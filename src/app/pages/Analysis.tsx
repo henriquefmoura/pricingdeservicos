@@ -563,7 +563,7 @@ export function Analysis() {
                             <div className="bg-white p-3 border rounded shadow-lg">
                               <p className="font-medium">{payload[0].payload.fullName}</p>
                               <p className="text-sm text-gray-600">
-                                R$ {payload[0].value?.toFixed(2)}
+                                R$ {typeof payload[0].value === 'number' ? payload[0].value.toFixed(2) : payload[0].value}
                               </p>
                             </div>
                           );

@@ -49,42 +49,29 @@ export class GoogleSheetsService {
 
     const { apiKey, spreadsheetId, sheetName } = this.config;
 
-    try {
-      // URL da API do Google Sheets v4
-      const range = `${sheetName}!A:ZZ`; // Busca todas as colunas de A até ZZ
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
+    // URL da API do Google Sheets v4
+    const range = `${sheetName}!A:ZZ`; // Busca todas as colunas de A até ZZ
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
 
-      console.log('🔄 Buscando dados do Google Sheets...');
-      
-      const response = await fetch(url);
+    const response = await fetch(url);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`Erro ao buscar dados: ${error.error?.message || response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (!data.values || data.values.length === 0) {
-        throw new Error('Planilha vazia ou sem dados');
-      }
-
-      // Primeira linha são os cabeçalhos
-      const headers = data.values[0];
-      // Restante são os dados
-      const rows = data.values.slice(1);
-
-      console.log('✅ Dados carregados:', {
-        headers,
-        rowCount: rows.length,
-        columnCount: headers.length,
-      });
-
-      return { headers, rows };
-    } catch (error) {
-      console.error('❌ Erro ao buscar dados do Google Sheets:', error);
-      throw error;
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`Erro ao buscar dados: ${error.error?.message || response.statusText}`);
     }
+
+    const data = await response.json();
+
+    if (!data.values || data.values.length === 0) {
+      throw new Error('Planilha vazia ou sem dados');
+    }
+
+    // Primeira linha são os cabeçalhos
+    const headers = data.values[0];
+    // Restante são os dados
+    const rows = data.values.slice(1);
+
+    return { headers, rows };
   }
 
   /**

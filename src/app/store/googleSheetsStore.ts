@@ -77,11 +77,6 @@ export const useGoogleSheetsStore = create<GoogleSheetsState>()(
             syncError: null,
           });
 
-          console.log('✅ Sincronização concluída:', {
-            rows: data.length,
-            timestamp: new Date(),
-          });
-
           return { success: true, data };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -90,8 +85,6 @@ export const useGoogleSheetsStore = create<GoogleSheetsState>()(
             isSyncing: false,
             syncError: errorMessage,
           });
-
-          console.error('❌ Erro na sincronização:', errorMessage);
 
           return { success: false, error: errorMessage };
         }

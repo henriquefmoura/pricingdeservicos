@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Upload, BarChart2, Calculator, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Upload, BarChart2, Calculator, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, CloudSun } from 'lucide-react';
 import { Logo } from './Logo';
 
 export type UserRole = 'Master' | 'Admin' | 'Usuário';
-export type NavItem = 'Upload' | 'Análise' | 'Simulador' | 'Dashboard' | 'Admin';
+export type NavItem = 'Upload' | 'Análise' | 'Simulador' | 'Dashboard' | 'Admin' | 'Clima';
 
 interface SidebarProps {
   activeItem: NavItem;
@@ -20,6 +20,7 @@ const navItems: { id: NavItem; label: string; icon: React.ElementType }[] = [
   { id: 'Análise', label: 'Análise', icon: BarChart2 },
   { id: 'Simulador', label: 'Simulador', icon: Calculator },
   { id: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'Clima', label: 'Clima', icon: CloudSun },
   { id: 'Admin', label: 'Admin', icon: Settings },
 ];
 

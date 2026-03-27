@@ -7,6 +7,7 @@ import MasterHomePage from "./MasterHomePage";
 import AnalysisPage from "./AnalysisPage";
 import AdminPricingPage from "./AdminPricingPage";
 import UserDashboardPage from "./UserDashboardPage";
+import WeatherPage from "./pages/WeatherPage";
 
 // Old pages that still have unique functionality
 import { Comparison } from "./pages/Comparison";
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
   {
     path: "/simulator",
     Component: PricingSimulator,
+  },
+  {
+    path: "/weather",
+    Component: WeatherPage,
   },
   {
     path: "*",

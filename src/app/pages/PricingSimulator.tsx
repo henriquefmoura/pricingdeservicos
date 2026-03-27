@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { ArrowLeft, Calculator, Download, RefreshCw, AlertCircle, CheckCircle2, Sparkles, Settings2, Shield } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { PricingClimateAdvisor } from '../components/pricing-climate/PricingClimateAdvisor';
+import { usePricingClimateAdvisor } from '../hooks/usePricingClimateAdvisor';
 import { Badge } from '../components/ui/badge';
 import {
   Table,
@@ -70,6 +72,35 @@ export function PricingSimulator() {
   const [selectedPlazasVenda, setSelectedPlazasVenda] = useState<Set<string>>(new Set());
   const [selectedPlazasRepasse, setSelectedPlazasRepasse] = useState<Set<string>>(new Set());
   const [selectedPlazasMargem, setSelectedPlazasMargem] = useState<Set<string>>(new Set());
+
+  // ---- Motor de Recomendação Climática ----
+  const [climateAdvisorContext, setClimateAdvisorContext] = useState<{
+    serviceId: string;
+    serviceName: string;
+    pracaName: string;
+    currentPrice: number;
+  } | null>(null);
+
+  const climateAdvisor = usePricingClimateAdvisor({
+    serviceId: climateAdvisorContext?.serviceId ?? '',
+    serviceName: climateAdvisorContext?.serviceName ?? '',
+    pracaId: climateAdvisorContext?.pracaName ?? '',
+    pracaName: climateAdvisorContext?.pracaName ?? '',
+    currentPrice: climateAdvisorContext?.currentPrice ?? 0,
+    enabled: climateAdvisorContext != null,
+  });
+
+  const handlePriceFieldFocus = useCallback(
+    (codigo: string, grupo: string, plazaAlvo: string, currentVenda: number) => {
+      setClimateAdvisorContext({
+        serviceId: codigo,
+        serviceName: grupo,
+        pracaName: plazaAlvo,
+        currentPrice: currentVenda,
+      });
+    },
+    []
+  );
 
   const analyzer = useMemo(() => {
     if (!data) return null;
@@ -358,6 +389,10 @@ export function PricingSimulator() {
     } else {
       edited.suggestedVenda = numValue;
       edited.suggestedMargem = ((numValue - edited.suggestedRepasse) / numValue) * 100;
+      // Atualiza o motor de recomendação climática com o novo preço
+      if (climateAdvisorContext) {
+        climateAdvisor.setProposedPrice(numValue);
+      }
     }
     
     edited.edited = true;
@@ -963,107 +998,128 @@ export function PricingSimulator() {
               </CardContent>
             </Card>
 
-            {/* Tabela de Preços Sugeridos */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Preços Sugeridos (Editáveis)</CardTitle>
-                <CardDescription>
-                  Clique em um preço para editá-lo. Os valores em verde são sugestões automáticas, amarelo são editados.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-white z-10">
-                      <TableRow>
-                        <TableHead>Praça</TableHead>
-                        <TableHead>Código</TableHead>
-                        <TableHead>Grupo</TableHead>
-                        <TableHead className="text-right">Venda Atual</TableHead>
-                        <TableHead className="text-right">Repasse Atual</TableHead>
-                        <TableHead className="text-right">Margem Atual</TableHead>
-                        <TableHead className="text-right bg-green-50">Venda Sugerida</TableHead>
-                        <TableHead className="text-right bg-green-50">Repasse Sugerido</TableHead>
-                        <TableHead className="text-right bg-green-50">Margem Sugerida</TableHead>
-                        <TableHead className="text-right">Diferença</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {suggestedPrices.map((price, idx) => {
-                        const final = getFinalPrice(price.codigo + price.plazaAlvo);
-                        const difference = ((final.suggestedVenda - price.originalVenda) / price.originalVenda) * 100;
-                        
-                        return (
-                          <TableRow key={`${price.codigo}-${price.plazaAlvo}`}>
-                            <TableCell className="font-medium text-sm">
-                              <Badge variant="outline" className="text-blue-600 border-blue-600">
-                                {price.plazaAlvo}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">{price.codigo}</TableCell>
-                            <TableCell className="text-sm">{price.grupo}</TableCell>
-                            <TableCell className="text-right text-sm">
-                              R$ {price.originalVenda.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-right text-sm text-gray-600">
-                              R$ {price.originalRepasse.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-right text-sm text-gray-600">
-                              {price.originalMargem.toFixed(1)}%
-                            </TableCell>
-                            <TableCell className={`text-right ${final.edited ? 'bg-yellow-50' : 'bg-green-50'}`}>
-                              <input
-                                type="number"
-                                step="0.01"
-                                value={final.suggestedVenda.toFixed(2)}
-                                onChange={(e) => handleEditPrice(price.codigo + price.plazaAlvo, 'venda', e.target.value)}
-                                className="w-24 px-2 py-1 text-sm text-right border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </TableCell>
-                            <TableCell className={`text-right ${final.edited ? 'bg-yellow-50' : 'bg-green-50'}`}>
-                              <input
-                                type="number"
-                                step="0.01"
-                                value={final.suggestedRepasse.toFixed(2)}
-                                onChange={(e) => handleEditPrice(price.codigo + price.plazaAlvo, 'repasse', e.target.value)}
-                                className="w-24 px-2 py-1 text-sm text-right border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </TableCell>
-                            <TableCell className={`text-right text-sm ${final.edited ? 'bg-yellow-50' : 'bg-green-50'}`}>
-                              {final.suggestedMargem.toFixed(1)}%
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Badge
-                                variant="outline"
-                                className={
-                                  Math.abs(difference) < 5
-                                    ? 'text-green-600 border-green-600'
-                                    : Math.abs(difference) < 15
-                                    ? 'text-orange-600 border-orange-600'
-                                    : 'text-red-600 border-red-600'
-                                }
-                              >
-                                {difference > 0 ? '+' : ''}{difference.toFixed(1)}%
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {final.edited ? (
-                                <Badge variant="outline" className="text-yellow-600 border-yellow-600">
-                                  Editado
-                                </Badge>
-                              ) : (
-                                <CheckCircle2 className="w-5 h-5 text-green-600 mx-auto" />
-                              )}
-                            </TableCell>
+            {/* Tabela de Preços Sugeridos + Motor de Recomendação Climática */}
+            <div className="flex gap-4 items-start">
+              {/* Tabela */}
+              <div className="flex-1 min-w-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Preços Sugeridos (Editáveis)</CardTitle>
+                    <CardDescription>
+                      Clique em um preço para editá-lo. Os valores em verde são sugestões automáticas, amarelo são editados.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-white z-10">
+                          <TableRow>
+                            <TableHead>Praça</TableHead>
+                            <TableHead>Código</TableHead>
+                            <TableHead>Grupo</TableHead>
+                            <TableHead className="text-right">Venda Atual</TableHead>
+                            <TableHead className="text-right">Repasse Atual</TableHead>
+                            <TableHead className="text-right">Margem Atual</TableHead>
+                            <TableHead className="text-right bg-green-50">Venda Sugerida</TableHead>
+                            <TableHead className="text-right bg-green-50">Repasse Sugerido</TableHead>
+                            <TableHead className="text-right bg-green-50">Margem Sugerida</TableHead>
+                            <TableHead className="text-right">Diferença</TableHead>
+                            <TableHead className="text-center">Status</TableHead>
                           </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {suggestedPrices.map((price, idx) => {
+                            const final = getFinalPrice(price.codigo + price.plazaAlvo);
+                            const difference = ((final.suggestedVenda - price.originalVenda) / price.originalVenda) * 100;
+                            
+                            return (
+                              <TableRow key={`${price.codigo}-${price.plazaAlvo}`}>
+                                <TableCell className="font-medium text-sm">
+                                  <Badge variant="outline" className="text-blue-600 border-blue-600">
+                                    {price.plazaAlvo}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="font-mono text-sm">{price.codigo}</TableCell>
+                                <TableCell className="text-sm">{price.grupo}</TableCell>
+                                <TableCell className="text-right text-sm">
+                                  R$ {price.originalVenda.toFixed(2)}
+                                </TableCell>
+                                <TableCell className="text-right text-sm text-gray-600">
+                                  R$ {price.originalRepasse.toFixed(2)}
+                                </TableCell>
+                                <TableCell className="text-right text-sm text-gray-600">
+                                  {price.originalMargem.toFixed(1)}%
+                                </TableCell>
+                                <TableCell className={`text-right ${final.edited ? 'bg-yellow-50' : 'bg-green-50'}`}>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={final.suggestedVenda.toFixed(2)}
+                                    onChange={(e) => handleEditPrice(price.codigo + price.plazaAlvo, 'venda', e.target.value)}
+                                    onFocus={() => handlePriceFieldFocus(price.codigo, price.grupo, price.plazaAlvo, price.originalVenda)}
+                                    className="w-24 px-2 py-1 text-sm text-right border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                </TableCell>
+                                <TableCell className={`text-right ${final.edited ? 'bg-yellow-50' : 'bg-green-50'}`}>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={final.suggestedRepasse.toFixed(2)}
+                                    onChange={(e) => handleEditPrice(price.codigo + price.plazaAlvo, 'repasse', e.target.value)}
+                                    className="w-24 px-2 py-1 text-sm text-right border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                </TableCell>
+                                <TableCell className={`text-right text-sm ${final.edited ? 'bg-yellow-50' : 'bg-green-50'}`}>
+                                  {final.suggestedMargem.toFixed(1)}%
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Badge
+                                    variant="outline"
+                                    className={
+                                      Math.abs(difference) < 5
+                                        ? 'text-green-600 border-green-600'
+                                        : Math.abs(difference) < 15
+                                        ? 'text-orange-600 border-orange-600'
+                                        : 'text-red-600 border-red-600'
+                                    }
+                                  >
+                                    {difference > 0 ? '+' : ''}{difference.toFixed(1)}%
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {final.edited ? (
+                                    <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                                      Editado
+                                    </Badge>
+                                  ) : (
+                                    <CheckCircle2 className="w-5 h-5 text-green-600 mx-auto" />
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Painel de Inteligência Climática */}
+              {climateAdvisorContext && (
+                <div className="sticky top-4 shrink-0" style={{ width: '440px' }}>
+                  <PricingClimateAdvisor
+                    output={climateAdvisor.output}
+                    weather={climateAdvisor.weather}
+                    sensitivity={climateAdvisor.sensitivity}
+                    loading={climateAdvisor.loadingWeather}
+                    computing={climateAdvisor.computing}
+                    error={climateAdvisor.error}
+                    onRefresh={climateAdvisor.refreshWeather}
+                  />
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </div>
 
             {/* Instruções */}
             <Card className="border-2 border-purple-200 bg-purple-50/30">

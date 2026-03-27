@@ -270,7 +270,7 @@ export default function DataTableShowcase() {
               setCurrentPage(1);
             },
           }}
-          onRowClick={() => undefined}
+          onRowClick={(row) => console.log('Row clicked:', row)}
         />
 
         {/* Legend */}

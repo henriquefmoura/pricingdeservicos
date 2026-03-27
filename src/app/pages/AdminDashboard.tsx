@@ -36,6 +36,16 @@ export function AdminDashboard() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Aqui você adicionaria a lógica para salvar no banco
+    console.log('Novo preço adicionado:', {
+      codigo,
+      grupo,
+      plaza,
+      repasse: parseFloat(repasse),
+      venda: parseFloat(venda),
+      margem: parseFloat(margem),
+    });
+
     setSuccessMessage('Preço adicionado com sucesso!');
     
     // Limpar formulário

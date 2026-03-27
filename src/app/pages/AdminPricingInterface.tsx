@@ -1,0 +1,548 @@
+import { useState, useMemo, useEffect } from 'react';
+import { Save, CheckCircle2, AlertCircle, Lightbulb, TrendingUp } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui/table';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { usePricingCodesStore, PricingCode } from '../store/pricingCodesStore';
+import { useAuthStore } from '../store/authStore';
+import { useMarketResearchStore } from '../store/marketResearchStore';
+import { useApprovalStore } from '../store/approvalStore';
+import { useCorrelationStore } from '../store/correlationStore';
+import { useReplicationConfigStore } from '../store/replicationConfigStore';
+import { toast } from 'sonner';
+
+interface PriceInput {
+  repasse: string;
+  venda: string;
+}
+
+export function AdminPricingInterface() {
+  const { user } = useAuthStore();
+  const { codes, updateCodePrice, initializeMockCodes } = usePricingCodesStore();
+  const { getResearchByCode, getSuggestedPrice } = useMarketResearchStore();
+  const { addApproval } = useApprovalStore();
+  const { getSimilarPlazas, initializeMockData } = useCorrelationStore();
+  const { getTargetPlazasForReplicator, isPlazaReplicator } = useReplicationConfigStore();
+  const [priceInputs, setPriceInputs] = useState<Record<string, PriceInput>>({});
+  const [editingCode, setEditingCode] = useState<string | null>(null);
+
+  // Inicializar dados mock de correlação e códigos
+  useEffect(() => {
+    initializeMockData();
+    initializeMockCodes();
+  }, [initializeMockData, initializeMockCodes]);
+
+  // Filtrar códigos por plaza do admin (se houver)
+  const relevantCodes = useMemo(() => {
+    return codes.filter((code) => {
+      // Se o código já foi preenchido para a praça do admin, não mostrar
+      if (user?.plaza && code.prices?.[user.plaza]) {
+        return false;
+      }
+      // Mostrar códigos pendentes e em andamento
+      return code.status === 'pendente' || code.status === 'em_andamento';
+    });
+  }, [codes, user?.plaza]);
+
+  const getTipoBadgeColor = (tipo: PricingCode['tipo']) => {
+    switch (tipo) {
+      case 'Visita Técnica':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'Serviço':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'Complementar':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'Deslocamento':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
+    }
+  };
+
+  const handlePriceChange = (codeId: string, field: 'repasse' | 'venda', value: string) => {
+    setPriceInputs((prev) => ({
+      ...prev,
+      [codeId]: {
+        ...prev[codeId],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSavePrice = (code: PricingCode) => {
+    if (!user?.plaza) {
+      toast.error('Erro: Praça do usuário não identificada');
+      return;
+    }
+
+    const input = priceInputs[code.id];
+    if (!input || !input.repasse || !input.venda) {
+      toast.error('Por favor, preencha todos os campos de preço');
+      return;
+    }
+
+    const repasse = parseFloat(input.repasse);
+    const venda = parseFloat(input.venda);
+
+    if (isNaN(repasse) || isNaN(venda)) {
+      toast.error('Por favor, insira valores numéricos válidos');
+      return;
+    }
+
+    if (repasse >= venda) {
+      toast.error('O valor de venda deve ser maior que o repasse');
+      return;
+    }
+
+    const margem = ((venda - repasse) / venda) * 100;
+
+    // 1. Salvar DIRETO na praça do admin (sem aprovação)
+    updateCodePrice(code.id, user.plaza, repasse, venda, user.name);
+    
+    // 2. Verificar se esta praça é replicadora e replicar conforme configuração do Master
+    let targetPlazas: string[] = [];
+    
+    if (isPlazaReplicator(user.plaza)) {
+      // Usar configuração do Master
+      targetPlazas = getTargetPlazasForReplicator(user.plaza);
+    } else {
+      // Fallback: usar sistema antigo de correlação
+      targetPlazas = getSimilarPlazas(user.plaza);
+    }
+    
+    if (targetPlazas.length > 0) {
+      // Criar aprovações para cada praça alvo
+      targetPlazas.forEach((plaza) => {
+        // Verificar se a praça já tem preço anterior para este código
+        const currentPrice = code.prices?.[plaza];
+        const currentVenda = currentPrice?.venda || 0;
+        const currentRepasse = currentPrice?.repasse || 0;
+        const currentMargem = currentPrice ? ((currentPrice.venda - currentPrice.repasse) / currentPrice.venda) * 100 : 0;
+        
+        // Calcular variação correta: 0 para novos serviços, % para serviços existentes
+        const variation = currentVenda === 0 
+          ? 0 
+          : ((venda - currentVenda) / currentVenda) * 100;
+        
+        addApproval({
+          codigo: code.codigoAvulso,
+          descricao: code.descricao,
+          grupo: code.tipo,
+          plaza: plaza,
+          currentRepasse: currentRepasse,
+          currentVenda: currentVenda,
+          currentMargem: currentMargem,
+          proposedRepasse: repasse,
+          proposedVenda: venda,
+          proposedMargem: margem,
+          variation: variation,
+          isNewService: currentVenda === 0,
+          requestedBy: `Admin ${user.plaza}`,
+        });
+      });
+      
+      const replicationSource = isPlazaReplicator(user.plaza) ? 'configuração do Master' : 'análise de correlação';
+      
+      toast.success(`Preço aplicado e replicado! 🎉`, {
+        description: `Preço de ${code.descricao} aplicado em ${user.plaza} e enviado para aprovação em ${targetPlazas.length} praça(s) via ${replicationSource}: ${targetPlazas.join(', ')}`,
+      });
+    } else {
+      toast.success(`Preço aplicado! 🎉`, {
+        description: `Preço de ${code.descricao} aplicado em ${user.plaza}`,
+      });
+    }
+    
+    // Limpar inputs
+    setPriceInputs((prev) => {
+      const newInputs = { ...prev };
+      delete newInputs[code.id];
+      return newInputs;
+    });
+    
+    setEditingCode(null);
+  };
+
+  const calculateMargem = (codeId: string) => {
+    const input = priceInputs[codeId];
+    if (!input || !input.repasse || !input.venda) return null;
+
+    const repasse = parseFloat(input.repasse);
+    const venda = parseFloat(input.venda);
+
+    if (isNaN(repasse) || isNaN(venda) || venda === 0) return null;
+
+    return ((venda - repasse) / venda) * 100;
+  };
+
+  // Calcular estatísticas
+  const totalCodes = relevantCodes.length;
+  const completedByMe = codes.filter(
+    (code) => user?.plaza && code.prices?.[user.plaza]
+  ).length;
+
+  if (totalCodes === 0 && completedByMe > 0) {
+    return (
+      <Card className="border-2 border-green-200 bg-green-50">
+        <CardContent className="py-12">
+          <div className="text-center">
+            <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-green-900 mb-2">
+              Todos os códigos foram precificados!
+            </h3>
+            <p className="text-sm text-green-800 mb-4">
+              Você preencheu {completedByMe} código(s) para a praça {user?.plaza}
+            </p>
+            <p className="text-xs text-green-700">
+              Aguarde novos códigos serem adicionados pelo Master
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Pendentes de Preenchimento
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-orange-600">{totalCodes}</p>
+            <p className="text-xs text-gray-500 mt-1">Praça {user?.plaza}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Já Precificados
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-green-600">{completedByMe}</p>
+            <p className="text-xs text-gray-500 mt-1">Por você</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Taxa de Conclusão
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-blue-600">
+              {codes.length > 0
+                ? ((completedByMe / codes.length) * 100).toFixed(0)
+                : 0}
+              %
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {completedByMe} de {codes.length} total
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabela de códigos para precificar */}
+      {totalCodes > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Códigos para Precificação - Praça {user?.plaza}</CardTitle>
+            <CardDescription>
+              Preencha os valores de repasse e venda para cada código de serviço
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {relevantCodes.map((code) => {
+                const margem = calculateMargem(code.id);
+                const isEditing = editingCode === code.id;
+                const hasInput = priceInputs[code.id];
+
+                return (
+                  <Card key={code.id} className="border-2">
+                    <CardContent className="pt-6">
+                      <div className="space-y-4">
+                        {/* Cabeçalho do código */}
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={getTipoBadgeColor(code.tipo)}>
+                                {code.tipo}
+                              </Badge>
+                              <span className="text-xs text-gray-500">
+                                Prazo: {code.prazo}
+                              </span>
+                            </div>
+                            <h4 className="font-semibold text-gray-900 mb-1">
+                              {code.descricao}
+                            </h4>
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <span>
+                                <span className="font-medium">Código:</span>{' '}
+                                {code.codigoAvulso}
+                              </span>
+                              <span>
+                                <span className="font-medium">Unidade:</span>{' '}
+                                {code.unidade}
+                              </span>
+                              {code.codigoAtrelado && (
+                                <span>
+                                  <span className="font-medium">Cód. Atrelado:</span>{' '}
+                                  {code.codigoAtrelado}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Formulário de preços */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                          <div className="space-y-2">
+                            <Label htmlFor={`repasse-${code.id}`}>
+                              Repasse (R$) *
+                            </Label>
+                            <Input
+                              id={`repasse-${code.id}`}
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={priceInputs[code.id]?.repasse || ''}
+                              onChange={(e) =>
+                                handlePriceChange(code.id, 'repasse', e.target.value)
+                              }
+                              onFocus={() => setEditingCode(code.id)}
+                              className="text-right"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor={`venda-${code.id}`}>
+                              Preço Venda (R$) *
+                            </Label>
+                            <Input
+                              id={`venda-${code.id}`}
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={priceInputs[code.id]?.venda || ''}
+                              onChange={(e) =>
+                                handlePriceChange(code.id, 'venda', e.target.value)
+                              }
+                              onFocus={() => setEditingCode(code.id)}
+                              className="text-right"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Margem (%)</Label>
+                            <div
+                              className={`h-10 px-3 py-2 border rounded-md text-right font-semibold flex items-center justify-end ${
+                                margem !== null
+                                  ? margem >= 15
+                                    ? 'bg-green-50 text-green-700 border-green-300'
+                                    : margem >= 10
+                                    ? 'bg-yellow-50 text-yellow-700 border-yellow-300'
+                                    : 'bg-red-50 text-red-700 border-red-300'
+                                  : 'bg-gray-100 text-gray-400 border-gray-200'
+                              }`}
+                            >
+                              {margem !== null ? `${margem.toFixed(2)}%` : '-'}
+                            </div>
+                          </div>
+
+                          <div className="flex items-end">
+                            <Button
+                              onClick={() => handleSavePrice(code)}
+                              disabled={!hasInput || !hasInput.repasse || !hasInput.venda}
+                              className="w-full gap-2"
+                            >
+                              <Save className="w-4 h-4" />
+                              Salvar
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Preço Sugerido baseado em Pesquisa de Mercado */}
+                        {(() => {
+                          const research = getResearchByCode(code.codigoAvulso);
+                          const prestadorPrices = code.prices
+                            ? Object.values(code.prices).map((p) => p.venda)
+                            : [];
+                          const suggestedPrice = getSuggestedPrice(
+                            code.codigoAvulso,
+                            prestadorPrices
+                          );
+
+                          if (suggestedPrice || research) {
+                            return (
+                              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg">
+                                <div className="flex items-start gap-3">
+                                  <div className="bg-blue-600 p-2 rounded-lg flex-shrink-0">
+                                    <Lightbulb className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <h5 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                      Preço Sugerido por IA
+                                      {suggestedPrice && (
+                                        <Badge className="bg-blue-600 text-white border-0">
+                                          R$ {suggestedPrice.toFixed(2)}
+                                        </Badge>
+                                      )}
+                                    </h5>
+                                    <div className="space-y-2 text-sm">
+                                      {research && research.precosConcorrentes.length > 0 && (
+                                        <div className="bg-white/70 p-3 rounded-md border border-blue-200">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <TrendingUp className="w-4 h-4 text-blue-700" />
+                                            <span className="font-medium text-blue-900">
+                                              Pesquisa de Mercado ({research.precosConcorrentes.length} concorrente
+                                              {research.precosConcorrentes.length > 1 ? 's' : ''})
+                                            </span>
+                                          </div>
+                                          <div className="grid grid-cols-2 gap-2 text-xs">
+                                            {research.precosConcorrentes.map((comp) => (
+                                              <div key={comp.id} className="text-blue-800">
+                                                <span className="font-medium">{comp.concorrente}:</span>{' '}
+                                                R$ {comp.preco.toFixed(2)}
+                                              </div>
+                                            ))}
+                                          </div>
+                                          <div className="mt-2 pt-2 border-t border-blue-200 text-blue-900 font-semibold">
+                                            Média dos Concorrentes: R${' '}
+                                            {(
+                                              research.precosConcorrentes.reduce(
+                                                (sum, c) => sum + c.preco,
+                                                0
+                                              ) / research.precosConcorrentes.length
+                                            ).toFixed(2)}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {prestadorPrices.length > 0 && (
+                                        <div className="bg-white/70 p-3 rounded-md border border-blue-200">
+                                          <span className="font-medium text-blue-900">
+                                            Preços de Prestadores ({prestadorPrices.length} praça
+                                            {prestadorPrices.length > 1 ? 's' : ''}):
+                                          </span>{' '}
+                                          <span className="text-blue-800">
+                                            Média R${' '}
+                                            {(
+                                              prestadorPrices.reduce((sum, p) => sum + p, 0) /
+                                              prestadorPrices.length
+                                            ).toFixed(2)}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {suggestedPrice && (
+                                        <p className="text-blue-800 mt-2">
+                                          💡 <strong>Recomendação:</strong> Com base nos dados de mercado
+                                          e preços de outras praças, sugerimos um preço de venda próximo a{' '}
+                                          <strong className="text-blue-900">
+                                            R$ {suggestedPrice.toFixed(2)}
+                                          </strong>
+                                          . Ajuste conforme as condições da sua praça.
+                                        </p>
+                                      )}
+                                    </div>
+                                    {suggestedPrice && (
+                                      <div className="mt-3">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            setPriceInputs((prev) => ({
+                                              ...prev,
+                                              [code.id]: {
+                                                ...prev[code.id],
+                                                venda: suggestedPrice.toFixed(2),
+                                              },
+                                            }));
+                                            setEditingCode(code.id);
+                                            toast.success('Preço sugerido aplicado ao campo de venda');
+                                          }}
+                                          className="gap-2 text-blue-700 border-blue-300 hover:bg-blue-100"
+                                        >
+                                          <Lightbulb className="w-4 h-4" />
+                                          Usar Preço Sugerido
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                        {/* Alertas de validação */}
+                        {isEditing && hasInput && hasInput.repasse && hasInput.venda && (
+                          <div className="mt-2">
+                            {margem !== null && margem < 10 && (
+                              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-red-800">
+                                  <strong>Atenção:</strong> A margem está abaixo de 10%, o
+                                  que pode não ser rentável.
+                                </p>
+                              </div>
+                            )}
+                            {margem !== null && margem >= 10 && margem < 15 && (
+                              <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <AlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-yellow-800">
+                                  A margem está entre 10-15%, dentro do aceitável mas pode ser otimizada.
+                                </p>
+                              </div>
+                            )}
+                            {margem !== null && margem >= 15 && (
+                              <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-green-800">
+                                  Excelente! A margem está acima de 15%, dentro do ideal.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center">
+              <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Nenhum código pendente de precificação
+              </h3>
+              <p className="text-sm text-gray-600">
+                Aguarde o Master adicionar novos códigos para precificação
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,70 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router';
+import { Sidebar, NavItem, UserRole } from './Sidebar';
+import { Header } from './Header';
+import { useAuthStore } from '../store/authStore';
+
+interface AppLayoutProps {
+  children: React.ReactNode;
+  activeNav: NavItem;
+  title: string;
+  subtitle: string;
+}
+
+export function AppLayout({ children, activeNav, title, subtitle }: AppLayoutProps) {
+  const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
+
+  const userName = user?.name || 'Usuário';
+  const userRole: UserRole = user?.role === 'master' ? 'Master' : user?.role === 'admin' ? 'Admin' : 'Usuário';
+  const notificationCount = 3;
+
+  const handleNavClick = (item: NavItem) => {
+    switch (item) {
+      case 'Upload':
+        navigate('/home');
+        break;
+      case 'Análise':
+        navigate('/analysis');
+        break;
+      case 'Simulador':
+        navigate('/simulator');
+        break;
+      case 'Dashboard':
+        navigate('/dashboard');
+        break;
+      case 'Admin':
+        navigate('/admin');
+        break;
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#F8FAFC' }}>
+      <Sidebar
+        activeItem={activeNav}
+        userRole={userRole}
+        userName={userName}
+        onItemClick={handleNavClick}
+        onLogout={handleLogout}
+      />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Header
+          title={title}
+          subtitle={subtitle}
+          userName={userName}
+          userRole={userRole}
+          notificationCount={notificationCount}
+        />
+        <main style={{ flex: 1, overflow: 'auto', padding: '24px 40px' }}>
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}

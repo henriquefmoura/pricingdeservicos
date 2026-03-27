@@ -418,7 +418,7 @@ export function DataTable<T = any>({
                           color: '#001022',
                         }}
                       >
-                        {column.render ? column.render((row as Record<string, unknown>)[column.key], row) : (row as Record<string, unknown>)[column.key]}
+                        {column.render ? column.render((row as Record<string, unknown>)[column.key], row) : String((row as Record<string, unknown>)[column.key] ?? '')}
                       </td>
                     ))}
                   </tr>

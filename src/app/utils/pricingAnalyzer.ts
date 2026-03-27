@@ -349,7 +349,7 @@ export class PricingAnalyzer {
 
     nonParameterPlazas.forEach((plaza) => {
       let bestParameterPlaza = parameterPlazaNames[0];
-      let bestCorrelation: PlazaCorrelation | null = null;
+      let bestCorrelation: PlazaCorrelation | null = null as PlazaCorrelation | null;
 
       // Encontra a praça parâmetro com melhor correlação
       parameterPlazaNames.forEach((paramPlaza) => {

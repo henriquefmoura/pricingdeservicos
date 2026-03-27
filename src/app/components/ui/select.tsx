@@ -5,11 +5,13 @@ interface SelectProps {
   value?: string;
   onValueChange?: (value: string) => void;
   children: React.ReactNode;
+  disabled?: boolean;
 }
 
 interface SelectTriggerProps {
   children: React.ReactNode;
   className?: string;
+  id?: string;
 }
 
 interface SelectContentProps {
@@ -58,12 +60,13 @@ export function Select({ value = '', onValueChange, children }: SelectProps) {
   );
 }
 
-export function SelectTrigger({ children, className = '' }: SelectTriggerProps) {
+export function SelectTrigger({ children, className = '', id }: SelectTriggerProps) {
   const { isOpen, setIsOpen } = React.useContext(SelectContext);
 
   return (
     <button
       type="button"
+      id={id}
       onClick={() => setIsOpen(!isOpen)}
       className={`flex items-center justify-between w-full px-3 py-2 text-left bg-white border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
     >

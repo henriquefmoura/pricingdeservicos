@@ -81,17 +81,23 @@ export function formatWindSpeed(value: number | null | undefined): string {
 
 /**
  * Formata data ISO para exibição pt-BR curta (ex: "27 mar").
+ * Aceita formatos YYYY-MM-DD ou ISO timestamps completos.
  */
 export function formatDateShort(dateStr: string): string {
-  const date = new Date(dateStr + 'T12:00:00');
+  const datePart = dateStr.split('T')[0];
+  const date = new Date(datePart + 'T12:00:00');
+  if (isNaN(date.getTime())) return dateStr;
   return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
 }
 
 /**
  * Formata data ISO para exibição pt-BR (ex: "27 de março de 2024").
+ * Aceita formatos YYYY-MM-DD ou ISO timestamps completos.
  */
 export function formatDateFull(dateStr: string): string {
-  const date = new Date(dateStr + 'T12:00:00');
+  const datePart = dateStr.split('T')[0];
+  const date = new Date(datePart + 'T12:00:00');
+  if (isNaN(date.getTime())) return dateStr;
   return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 

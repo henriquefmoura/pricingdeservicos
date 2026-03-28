@@ -8,6 +8,7 @@ import AnalysisPage from "./AnalysisPage";
 import AdminPricingPage from "./AdminPricingPage";
 import UserDashboardPage from "./UserDashboardPage";
 import WeatherPage from "./pages/WeatherPage";
+import TerritorialIntelligencePage from "./pages/TerritorialIntelligencePage";
 
 // Old pages that still have unique functionality
 import { Comparison } from "./pages/Comparison";
@@ -55,6 +56,10 @@ export const router = createBrowserRouter([
   {
     path: "/weather",
     Component: WeatherPage,
+  },
+  {
+    path: "/territorial",
+    Component: TerritorialIntelligencePage,
   },
   {
     path: "*",

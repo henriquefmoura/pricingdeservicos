@@ -36,6 +36,9 @@ export function AppLayout({ children, activeNav, title, subtitle }: AppLayoutPro
       case 'Clima':
         navigate('/weather');
         break;
+      case 'Territorial':
+        navigate('/territorial');
+        break;
       case 'Admin':
         navigate('/admin');
         break;

@@ -2,10 +2,14 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { AppLayout } from './components/AppLayout';
 import { Tabs } from './components/Tabs';
+import { Card } from './components/Card';
 import { CurrencyInput } from './components/Input';
-import { Check, X, ArrowRight, Clock, CheckCircle, XCircle, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import { Check, X, ArrowRight, Clock, CheckCircle, XCircle, AlertTriangle, TrendingUp, TrendingDown, BarChart2 } from 'lucide-react';
 import { useAuthStore } from './store/authStore';
 import { useApprovalStore, PriceApproval } from './store/approvalStore';
+import { AnalysisPanel } from './components/analysis/AnalysisPanel';
+import { usePricingAnalysis } from './hooks/usePricingAnalysis';
+import { ANALYSIS_SERVICES, ANALYSIS_PLAZAS, getDefaultAnalysisPlaza } from './utils/analysisConstants';
 import { toast } from 'sonner';
 
 export default function UserDashboardPage() {
@@ -21,12 +25,26 @@ export default function UserDashboardPage() {
     applyRejectedPrice,
   } = useApprovalStore();
 
-  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'analysis'>('pending');
   const [expandedComment, setExpandedComment] = useState<string | null>(null);
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [editRepasseValue, setEditRepasseValue] = useState('');
   const [editVendaValue, setEditVendaValue] = useState('');
+
+  // Analysis state
+  const [analysisService, setAnalysisService] = useState(ANALYSIS_SERVICES[0]);
+  const [analysisPlaza, setAnalysisPlaza] = useState(getDefaultAnalysisPlaza(user?.plaza));
+  const [analysisPrice, setAnalysisPrice] = useState(150);
+
+  const analysisData = usePricingAnalysis({
+    serviceId: analysisService.id,
+    serviceName: analysisService.name,
+    pracaId: analysisPlaza,
+    pracaName: analysisPlaza,
+    currentPrice: analysisPrice,
+    enabled: activeTab === 'analysis',
+  });
 
   // Auth guard
   useEffect(() => {
@@ -111,7 +129,9 @@ export default function UserDashboardPage() {
       ? pendingItems
       : activeTab === 'rejected'
       ? rejectedItems
-      : approvedItems;
+      : activeTab === 'approved'
+      ? approvedItems
+      : [];
 
   if (!isAuthenticated || !user) {
     return (
@@ -129,12 +149,137 @@ export default function UserDashboardPage() {
           { id: 'pending', label: 'Pendentes', count: pendingItems.length },
           { id: 'approved', label: 'Aprovados', count: approvedItems.length },
           { id: 'rejected', label: 'Rejeitados', count: rejectedItems.length },
+          { id: 'analysis', label: 'Análise de Mercado' },
         ]}
         activeTab={activeTab}
         onTabChange={(id) => setActiveTab(id as any)}
         style={{ marginBottom: '24px' }}
       />
 
+      {activeTab === 'analysis' ? (
+        <div style={{ maxWidth: '1440px' }}>
+          <Card>
+            <h2 style={{ font: 'var(--font-card-title)', color: 'var(--text-card-title)', marginBottom: '20px' }}>
+              Contexto de Mercado e Decisão
+            </h2>
+            <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '20px' }}>
+              Selecione um serviço, uma praça e ajuste o preço para receber análise inteligente e recomendações.
+            </p>
+
+            {/* Controls */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+              {/* Service selector */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                  Serviço
+                </label>
+                <select
+                  value={analysisService.id}
+                  onChange={(e) => {
+                    const svc = ANALYSIS_SERVICES.find((s) => s.id === e.target.value);
+                    if (svc) setAnalysisService(svc);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '13px',
+                    color: '#001022',
+                    backgroundColor: '#FFFFFF',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {ANALYSIS_SERVICES.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Plaza selector */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                  Praça
+                </label>
+                <select
+                  value={analysisPlaza}
+                  onChange={(e) => setAnalysisPlaza(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '13px',
+                    color: '#001022',
+                    backgroundColor: '#FFFFFF',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {ANALYSIS_PLAZAS.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Current price */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                  Preço Atual (R$)
+                </label>
+                <input
+                  type="number"
+                  value={analysisPrice}
+                  onChange={(e) => setAnalysisPrice(Number(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '13px',
+                    color: '#001022',
+                    backgroundColor: '#FFFFFF',
+                  }}
+                  min={0}
+                  step={0.01}
+                />
+              </div>
+
+              {/* Proposed price */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                  Preço Proposto (R$)
+                </label>
+                <input
+                  type="number"
+                  value={analysisData.proposedPrice}
+                  onChange={(e) => analysisData.setProposedPrice(Number(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #78BE20',
+                    fontSize: '13px',
+                    color: '#001022',
+                    backgroundColor: '#F0FDF4',
+                    fontWeight: 600,
+                  }}
+                  min={0}
+                  step={0.01}
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Analysis Panel */}
+          <AnalysisPanel
+            context={analysisData.context}
+            loading={analysisData.loading}
+            error={analysisData.error}
+            onRefresh={analysisData.refresh}
+          />
+        </div>
+      ) : (
+      <>
       {/* Stats Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
         <div
@@ -573,6 +718,8 @@ export default function UserDashboardPage() {
               : 'Nenhum preço foi rejeitado ainda'}
           </p>
         </div>
+      )}
+      </>
       )}
     </AppLayout>
   );

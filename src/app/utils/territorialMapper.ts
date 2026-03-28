@@ -51,6 +51,7 @@ export function classifyPricingProfile(income: IncomeLevel, pressure: OfferPress
   if (income === 'baixa' && pressure === 'alta') return 'alto_risco';
   if (income === 'baixa' && pressure === 'baixa' && size === 'pequeno') return 'expansao';
   if (income === 'media' && pressure === 'media') return 'equilibrado';
+  // Remaining baixa cases (media pressure, or non-small size with baixa pressure)
   if (income === 'baixa') return 'sensivel_preco';
   return 'equilibrado';
 }

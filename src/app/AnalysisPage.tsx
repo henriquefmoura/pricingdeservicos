@@ -9,6 +9,22 @@ import { usePricingStore } from './store/pricingStore';
 import { useCorrelationStore } from './store/correlationStore';
 import { useAuthStore } from './store/authStore';
 import { PricingAnalyzer } from './utils/pricingAnalyzer';
+import { AnalysisPanel } from './components/analysis/AnalysisPanel';
+import { usePricingAnalysis } from './hooks/usePricingAnalysis';
+
+// Mock services for analysis
+const MOCK_SERVICES = [
+  { id: 'srv-001', name: 'Instalação de Piso' },
+  { id: 'srv-002', name: 'Pintura Residencial' },
+  { id: 'srv-003', name: 'Impermeabilização' },
+  { id: 'srv-004', name: 'Instalação Elétrica' },
+  { id: 'srv-005', name: 'Instalação Hidráulica' },
+];
+
+const MOCK_PLAZAS = [
+  'São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Curitiba',
+  'Porto Alegre', 'Salvador', 'Recife', 'Fortaleza', 'Brasília',
+];
 
 export default function AnalysisPage() {
   const navigate = useNavigate();
@@ -16,6 +32,20 @@ export default function AnalysisPage() {
   const data = usePricingStore((state) => state.data);
   const { setParameterPlazas } = useCorrelationStore();
   const [selectedParameter, setSelectedParameter] = useState<string | null>(null);
+
+  // Pricing Analysis state
+  const [selectedService, setSelectedService] = useState(MOCK_SERVICES[0]);
+  const [selectedPlaza, setSelectedPlaza] = useState(MOCK_PLAZAS[0]);
+  const [currentPriceInput, setCurrentPriceInput] = useState(150);
+
+  const analysis = usePricingAnalysis({
+    serviceId: selectedService.id,
+    serviceName: selectedService.name,
+    pracaId: selectedPlaza,
+    pracaName: selectedPlaza,
+    currentPrice: currentPriceInput,
+    enabled: true,
+  });
 
   // Auth guard
   useEffect(() => {
@@ -462,6 +492,131 @@ export default function AnalysisPage() {
             </button>
           )}
         </Card>
+
+        {/* ============================================== */}
+        {/* Inteligência de Mercado para Pricing           */}
+        {/* ============================================== */}
+        <div style={{ marginTop: '32px' }}>
+          <Card>
+            <h2 style={{ font: 'var(--font-card-title)', color: 'var(--text-card-title)', marginBottom: '20px' }}>
+              Contexto de Mercado e Decisão
+            </h2>
+            <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '20px' }}>
+              Selecione um serviço, uma praça e ajuste o preço para receber análise inteligente e recomendações.
+            </p>
+
+            {/* Controls */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+              {/* Service selector */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                  Serviço
+                </label>
+                <select
+                  value={selectedService.id}
+                  onChange={(e) => {
+                    const svc = MOCK_SERVICES.find((s) => s.id === e.target.value);
+                    if (svc) setSelectedService(svc);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '13px',
+                    color: '#001022',
+                    backgroundColor: '#FFFFFF',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {MOCK_SERVICES.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Plaza selector */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                  Praça
+                </label>
+                <select
+                  value={selectedPlaza}
+                  onChange={(e) => setSelectedPlaza(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '13px',
+                    color: '#001022',
+                    backgroundColor: '#FFFFFF',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {MOCK_PLAZAS.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Current price */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                  Preço Atual (R$)
+                </label>
+                <input
+                  type="number"
+                  value={currentPriceInput}
+                  onChange={(e) => setCurrentPriceInput(Number(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '13px',
+                    color: '#001022',
+                    backgroundColor: '#FFFFFF',
+                  }}
+                  min={0}
+                  step={0.01}
+                />
+              </div>
+
+              {/* Proposed price */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                  Preço Proposto (R$)
+                </label>
+                <input
+                  type="number"
+                  value={analysis.proposedPrice}
+                  onChange={(e) => analysis.setProposedPrice(Number(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #78BE20',
+                    fontSize: '13px',
+                    color: '#001022',
+                    backgroundColor: '#F0FDF4',
+                    fontWeight: 600,
+                  }}
+                  min={0}
+                  step={0.01}
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Analysis Panel */}
+          <AnalysisPanel
+            context={analysis.context}
+            loading={analysis.loading}
+            error={analysis.error}
+            onRefresh={analysis.refresh}
+          />
+        </div>
       </div>
     </AppLayout>
   );

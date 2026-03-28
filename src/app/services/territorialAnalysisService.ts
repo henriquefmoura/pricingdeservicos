@@ -5,6 +5,7 @@
 
 import type { TerritorialInsightSummary } from '../types/territorial';
 import { runTerritorialAnalysis } from './territorialPricingEngine';
+import { simpleHash } from '../utils/pricingAnalysisMappers';
 
 // Mock IBGE codes for common plazas
 const PLAZA_IBGE_MAP: Record<string, string> = {
@@ -121,14 +122,4 @@ export function getMockTerritorialData(pracaName: string): TerritorialInsightSum
     pricingProfile: profile,
     insights: [],
   };
-}
-
-function simpleHash(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const ch = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + ch;
-    hash |= 0;
-  }
-  return Math.abs(hash);
 }

@@ -55,10 +55,10 @@ export function AnalysisHistoricalCurve({ context }: Props) {
                 return (
                   <div style={{ backgroundColor: '#FFF', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                     <p style={{ fontWeight: 600, fontSize: '12px', marginBottom: '4px' }}>{label}</p>
-                    {payload.map((entry: any) => (
+                    {payload.map((entry) => (
                       entry.value != null && (
-                        <p key={entry.dataKey} style={{ fontSize: '12px', color: entry.color }}>
-                          {entry.name}: R$ {Number(entry.value).toFixed(2)}
+                        <p key={String(entry.dataKey)} style={{ fontSize: '12px', color: String(entry.color) }}>
+                          {String(entry.name)}: R$ {Number(entry.value).toFixed(2)}
                         </p>
                       )
                     ))}

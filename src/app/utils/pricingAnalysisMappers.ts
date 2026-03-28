@@ -92,7 +92,11 @@ export function formatNumber(value: number | null | undefined): string {
   return value.toLocaleString('pt-BR');
 }
 
-function simpleHash(str: string): number {
+/**
+ * Generates a deterministic numeric hash from a string.
+ * Used for producing consistent mock data based on plaza/service names.
+ */
+export function simpleHash(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const ch = str.charCodeAt(i);

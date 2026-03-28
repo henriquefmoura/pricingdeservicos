@@ -9,20 +9,8 @@ import { useAuthStore } from './store/authStore';
 import { useApprovalStore, PriceApproval } from './store/approvalStore';
 import { AnalysisPanel } from './components/analysis/AnalysisPanel';
 import { usePricingAnalysis } from './hooks/usePricingAnalysis';
+import { ANALYSIS_SERVICES, ANALYSIS_PLAZAS, getDefaultAnalysisPlaza } from './utils/analysisConstants';
 import { toast } from 'sonner';
-
-const ANALYSIS_SERVICES = [
-  { id: 'srv-001', name: 'Instalação de Piso' },
-  { id: 'srv-002', name: 'Pintura Residencial' },
-  { id: 'srv-003', name: 'Impermeabilização' },
-  { id: 'srv-004', name: 'Instalação Elétrica' },
-  { id: 'srv-005', name: 'Instalação Hidráulica' },
-];
-
-const ANALYSIS_PLAZAS = [
-  'São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Curitiba',
-  'Porto Alegre', 'Salvador', 'Recife', 'Fortaleza', 'Brasília',
-];
 
 export default function UserDashboardPage() {
   const navigate = useNavigate();
@@ -46,10 +34,7 @@ export default function UserDashboardPage() {
 
   // Analysis state
   const [analysisService, setAnalysisService] = useState(ANALYSIS_SERVICES[0]);
-  const defaultPlaza = user?.plaza
-    ? ANALYSIS_PLAZAS.find((p) => p.toLowerCase().includes(user.plaza!.toLowerCase())) || ANALYSIS_PLAZAS[0]
-    : ANALYSIS_PLAZAS[0];
-  const [analysisPlaza, setAnalysisPlaza] = useState(defaultPlaza);
+  const [analysisPlaza, setAnalysisPlaza] = useState(getDefaultAnalysisPlaza(user?.plaza));
   const [analysisPrice, setAnalysisPrice] = useState(150);
 
   const analysisData = usePricingAnalysis({

@@ -11,20 +11,7 @@ import { useAuthStore } from './store/authStore';
 import { PricingAnalyzer } from './utils/pricingAnalyzer';
 import { AnalysisPanel } from './components/analysis/AnalysisPanel';
 import { usePricingAnalysis } from './hooks/usePricingAnalysis';
-
-// Mock services for analysis
-const MOCK_SERVICES = [
-  { id: 'srv-001', name: 'Instalação de Piso' },
-  { id: 'srv-002', name: 'Pintura Residencial' },
-  { id: 'srv-003', name: 'Impermeabilização' },
-  { id: 'srv-004', name: 'Instalação Elétrica' },
-  { id: 'srv-005', name: 'Instalação Hidráulica' },
-];
-
-const MOCK_PLAZAS = [
-  'São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Curitiba',
-  'Porto Alegre', 'Salvador', 'Recife', 'Fortaleza', 'Brasília',
-];
+import { ANALYSIS_SERVICES, ANALYSIS_PLAZAS } from './utils/analysisConstants';
 
 export default function AnalysisPage() {
   const navigate = useNavigate();
@@ -34,8 +21,8 @@ export default function AnalysisPage() {
   const [selectedParameter, setSelectedParameter] = useState<string | null>(null);
 
   // Pricing Analysis state
-  const [selectedService, setSelectedService] = useState(MOCK_SERVICES[0]);
-  const [selectedPlaza, setSelectedPlaza] = useState(MOCK_PLAZAS[0]);
+  const [selectedService, setSelectedService] = useState(ANALYSIS_SERVICES[0]);
+  const [selectedPlaza, setSelectedPlaza] = useState(ANALYSIS_PLAZAS[0]);
   const [currentPriceInput, setCurrentPriceInput] = useState(150);
 
   const analysis = usePricingAnalysis({
@@ -520,7 +507,7 @@ export default function AnalysisPage() {
                 <select
                   value={selectedService.id}
                   onChange={(e) => {
-                    const svc = MOCK_SERVICES.find((s) => s.id === e.target.value);
+                    const svc = ANALYSIS_SERVICES.find((s) => s.id === e.target.value);
                     if (svc) setSelectedService(svc);
                   }}
                   style={{
@@ -534,7 +521,7 @@ export default function AnalysisPage() {
                     cursor: 'pointer',
                   }}
                 >
-                  {MOCK_SERVICES.map((s) => (
+                  {ANALYSIS_SERVICES.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
@@ -559,7 +546,7 @@ export default function AnalysisPage() {
                     cursor: 'pointer',
                   }}
                 >
-                  {MOCK_PLAZAS.map((p) => (
+                  {ANALYSIS_PLAZAS.map((p) => (
                     <option key={p} value={p}>{p}</option>
                   ))}
                 </select>

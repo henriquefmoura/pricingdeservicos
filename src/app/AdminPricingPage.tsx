@@ -13,9 +13,7 @@ import { useApprovalStore } from './store/approvalStore';
 import { useCorrelationStore } from './store/correlationStore';
 import { useReplicationConfigStore } from './store/replicationConfigStore';
 import { MarketResearchForm } from './components/MarketResearchForm';
-import { AnalysisPanel } from './components/analysis/AnalysisPanel';
-import { usePricingAnalysis } from './hooks/usePricingAnalysis';
-import { ANALYSIS_SERVICES, ANALYSIS_PLAZAS, getDefaultAnalysisPlaza } from './utils/analysisConstants';
+import { SharedAnalysisPanel } from './components/shared/SharedAnalysisPanel';
 import { toast } from 'sonner';
 
 interface PriceInput {
@@ -36,20 +34,6 @@ export default function AdminPricingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [priceInputs, setPriceInputs] = useState<Record<string, PriceInput>>({});
   const [editingCode, setEditingCode] = useState<string | null>(null);
-
-  // Analysis state
-  const [analysisService, setAnalysisService] = useState(ANALYSIS_SERVICES[0]);
-  const [analysisPlaza, setAnalysisPlaza] = useState(getDefaultAnalysisPlaza(user?.plaza));
-  const [analysisPrice, setAnalysisPrice] = useState(150);
-
-  const analysis = usePricingAnalysis({
-    serviceId: analysisService.id,
-    serviceName: analysisService.name,
-    pracaId: analysisPlaza,
-    pracaName: analysisPlaza,
-    currentPrice: analysisPrice,
-    enabled: activeTab === 'analysis',
-  });
 
   // Auth guard
   useEffect(() => {
@@ -262,129 +246,7 @@ export default function AdminPricingPage() {
       {activeTab === 'market' && <MarketResearchForm />}
 
       {activeTab === 'analysis' && (
-        <div style={{ maxWidth: '1440px' }}>
-          <Card>
-            <h2 style={{ font: 'var(--font-card-title)', color: 'var(--text-card-title)', marginBottom: '20px' }}>
-              Contexto de Mercado e Decisão
-            </h2>
-            <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '20px' }}>
-              Selecione um serviço, uma praça e ajuste o preço para receber análise inteligente e recomendações.
-            </p>
-
-            {/* Controls */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-              {/* Service selector */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                  Serviço
-                </label>
-                <select
-                  value={analysisService.id}
-                  onChange={(e) => {
-                    const svc = ANALYSIS_SERVICES.find((s) => s.id === e.target.value);
-                    if (svc) setAnalysisService(svc);
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '13px',
-                    color: '#001022',
-                    backgroundColor: '#FFFFFF',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {ANALYSIS_SERVICES.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Plaza selector */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                  Praça
-                </label>
-                <select
-                  value={analysisPlaza}
-                  onChange={(e) => setAnalysisPlaza(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '13px',
-                    color: '#001022',
-                    backgroundColor: '#FFFFFF',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {ANALYSIS_PLAZAS.map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Current price */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                  Preço Atual (R$)
-                </label>
-                <input
-                  type="number"
-                  value={analysisPrice}
-                  onChange={(e) => setAnalysisPrice(Number(e.target.value) || 0)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '13px',
-                    color: '#001022',
-                    backgroundColor: '#FFFFFF',
-                  }}
-                  min={0}
-                  step={0.01}
-                />
-              </div>
-
-              {/* Proposed price */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                  Preço Proposto (R$)
-                </label>
-                <input
-                  type="number"
-                  value={analysis.proposedPrice}
-                  onChange={(e) => analysis.setProposedPrice(Number(e.target.value) || 0)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #78BE20',
-                    fontSize: '13px',
-                    color: '#001022',
-                    backgroundColor: '#F0FDF4',
-                    fontWeight: 600,
-                  }}
-                  min={0}
-                  step={0.01}
-                />
-              </div>
-            </div>
-          </Card>
-
-          {/* Analysis Panel */}
-          <AnalysisPanel
-            context={analysis.context}
-            loading={analysis.loading}
-            error={analysis.error}
-            onRefresh={analysis.refresh}
-            competitorContext={analysis.competitorContext}
-            cnaeContext={analysis.cnaeContext}
-          />
-        </div>
+        <SharedAnalysisPanel userPlaza={user?.plaza} userRole="admin" />
       )}
 
       {activeTab === 'pricing' && (

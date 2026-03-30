@@ -328,7 +328,7 @@ export const useGovernanceStore = create<GovernanceState>()(
         const plazaMap = new Map<string, PlazaGovernanceMetrics>();
         const plazaUsers = new Map<string, Set<string>>();
 
-        // Initialise all plazas
+        // Initialize all plazas
         for (const plaza of PLAZAS) {
           plazaMap.set(plaza, {
             plaza,

@@ -39,6 +39,9 @@ export function AppLayout({ children, activeNav, title, subtitle }: AppLayoutPro
       case 'Territorial':
         navigate('/territorial');
         break;
+      case 'Concorrência':
+        navigate('/competitor');
+        break;
       case 'Admin':
         navigate('/admin');
         break;

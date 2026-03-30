@@ -62,15 +62,21 @@ export function calculateDeltaPercent(value: number | null | undefined, ref: num
 }
 
 export function normalizeMunicipalityData(raw: IBGEMunicipio): MunicipalityData {
+  // Safely access nested properties with fallbacks
+  const microrregiao = raw.microrregiao;
+  const mesorregiao = microrregiao?.mesorregiao;
+  const uf = mesorregiao?.UF;
+  const regiao = uf?.regiao;
+
   return {
     ibgeCode: String(raw.id),
-    name: raw.nome,
-    uf: raw.microrregiao.mesorregiao.UF.sigla,
-    ufName: raw.microrregiao.mesorregiao.UF.nome,
-    region: raw.microrregiao.mesorregiao.UF.regiao.sigla,
-    regionName: raw.microrregiao.mesorregiao.UF.regiao.nome,
-    microregion: raw.microrregiao.nome,
-    mesoregion: raw.microrregiao.mesorregiao.nome,
+    name: raw.nome ?? `Município ${raw.id}`,
+    uf: uf?.sigla ?? '',
+    ufName: uf?.nome ?? '',
+    region: regiao?.sigla ?? '',
+    regionName: regiao?.nome ?? '',
+    microregion: microrregiao?.nome,
+    mesoregion: mesorregiao?.nome,
   };
 }
 

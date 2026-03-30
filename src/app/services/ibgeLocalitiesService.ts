@@ -38,15 +38,19 @@ export async function fetchMunicipiosByUF(uf: string): Promise<IBGEMunicipio[]> 
 }
 
 export async function fetchMunicipioById(id: number): Promise<IBGEMunicipio | null> {
+  if (!id || isNaN(id)) return null;
   const key = `mun_${id}`;
   const cached = getTerritorialCache<IBGEMunicipio>(key);
   if (cached) return cached;
   try {
     const res = await fetch(`${BASE}/municipios/${id}`);
     if (!res.ok) return null;
-    const data: IBGEMunicipio = await res.json();
-    setTerritorialCache(key, data, LOCALITIES_TTL_MS);
-    return data;
+    const data = await res.json();
+    // Validate basic structure
+    if (!data || typeof data !== 'object' || !data.id || !data.nome) return null;
+    const mun = data as IBGEMunicipio;
+    setTerritorialCache(key, mun, LOCALITIES_TTL_MS);
+    return mun;
   } catch {
     return null;
   }

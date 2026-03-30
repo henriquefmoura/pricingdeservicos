@@ -34,8 +34,27 @@ export function getCompanyDensity(companies: number, population: number | null):
 }
 
 /**
+ * CNAE codes representing installation, assembly, and maintenance services.
+ * These codes are from the IBGE CNAE 2.0 classification and correspond
+ * to the service categories mapped in serviceCnaeMappings.ts.
+ * Providers with these codes are displayed as "Instalador" on the map.
+ */
+const INSTALLATION_CNAE_CODES = new Set([
+  '4321-5/00', // Instalação Elétrica
+  '4322-3/02', // Ar-Condicionado (Instalação)
+  '4322-3/01', // Hidráulica (Instalação)
+  '3104-7/00', // Montagem de Móveis
+  '4330-4/02', // Impermeabilização
+  '4330-4/99', // Serviços Especializados (Fechadura Digital)
+  '4330-4/04', // Pintura / Papel de Parede
+  '3321-0/00', // Manutenção de Equipamentos
+  '4399-1/03', // Telhado / Coberturas
+]);
+
+/**
  * Generate mock CNAE professional markers scattered around a municipality centroid.
  * Used to visualize professionals on the map.
+ * Providers with installation-related CNAE codes are marked as 'instalador' (blue).
  */
 export function generateProfessionalMarkers(
   ibgeCode: string,
@@ -68,11 +87,19 @@ export function generateProfessionalMarkers(
     const lon = centerLon + (nextRandom() - 0.5) * 0.1;
     const isMei = nextRandom() > 0.4;
 
+    // Mark providers with installation CNAE codes as 'instalador'
+    let type: 'company' | 'mei' | 'instalador';
+    if (INSTALLATION_CNAE_CODES.has(cnae)) {
+      type = 'instalador';
+    } else {
+      type = isMei ? 'mei' : 'company';
+    }
+
     markers.push({
       id: `prof-${ibgeCode}-${i}`,
       cnae,
       cnaeDescription: CNAE_DESCRIPTIONS[cnae] ?? cnae,
-      type: isMei ? 'mei' : 'company',
+      type,
       lat,
       lon,
       municipalityCode: ibgeCode,

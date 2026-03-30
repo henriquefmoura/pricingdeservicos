@@ -134,7 +134,7 @@ export async function searchCompetitorPrices(
       allResults.push(...results);
     } catch {
       // Source failure is non-blocking — continue with other sources
-      console.warn('Adapter failure, continuing with other sources');
+      console.warn(`Adapter ${adapter.name || 'unknown'} failed, continuing with other sources`);
     }
   }
 

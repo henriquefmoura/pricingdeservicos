@@ -119,13 +119,16 @@ export function CompetitorPriceChart({ summary, prices, position }: Props) {
             )}
 
             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-              {data.map((entry, index) => (
-                <Cell
-                  key={index}
-                  fill={entry.count > 0 ? '#78BE20' : '#e2e8f0'}
-                  fillOpacity={0.7 + (entry.count / Math.max(...data.map(d => d.count))) * 0.3}
-                />
-              ))}
+              {(() => {
+                const maxCount = Math.max(...data.map(d => d.count));
+                return data.map((entry, index) => (
+                  <Cell
+                    key={index}
+                    fill={entry.count > 0 ? '#78BE20' : '#e2e8f0'}
+                    fillOpacity={0.7 + (maxCount > 0 ? (entry.count / maxCount) * 0.3 : 0)}
+                  />
+                ));
+              })()}
             </Bar>
           </BarChart>
         </ResponsiveContainer>

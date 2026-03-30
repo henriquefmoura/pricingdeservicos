@@ -64,7 +64,8 @@ export function useCompetitorIntelligence(): UseCompetitorIntelligenceReturn {
       const analysisResult = buildAnalysisResult(input, summary, normalizedPrices, userPrice);
 
       setResult(analysisResult);
-    } catch {
+    } catch (err) {
+      console.error('Competitor analysis pipeline error:', err);
       setError('Erro ao analisar preços de concorrentes. Tente novamente.');
     } finally {
       setLoading(false);

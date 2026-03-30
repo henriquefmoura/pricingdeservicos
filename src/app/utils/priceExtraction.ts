@@ -11,6 +11,8 @@ export interface ExtractedPrice {
 
 /**
  * Regex patterns for Brazilian Real price formats.
+ * All patterns use the global flag (g). The lastIndex is reset in extractPrices()
+ * before each iteration to avoid stateful regex matching issues.
  */
 const PRICE_PATTERNS: RegExp[] = [
   // R$ 1.234,56

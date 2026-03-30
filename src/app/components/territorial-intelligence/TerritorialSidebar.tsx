@@ -2,7 +2,7 @@
 // Territorial Sidebar — City Detail Panel
 // ========================================
 
-import { X, MapPin, RefreshCw } from 'lucide-react';
+import { X, MapPin, RefreshCw, Tag } from 'lucide-react';
 import type { TerritorialInsightSummary } from '../../types/territorial';
 import { OfferPressureBadge, PricingProfileBadge } from './TerritorialBadges';
 import { TerritorialSummaryCards } from './TerritorialSummaryCards';
@@ -49,6 +49,24 @@ export function TerritorialSidebar({ summary, loading, onClose, onRefresh, onCom
 
         {/* Summary Cards */}
         <TerritorialSummaryCards summary={summary} />
+
+        {/* CNAE Information */}
+        {summary.cnaeInfo && summary.cnaeInfo.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Tag className="w-4 h-4 text-[#78BE20]" />
+              <h3 className="text-sm font-semibold text-gray-700">CNAEs Relacionados (IBGE)</h3>
+            </div>
+            <div className="space-y-2">
+              {summary.cnaeInfo.map((cnae) => (
+                <div key={cnae.code} className="flex items-start gap-2 px-3 py-2 bg-gray-50 rounded-lg">
+                  <span className="text-xs font-mono text-[#78BE20] bg-[#78BE20]/10 px-2 py-0.5 rounded whitespace-nowrap">{cnae.code}</span>
+                  <span className="text-sm text-gray-700">{cnae.description}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Insights */}
         <TerritorialInsightsPanel insights={summary.insights} />

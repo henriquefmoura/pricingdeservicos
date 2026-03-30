@@ -17,6 +17,9 @@ const CNAE_DESCRIPTIONS: Record<string, string> = {
   '4399-1/03': 'Telhado / Coberturas',
   '8130-3/00': 'Jardinagem',
   '8121-4/00': 'Limpeza',
+  '4120-4/00': 'Construção de Edifícios',
+  '4399-1/01': 'Administração de Obras',
+  '4399-1/99': 'Serviços Especializados para Construção',
 };
 
 export async function fetchCompaniesByMunicipality(ibgeCode: string, cnaeCodes?: string[]): Promise<CompanyData> {

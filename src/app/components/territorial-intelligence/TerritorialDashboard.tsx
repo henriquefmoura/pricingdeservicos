@@ -53,6 +53,7 @@ export function TerritorialDashboard() {
   };
 
   const handleCityClick = (ibgeCode: string, _name: string) => {
+    setFilters({ selectedMunicipality: ibgeCode });
     selectCity(ibgeCode);
   };
 
@@ -85,7 +86,13 @@ export function TerritorialDashboard() {
       )}
 
       {/* Filters */}
-      <TerritorialFilters filters={filters} ufs={ufs} onFilterChange={handleFilterChange} />
+      <TerritorialFilters
+        filters={filters}
+        ufs={ufs}
+        municipalities={municipalities}
+        onFilterChange={handleFilterChange}
+        onCitySelect={(ibgeCode) => selectCity(ibgeCode)}
+      />
 
       {loading && !selectedCity ? (
         <TerritorialSkeleton />
@@ -100,31 +107,7 @@ export function TerritorialDashboard() {
               onStateClick={handleStateClick}
             />
 
-            {/* Municipality list */}
-            {municipalities.length > 0 && !selectedCity && (
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                  Municípios ({municipalities.length})
-                </h3>
-                <div className="max-h-60 overflow-y-auto space-y-1">
-                  {municipalities.slice(0, 50).map((m) => (
-                    <button
-                      key={m.ibgeCode}
-                      onClick={() => selectCity(m.ibgeCode)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded-lg transition-colors flex items-center justify-between"
-                    >
-                      <span className="text-gray-700">{m.name}</span>
-                      <span className="text-xs text-gray-400">{m.ibgeCode}</span>
-                    </button>
-                  ))}
-                  {municipalities.length > 50 && (
-                    <p className="text-xs text-gray-400 text-center py-2">
-                      Use a busca para encontrar mais municípios
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
+            {/* Municipality list is now available as a dropdown in filters above */}
 
             {/* Comparison */}
             {comparison && (

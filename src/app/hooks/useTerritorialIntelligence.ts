@@ -62,6 +62,7 @@ export function useTerritorialIntelligence(serviceId?: string): UseTerritorialIn
     if (partial.selectedUF || partial.selectedRegion) {
       setSelectedCity(null);
       setComparison(null);
+      setError(null);
     }
   }, []);
 
@@ -78,7 +79,7 @@ export function useTerritorialIntelligence(serviceId?: string): UseTerritorialIn
     }
   }, [serviceId]);
 
-  const clearSelection = useCallback(() => { setSelectedCity(null); setComparison(null); }, []);
+  const clearSelection = useCallback(() => { setSelectedCity(null); setComparison(null); setError(null); }, []);
 
   const compareWith = useCallback(async (ibgeCode: string) => {
     if (!selectedCity) return;

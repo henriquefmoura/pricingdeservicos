@@ -138,6 +138,20 @@ export interface CompanyData {
 }
 
 // ----------------------------------------
+// CNAE Professional Marker
+// ----------------------------------------
+
+export interface CnaeProfessionalMarker {
+  id: string;
+  cnae: string;
+  cnaeDescription: string;
+  type: 'company' | 'mei';
+  lat: number;
+  lon: number;
+  municipalityCode: string;
+}
+
+// ----------------------------------------
 // Filters
 // ----------------------------------------
 

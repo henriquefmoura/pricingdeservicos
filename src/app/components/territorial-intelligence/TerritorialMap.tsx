@@ -2,16 +2,17 @@
 // Territorial Map — Interactive Leaflet
 // ========================================
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup, useMap } from 'react-leaflet';
 import type { Layer, LeafletMouseEvent } from 'leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { fetchBrazilStatesGeoJSON, fetchMunicipiosGeoJSON } from '../../services/ibgeMapService';
 import type { GeoJSONFeatureCollection } from '../../services/ibgeMapService';
-import type { LeroyStore } from '../../types/territorial';
+import { generateMeiDensityForMunicipalities, generateProfessionalMarkers } from '../../services/companySupplyService';
+import type { LeroyStore, CnaeProfessionalMarker } from '../../types/territorial';
 import { getLeroyStoresByUF, LEROY_MERLIN_STORES } from '../../data/leroyStores';
-import { Store, Users } from 'lucide-react';
+import { Store, Users, Briefcase } from 'lucide-react';
 
 interface Props {
   selectedUF?: string;
@@ -19,12 +20,10 @@ interface Props {
   onCityClick?: (ibgeCode: string, name: string) => void;
   onStateClick?: (ufCode: string) => void;
   showLeroyStores?: boolean;
-  showMeiDensity?: boolean;
-  meiDensityData?: Record<string, number>;
 }
 
 // ----------------------------------------
-// Leroy Merlin custom icon
+// Custom icons
 // ----------------------------------------
 
 const leroyIcon = new L.DivIcon({
@@ -43,6 +42,38 @@ const leroyIcon = new L.DivIcon({
   popupAnchor: [0, -16],
 });
 
+const cnaeCompanyIcon = new L.DivIcon({
+  className: 'cnae-company-marker',
+  html: `<div style="
+    width: 22px; height: 22px;
+    background: #3b82f6;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    font-size: 10px; font-weight: bold; color: #fff;
+  ">E</div>`,
+  iconSize: [22, 22],
+  iconAnchor: [11, 11],
+  popupAnchor: [0, -11],
+});
+
+const cnaeMeiIcon = new L.DivIcon({
+  className: 'cnae-mei-marker',
+  html: `<div style="
+    width: 22px; height: 22px;
+    background: #f59e0b;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    font-size: 10px; font-weight: bold; color: #fff;
+  ">M</div>`,
+  iconSize: [22, 22],
+  iconAnchor: [11, 11],
+  popupAnchor: [0, -11],
+});
+
 function MapUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
   useEffect(() => { map.setView(center, zoom); }, [map, center, zoom]);
@@ -55,8 +86,6 @@ export function TerritorialMap({
   onCityClick,
   onStateClick,
   showLeroyStores = true,
-  showMeiDensity = false,
-  meiDensityData,
 }: Props) {
   const [statesGeo, setStatesGeo] = useState<GeoJSONFeatureCollection | null>(null);
   const [munGeo, setMunGeo] = useState<GeoJSONFeatureCollection | null>(null);
@@ -65,6 +94,7 @@ export function TerritorialMap({
   const [layerToggles, setLayerToggles] = useState({
     leroy: true,
     meiDensity: false,
+    cnaeProfessionals: false,
   });
   const geoKeyRef = useRef(0);
 
@@ -72,6 +102,37 @@ export function TerritorialMap({
   const visibleStores: LeroyStore[] = selectedUF
     ? getLeroyStoresByUF(selectedUF)
     : LEROY_MERLIN_STORES;
+
+  // MEI density data from municipalities GeoJSON
+  const meiDensityData = useMemo<Record<string, number>>(() => {
+    if (!munGeo) return {};
+    return generateMeiDensityForMunicipalities(munGeo.features);
+  }, [munGeo]);
+
+  // Professional markers for selected city
+  const professionalMarkers = useMemo<CnaeProfessionalMarker[]>(() => {
+    if (!selectedIbgeCode || !munGeo) return [];
+    // Find the centroid of the selected municipality from GeoJSON
+    const feature = munGeo.features.find((f) => {
+      const code = String(f.properties?.codarea ?? f.id ?? '');
+      return code === selectedIbgeCode;
+    });
+    if (!feature?.geometry) return [];
+
+    const centroid = computeGeometryCentroid(feature.geometry);
+    if (!centroid) return [];
+
+    return generateProfessionalMarkers(selectedIbgeCode, centroid[0], centroid[1]);
+  }, [selectedIbgeCode, munGeo]);
+
+  // Auto-enable CNAE professionals layer when a city is selected
+  useEffect(() => {
+    if (selectedIbgeCode && professionalMarkers.length > 0) {
+      setLayerToggles((p) => ({ ...p, cnaeProfessionals: true }));
+    } else {
+      setLayerToggles((p) => ({ ...p, cnaeProfessionals: false }));
+    }
+  }, [selectedIbgeCode, professionalMarkers.length]);
 
   // Load Brazil states on mount
   useEffect(() => {
@@ -112,7 +173,7 @@ export function TerritorialMap({
     const isSelected = selectedIbgeCode && String(code) === String(selectedIbgeCode);
 
     // MEI density coloring
-    if (showMeiDensity && layerToggles.meiDensity && meiDensityData) {
+    if (layerToggles.meiDensity && meiDensityData) {
       const density = meiDensityData[String(code)] ?? 0;
       const fillColor = getDensityColor(density);
       return {
@@ -144,7 +205,7 @@ export function TerritorialMap({
 
     // Enhanced tooltip with MEI density
     let tooltipContent = name;
-    if (showMeiDensity && layerToggles.meiDensity && meiDensityData) {
+    if (layerToggles.meiDensity && meiDensityData) {
       const density = meiDensityData[String(code)];
       if (density !== undefined) {
         tooltipContent += ` | MEIs: ${density}`;
@@ -180,7 +241,7 @@ export function TerritorialMap({
           <Store size={12} />
           Leroy
         </button>
-        {showMeiDensity && (
+        {munGeo && (
           <button
             onClick={() => setLayerToggles((p) => ({ ...p, meiDensity: !p.meiDensity }))}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg shadow-md transition-colors ${
@@ -191,29 +252,61 @@ export function TerritorialMap({
             title="Densidade MEI/CNAE"
           >
             <Users size={12} />
-            MEI
+            Densidade MEI
+          </button>
+        )}
+        {selectedIbgeCode && professionalMarkers.length > 0 && (
+          <button
+            onClick={() => setLayerToggles((p) => ({ ...p, cnaeProfessionals: !p.cnaeProfessionals }))}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg shadow-md transition-colors ${
+              layerToggles.cnaeProfessionals
+                ? 'bg-amber-500 text-white'
+                : 'bg-white text-gray-600 border border-gray-200'
+            }`}
+            title="Profissionais CNAE"
+          >
+            <Briefcase size={12} />
+            CNAE
           </button>
         )}
       </div>
 
-      {/* MEI density legend */}
-      {showMeiDensity && layerToggles.meiDensity && (
-        <div className="absolute bottom-3 left-3 z-[1000] bg-white rounded-lg shadow-md p-2 text-xs">
-          <p className="font-semibold text-gray-700 mb-1">Densidade MEI</p>
-          <div className="flex items-center gap-1">
-            <span className="w-4 h-3 rounded" style={{ background: '#fee0d2' }} />
-            <span className="text-gray-500">Baixa</span>
+      {/* Legends */}
+      <div className="absolute bottom-3 left-3 z-[1000] flex flex-col gap-2">
+        {/* MEI density legend */}
+        {layerToggles.meiDensity && munGeo && (
+          <div className="bg-white rounded-lg shadow-md p-2 text-xs">
+            <p className="font-semibold text-gray-700 mb-1">Densidade MEI</p>
+            <div className="flex items-center gap-1">
+              <span className="w-4 h-3 rounded" style={{ background: '#fee0d2' }} />
+              <span className="text-gray-500">Baixa (&lt;20)</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-4 h-3 rounded" style={{ background: '#fc9272' }} />
+              <span className="text-gray-500">Média (20-99)</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-4 h-3 rounded" style={{ background: '#de2d26' }} />
+              <span className="text-gray-500">Alta (100+)</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="w-4 h-3 rounded" style={{ background: '#fc9272' }} />
-            <span className="text-gray-500">Média</span>
+        )}
+
+        {/* CNAE professionals legend */}
+        {layerToggles.cnaeProfessionals && selectedIbgeCode && (
+          <div className="bg-white rounded-lg shadow-md p-2 text-xs">
+            <p className="font-semibold text-gray-700 mb-1">Profissionais CNAE</p>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-blue-500 border border-white" />
+              <span className="text-gray-500">Empresa</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-amber-500 border border-white" />
+              <span className="text-gray-500">MEI</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="w-4 h-3 rounded" style={{ background: '#de2d26' }} />
-            <span className="text-gray-500">Alta</span>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <MapContainer
         center={center}
@@ -261,13 +354,32 @@ export function TerritorialMap({
             </Popup>
           </Marker>
         ))}
+
+        {/* CNAE Professional markers layer */}
+        {layerToggles.cnaeProfessionals && professionalMarkers.map((prof) => (
+          <Marker
+            key={prof.id}
+            position={[prof.lat, prof.lon]}
+            icon={prof.type === 'mei' ? cnaeMeiIcon : cnaeCompanyIcon}
+          >
+            <Popup>
+              <div className="text-sm">
+                <p className="font-bold" style={{ color: prof.type === 'mei' ? '#f59e0b' : '#3b82f6' }}>
+                  {prof.type === 'mei' ? 'MEI' : 'Empresa'}
+                </p>
+                <p className="text-gray-700 font-medium">{prof.cnaeDescription}</p>
+                <p className="text-gray-500 text-xs">CNAE: {prof.cnae}</p>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   );
 }
 
 // ----------------------------------------
-// Helper: density color scale
+// Helpers
 // ----------------------------------------
 
 function getDensityColor(density: number): string {
@@ -275,4 +387,43 @@ function getDensityColor(density: number): string {
   if (density >= 50) return '#fc9272';
   if (density >= 20) return '#fee0d2';
   return '#f7f7f7';
+}
+
+/**
+ * Compute a simple centroid from a GeoJSON geometry.
+ * Handles Polygon and MultiPolygon types.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function computeGeometryCentroid(geometry: any): [number, number] | null {
+  try {
+    const coords: number[][] = [];
+
+    if (geometry.type === 'Polygon') {
+      for (const ring of geometry.coordinates) {
+        for (const pt of ring) {
+          coords.push(pt);
+        }
+      }
+    } else if (geometry.type === 'MultiPolygon') {
+      for (const polygon of geometry.coordinates) {
+        for (const ring of polygon) {
+          for (const pt of ring) {
+            coords.push(pt);
+          }
+        }
+      }
+    }
+
+    if (coords.length === 0) return null;
+
+    let sumLat = 0;
+    let sumLon = 0;
+    for (const [lon, lat] of coords) {
+      sumLat += lat;
+      sumLon += lon;
+    }
+    return [sumLat / coords.length, sumLon / coords.length];
+  } catch {
+    return null;
+  }
 }

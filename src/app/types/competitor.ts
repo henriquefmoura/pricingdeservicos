@@ -139,3 +139,26 @@ export const SOURCE_CONFIDENCE_WEIGHTS: Record<SourceType, number> = {
   conteudo: 40,
   interna: 95,
 };
+
+// ----------------------------------------
+// Enhanced Competitor Source (traceability)
+// ----------------------------------------
+
+export interface CompetitorSource {
+  url: string;
+  title?: string;
+  capturedAt: string;
+  sourceType: SourceType;
+}
+
+// ----------------------------------------
+// Enhanced Competitor Data
+// ----------------------------------------
+
+export interface CompetitorDataEnhanced {
+  price: number;
+  city?: string;
+  service: string;
+  source: CompetitorSource;
+  confidence: number;
+}

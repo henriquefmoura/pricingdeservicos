@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { AppLayout } from './components/AppLayout';
 import { HighlightedCard, AISuggestionCard, Card } from './components/Card';
 import { Toggle } from './components/Toggle';
-import { FileSpreadsheet, BarChart2, MapPin, TrendingUp, AlertCircle, ListChecks } from 'lucide-react';
+import { FileSpreadsheet, BarChart2, MapPin, TrendingUp, AlertCircle, ListChecks, Shield } from 'lucide-react';
 import { usePricingStore } from './store/pricingStore';
 import { useAuthStore } from './store/authStore';
 import { usePricingCodesStore } from './store/pricingCodesStore';
@@ -378,6 +378,56 @@ export default function MasterHomePage() {
 
           {/* RIGHT COLUMN */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Governance Quick Access */}
+            <div
+              onClick={() => navigate('/governance')}
+              style={{
+                padding: '20px',
+                borderRadius: '12px',
+                backgroundColor: '#001022',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 12px rgba(0, 16, 34, 0.3)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                <div
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(120, 190, 32, 0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Shield size={24} style={{ color: '#78BE20' }} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#FFFFFF', marginBottom: '8px' }}>
+                    Governança de Precificação
+                  </h3>
+                  <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginBottom: '12px' }}>
+                    Acompanhe comportamento, consistência e performance do processo de precificação
+                  </p>
+                  <span
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '100px',
+                      backgroundColor: '#78BE20',
+                      color: '#FFFFFF',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Acessar Dashboard →
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <Card>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                 <div

@@ -62,14 +62,12 @@ function StatCard({ icon, iconBg, iconColor, value, label, trend }: StatCardProp
         {icon}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-        <span
-          role="heading"
-          aria-level={3}
+        <h3
           aria-label={`${label}: ${value}`}
-          style={{ fontSize: '24px', fontWeight: 700, color: COLORS.dark, lineHeight: 1.2, fontVariantNumeric: 'tabular-nums' }}
+          style={{ fontSize: '24px', fontWeight: 700, color: COLORS.dark, lineHeight: 1.2, fontVariantNumeric: 'tabular-nums', margin: 0 }}
         >
           {value}
-        </span>
+        </h3>
         <span style={{ fontSize: '13px', fontWeight: 400, color: COLORS.gray, lineHeight: 1.4 }}>
           {label}
         </span>

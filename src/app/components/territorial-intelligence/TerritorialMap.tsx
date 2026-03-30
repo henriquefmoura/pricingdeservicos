@@ -58,6 +58,22 @@ const cnaeCompanyIcon = new L.DivIcon({
   popupAnchor: [0, -11],
 });
 
+const cnaeInstaladorIcon = new L.DivIcon({
+  className: 'cnae-instalador-marker',
+  html: `<div style="
+    width: 26px; height: 26px;
+    background: #2563eb;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(37,99,235,0.5);
+    font-size: 12px; font-weight: bold; color: #fff;
+  ">I</div>`,
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
+  popupAnchor: [0, -13],
+});
+
 const cnaeMeiIcon = new L.DivIcon({
   className: 'cnae-mei-marker',
   html: `<div style="
@@ -297,6 +313,10 @@ export function TerritorialMap({
           <div className="bg-white rounded-lg shadow-md p-2 text-xs">
             <p className="font-semibold text-gray-700 mb-1">Profissionais CNAE</p>
             <div className="flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-white" style={{ background: '#2563eb', boxShadow: '0 1px 3px rgba(37,99,235,0.4)' }} />
+              <span className="text-gray-600 font-medium">Instalador CNAE</span>
+            </div>
+            <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-full bg-blue-500 border border-white" />
               <span className="text-gray-500">Empresa</span>
             </div>
@@ -356,23 +376,40 @@ export function TerritorialMap({
         ))}
 
         {/* CNAE Professional markers layer */}
-        {layerToggles.cnaeProfessionals && professionalMarkers.map((prof) => (
-          <Marker
-            key={prof.id}
-            position={[prof.lat, prof.lon]}
-            icon={prof.type === 'mei' ? cnaeMeiIcon : cnaeCompanyIcon}
-          >
-            <Popup>
-              <div className="text-sm">
-                <p className="font-bold" style={{ color: prof.type === 'mei' ? '#f59e0b' : '#3b82f6' }}>
-                  {prof.type === 'mei' ? 'MEI' : 'Empresa'}
-                </p>
-                <p className="text-gray-700 font-medium">{prof.cnaeDescription}</p>
-                <p className="text-gray-500 text-xs">CNAE: {prof.cnae}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {layerToggles.cnaeProfessionals && professionalMarkers.map((prof) => {
+          const icon = prof.type === 'instalador'
+            ? cnaeInstaladorIcon
+            : prof.type === 'mei'
+              ? cnaeMeiIcon
+              : cnaeCompanyIcon;
+          const label = prof.type === 'instalador'
+            ? 'Instalador CNAE'
+            : prof.type === 'mei'
+              ? 'MEI'
+              : 'Empresa';
+          const color = prof.type === 'instalador'
+            ? '#2563eb'
+            : prof.type === 'mei'
+              ? '#f59e0b'
+              : '#3b82f6';
+          return (
+            <Marker
+              key={prof.id}
+              position={[prof.lat, prof.lon]}
+              icon={icon}
+            >
+              <Popup>
+                <div className="text-sm">
+                  <p className="font-bold" style={{ color }}>
+                    {label}
+                  </p>
+                  <p className="text-gray-700 font-medium">{prof.cnaeDescription}</p>
+                  <p className="text-gray-500 text-xs">CNAE: {prof.cnae}</p>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );

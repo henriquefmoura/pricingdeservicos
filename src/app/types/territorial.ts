@@ -145,7 +145,7 @@ export interface CnaeProfessionalMarker {
   id: string;
   cnae: string;
   cnaeDescription: string;
-  type: 'company' | 'mei';
+  type: 'company' | 'mei' | 'instalador';
   lat: number;
   lon: number;
   municipalityCode: string;

@@ -2,14 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { AppLayout } from './components/AppLayout';
 import { Tabs } from './components/Tabs';
-import { Card } from './components/Card';
 import { CurrencyInput } from './components/Input';
-import { Check, X, ArrowRight, Clock, CheckCircle, XCircle, AlertTriangle, TrendingUp, TrendingDown, BarChart2 } from 'lucide-react';
+import { Check, X, ArrowRight, Clock, CheckCircle, XCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAuthStore } from './store/authStore';
-import { useApprovalStore, PriceApproval } from './store/approvalStore';
-import { AnalysisPanel } from './components/analysis/AnalysisPanel';
-import { usePricingAnalysis } from './hooks/usePricingAnalysis';
-import { ANALYSIS_SERVICES, ANALYSIS_PLAZAS, getDefaultAnalysisPlaza } from './utils/analysisConstants';
+import { useApprovalStore } from './store/approvalStore';
+import { SharedAnalysisPanel } from './components/shared/SharedAnalysisPanel';
 import { toast } from 'sonner';
 
 export default function UserDashboardPage() {
@@ -27,24 +24,9 @@ export default function UserDashboardPage() {
 
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'analysis'>('pending');
   const [expandedComment, setExpandedComment] = useState<string | null>(null);
-  const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [editRepasseValue, setEditRepasseValue] = useState('');
   const [editVendaValue, setEditVendaValue] = useState('');
-
-  // Analysis state
-  const [analysisService, setAnalysisService] = useState(ANALYSIS_SERVICES[0]);
-  const [analysisPlaza, setAnalysisPlaza] = useState(getDefaultAnalysisPlaza(user?.plaza));
-  const [analysisPrice, setAnalysisPrice] = useState(150);
-
-  const analysisData = usePricingAnalysis({
-    serviceId: analysisService.id,
-    serviceName: analysisService.name,
-    pracaId: analysisPlaza,
-    pracaName: analysisPlaza,
-    currentPrice: analysisPrice,
-    enabled: activeTab === 'analysis',
-  });
 
   // Auth guard
   useEffect(() => {
@@ -78,25 +60,39 @@ export default function UserDashboardPage() {
   }, [approvals, user?.plaza]);
 
   const handleApprove = (id: string) => {
-    approvePrice(id, user?.name || 'Usuário', commentTexts[id] || '');
+    approvePrice(id, user?.name || 'Usuário', '');
     toast.success('Preço aprovado com sucesso!');
     setExpandedComment(null);
-    setCommentTexts((prev) => {
-      const n = { ...prev };
-      delete n[id];
-      return n;
-    });
   };
 
-  const handleReject = (id: string) => {
-    rejectPrice(id, user?.name || 'Usuário', commentTexts[id] || 'Rejeitado pelo usuário');
-    toast.error('Preço rejeitado');
+  const handleRejectWithNewPrice = (id: string) => {
+    // Direct reject → open inline new price editor
+    setExpandedComment(expandedComment === id ? null : id);
+    setEditingPrice(id);
+    const found = pendingItems.find((i) => i.id === id) || rejectedItems.find((i) => i.id === id);
+    if (found) {
+      setEditRepasseValue(found.proposedRepasse.toFixed(2));
+      setEditVendaValue(found.proposedVenda.toFixed(2));
+    }
+  };
+
+  const handleConfirmRejection = (id: string) => {
+    const repasse = parseFloat(editRepasseValue);
+    const venda = parseFloat(editVendaValue);
+    if (isNaN(repasse) || isNaN(venda)) {
+      toast.error('Valores inválidos');
+      return;
+    }
+    if (repasse >= venda) {
+      toast.error('Venda deve ser maior que repasse');
+      return;
+    }
+    // Reject with new suggested price
+    rejectPrice(id, user?.name || 'Usuário', `Novo preço sugerido: R$ ${venda.toFixed(2)}`);
+    applyRejectedPrice(id, repasse, venda);
+    toast.success('Preço rejeitado e novo valor sugerido com sucesso!');
+    setEditingPrice(null);
     setExpandedComment(null);
-    setCommentTexts((prev) => {
-      const n = { ...prev };
-      delete n[id];
-      return n;
-    });
   };
 
   const handleDefineNewPrice = (id: string) => {
@@ -142,7 +138,7 @@ export default function UserDashboardPage() {
   }
 
   return (
-    <AppLayout activeNav="Dashboard" title="Aprovações" subtitle={`Revise e aprove preços replicados para a praça ${user?.plaza || ''}`}>
+    <AppLayout activeNav="Dashboard" title="Validação de Preços" subtitle={`Aprove, rejeite ou sugira novos preços para a praça ${user?.plaza || ''}`}>
       {/* Tab Bar */}
       <Tabs
         tabs={[
@@ -157,129 +153,7 @@ export default function UserDashboardPage() {
       />
 
       {activeTab === 'analysis' ? (
-        <div style={{ maxWidth: '1440px' }}>
-          <Card>
-            <h2 style={{ font: 'var(--font-card-title)', color: 'var(--text-card-title)', marginBottom: '20px' }}>
-              Contexto de Mercado e Decisão
-            </h2>
-            <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '20px' }}>
-              Selecione um serviço, uma praça e ajuste o preço para receber análise inteligente e recomendações.
-            </p>
-
-            {/* Controls */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-              {/* Service selector */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                  Serviço
-                </label>
-                <select
-                  value={analysisService.id}
-                  onChange={(e) => {
-                    const svc = ANALYSIS_SERVICES.find((s) => s.id === e.target.value);
-                    if (svc) setAnalysisService(svc);
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '13px',
-                    color: '#001022',
-                    backgroundColor: '#FFFFFF',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {ANALYSIS_SERVICES.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Plaza selector */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                  Praça
-                </label>
-                <select
-                  value={analysisPlaza}
-                  onChange={(e) => setAnalysisPlaza(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '13px',
-                    color: '#001022',
-                    backgroundColor: '#FFFFFF',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {ANALYSIS_PLAZAS.map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Current price */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                  Preço Atual (R$)
-                </label>
-                <input
-                  type="number"
-                  value={analysisPrice}
-                  onChange={(e) => setAnalysisPrice(Number(e.target.value) || 0)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '13px',
-                    color: '#001022',
-                    backgroundColor: '#FFFFFF',
-                  }}
-                  min={0}
-                  step={0.01}
-                />
-              </div>
-
-              {/* Proposed price */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                  Preço Proposto (R$)
-                </label>
-                <input
-                  type="number"
-                  value={analysisData.proposedPrice}
-                  onChange={(e) => analysisData.setProposedPrice(Number(e.target.value) || 0)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #78BE20',
-                    fontSize: '13px',
-                    color: '#001022',
-                    backgroundColor: '#F0FDF4',
-                    fontWeight: 600,
-                  }}
-                  min={0}
-                  step={0.01}
-                />
-              </div>
-            </div>
-          </Card>
-
-          {/* Analysis Panel */}
-          <AnalysisPanel
-            context={analysisData.context}
-            loading={analysisData.loading}
-            error={analysisData.error}
-            onRefresh={analysisData.refresh}
-            competitorContext={analysisData.competitorContext}
-            cnaeContext={analysisData.cnaeContext}
-          />
-        </div>
+        <SharedAnalysisPanel userPlaza={user?.plaza} userRole="user" />
       ) : (
       <>
       {/* Stats Row */}
@@ -541,11 +415,7 @@ export default function UserDashboardPage() {
                       Aprovar
                     </button>
                     <button
-                      onClick={() =>
-                        expandedComment === item.id
-                          ? handleReject(item.id)
-                          : setExpandedComment(item.id)
-                      }
+                      onClick={() => handleRejectWithNewPrice(item.id)}
                       style={{
                         padding: '10px 20px',
                         borderRadius: '8px',
@@ -562,7 +432,7 @@ export default function UserDashboardPage() {
                       }}
                     >
                       <X size={16} />
-                      {expandedComment === item.id ? 'Confirmar Rejeição' : 'Rejeitar'}
+                      Rejeitar e Sugerir Preço
                     </button>
                   </div>
                 )}
@@ -588,35 +458,81 @@ export default function UserDashboardPage() {
                 )}
               </div>
 
-              {/* Comment Textarea */}
+              {/* Inline New Price Form (shown on reject) */}
               {showComment && !isRejected && !isApproved && (
-                <div style={{ marginTop: '16px' }}>
-                  <textarea
-                    placeholder="Motivo da rejeição (opcional)..."
-                    value={commentTexts[item.id] || ''}
-                    onChange={(e) =>
-                      setCommentTexts({ ...commentTexts, [item.id]: e.target.value })
-                    }
-                    style={{
-                      width: '100%',
-                      minHeight: '80px',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1.5px solid #D1D5DB',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                      resize: 'vertical',
-                      outline: 'none',
-                    }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = '#78BE20';
-                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(120, 190, 32, 0.20)';
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = '#D1D5DB';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  />
+                <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' }}>
+                  <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '12px' }}>
+                    Sugira um novo preço:
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr auto auto', gap: '16px', alignItems: 'end' }}>
+                    <CurrencyInput
+                      label="Repasse (R$)"
+                      value={editRepasseValue}
+                      onValueChange={setEditRepasseValue}
+                      placeholder="0,00"
+                    />
+                    <div style={{ paddingBottom: '8px' }}>
+                      {(() => {
+                        const venda = parseFloat(editVendaValue.replace(',', '.'));
+                        const repasse = parseFloat(editRepasseValue.replace(',', '.'));
+                        const margin = ((venda - repasse) / venda) * 100;
+                        if (isNaN(margin)) return null;
+                        const getMarginStyle = (m: number) => {
+                          if (m > 30) return { bg: '#D1FAE5', text: '#065F46' };
+                          if (m >= 15) return { bg: '#FEF3C7', text: '#92400E' };
+                          return { bg: '#FEE2E2', text: '#991B1B' };
+                        };
+                        const s = getMarginStyle(margin);
+                        return (
+                          <div style={{ padding: '8px 14px', borderRadius: '100px', backgroundColor: s.bg, whiteSpace: 'nowrap' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: s.text }}>
+                              {margin.toFixed(1)}%
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <CurrencyInput
+                      label="Venda (R$)"
+                      value={editVendaValue}
+                      onValueChange={setEditVendaValue}
+                      placeholder="0,00"
+                    />
+                    <button
+                      onClick={() => handleConfirmRejection(item.id)}
+                      style={{
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        backgroundColor: '#DA291C',
+                        color: '#FFFFFF',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      Confirmar
+                    </button>
+                    <button
+                      onClick={() => { setExpandedComment(null); setEditingPrice(null); }}
+                      style={{
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        border: '1px solid #D1D5DB',
+                        backgroundColor: '#FFFFFF',
+                        color: '#6B7280',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
               )}
 

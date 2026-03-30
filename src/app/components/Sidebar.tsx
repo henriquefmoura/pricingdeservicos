@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
-import { Upload, BarChart2, Calculator, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, CloudSun, MapPin, Crosshair } from 'lucide-react';
+import { Upload, BarChart2, Calculator, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, CloudSun, MapPin, Crosshair, Shield, CheckCircle, FileText, Lightbulb } from 'lucide-react';
 import { Logo } from './Logo';
 
 export type UserRole = 'Master' | 'Admin' | 'Usuário';
-export type NavItem = 'Upload' | 'Análise' | 'Simulador' | 'Dashboard' | 'Admin' | 'Clima' | 'Territorial' | 'Concorrência';
+export type NavItem = 'Upload' | 'Análise' | 'Simulador' | 'Dashboard' | 'Admin' | 'Clima' | 'Territorial' | 'Concorrência' | 'Governança';
+
+interface NavItemConfig {
+  id: NavItem;
+  label: string;
+  icon: React.ElementType;
+  group?: string;
+}
 
 interface SidebarProps {
   activeItem: NavItem;
@@ -15,16 +22,70 @@ interface SidebarProps {
   onToggleCollapse?: () => void;
 }
 
-const navItems: { id: NavItem; label: string; icon: React.ElementType }[] = [
-  { id: 'Upload', label: 'Upload', icon: Upload },
-  { id: 'Análise', label: 'Análise', icon: BarChart2 },
-  { id: 'Simulador', label: 'Simulador', icon: Calculator },
-  { id: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'Clima', label: 'Clima', icon: CloudSun },
-  { id: 'Territorial', label: 'Territorial', icon: MapPin },
-  { id: 'Concorrência', label: 'Concorrência', icon: Crosshair },
-  { id: 'Admin', label: 'Admin', icon: Settings },
-];
+// Role-based navigation with logical grouping
+const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemConfig[] }[] => {
+  switch (role) {
+    case 'Master':
+      return [
+        {
+          group: 'Gestão',
+          items: [
+            { id: 'Upload', label: 'Upload de Dados', icon: Upload },
+            { id: 'Análise', label: 'Análise', icon: BarChart2 },
+            { id: 'Governança', label: 'Governança', icon: Shield },
+          ],
+        },
+        {
+          group: 'Inteligência',
+          items: [
+            { id: 'Clima', label: 'Clima', icon: CloudSun },
+            { id: 'Territorial', label: 'Territorial', icon: MapPin },
+            { id: 'Concorrência', label: 'Concorrência', icon: Crosshair },
+          ],
+        },
+      ];
+    case 'Admin':
+      return [
+        {
+          group: 'Precificação',
+          items: [
+            { id: 'Admin', label: 'Precificar', icon: Settings },
+            { id: 'Simulador', label: 'Simulador', icon: Calculator },
+            { id: 'Dashboard', label: 'Aprovações', icon: CheckCircle },
+          ],
+        },
+        {
+          group: 'Análises',
+          items: [
+            { id: 'Clima', label: 'Clima', icon: CloudSun },
+            { id: 'Territorial', label: 'Territorial', icon: MapPin },
+            { id: 'Concorrência', label: 'Concorrência', icon: Crosshair },
+            { id: 'Análise', label: 'Análise Geral', icon: BarChart2 },
+          ],
+        },
+      ];
+    case 'Usuário':
+      return [
+        {
+          group: 'Aprovações',
+          items: [
+            { id: 'Dashboard', label: 'Validar Preços', icon: CheckCircle },
+          ],
+        },
+        {
+          group: 'Análises',
+          items: [
+            { id: 'Clima', label: 'Clima', icon: CloudSun },
+            { id: 'Territorial', label: 'Territorial', icon: MapPin },
+            { id: 'Concorrência', label: 'Concorrência', icon: Crosshair },
+            { id: 'Análise', label: 'Análise Geral', icon: BarChart2 },
+          ],
+        },
+      ];
+    default:
+      return [];
+  }
+};
 
 const roleStyles: Record<UserRole, { bg: string; text: string }> = {
   Master: { bg: '#78BE20', text: '#FFFFFF' },
@@ -45,6 +106,7 @@ export function Sidebar({
   const [isLogoutHovered, setIsLogoutHovered] = useState(false);
 
   const roleStyle = roleStyles[userRole];
+  const navGroups = getNavItemsForRole(userRole);
 
   return (
     <div
@@ -101,7 +163,7 @@ export function Sidebar({
         )}
       </div>
 
-      {/* MIDDLE - Nav Items */}
+      {/* MIDDLE - Nav Items (Role-based groups) */}
       <nav
         style={{
           flex: 1,
@@ -109,77 +171,114 @@ export function Sidebar({
           display: 'flex',
           flexDirection: 'column',
           gap: '4px',
+          overflowY: 'auto',
         }}
       >
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeItem === item.id;
-          const isHovered = hoveredItem === item.id;
-
-          return (
-            <button
-              key={item.id}
-              onClick={() => onItemClick(item.id)}
-              onMouseEnter={() => setHoveredItem(item.id)}
-              onMouseLeave={() => setHoveredItem(null)}
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: isCollapsed ? 'center' : 'flex-start',
-                gap: '12px',
-                padding: isCollapsed ? '12px 0' : '12px 16px',
-                borderRadius: '6px',
-                border: 'none',
-                backgroundColor: isActive
-                  ? 'rgba(120, 190, 32, 0.10)'
-                  : isHovered
-                  ? 'rgba(255, 255, 255, 0.06)'
-                  : 'transparent',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                textAlign: 'left',
-              }}
-            >
-              {/* Active Left Border */}
-              {isActive && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: '4px',
-                    backgroundColor: '#78BE20',
-                    borderRadius: '0 4px 4px 0',
-                  }}
-                />
-              )}
-
-              {/* Icon */}
-              <Icon
-                size={20}
+        {navGroups.map((group, groupIndex) => (
+          <div key={group.group || groupIndex}>
+            {/* Group Label */}
+            {group.group && !isCollapsed && (
+              <div
                 style={{
-                  color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)',
-                  flexShrink: 0,
+                  padding: '8px 16px 4px',
+                  marginTop: groupIndex > 0 ? '12px' : '0',
                 }}
-              />
-
-              {/* Label */}
-              {!isCollapsed && (
+              >
                 <span
                   style={{
-                    color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.8)',
-                    fontSize: '14px',
-                    fontWeight: 400,
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    color: 'rgba(255, 255, 255, 0.35)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1.2px',
                   }}
                 >
-                  {item.label}
+                  {group.group}
                 </span>
-              )}
-            </button>
-          );
-        })}
+              </div>
+            )}
+            {/* Collapsed separator */}
+            {group.group && isCollapsed && groupIndex > 0 && (
+              <div
+                style={{
+                  height: '1px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  margin: '8px 4px',
+                }}
+              />
+            )}
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeItem === item.id;
+              const isHovered = hoveredItem === item.id;
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onItemClick(item.id)}
+                  onMouseEnter={() => setHoveredItem(item.id)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: isCollapsed ? 'center' : 'flex-start',
+                    gap: '12px',
+                    padding: isCollapsed ? '12px 0' : '12px 16px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: isActive
+                      ? 'rgba(120, 190, 32, 0.10)'
+                      : isHovered
+                      ? 'rgba(255, 255, 255, 0.06)'
+                      : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  {/* Active Left Border */}
+                  {isActive && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: '4px',
+                        backgroundColor: '#78BE20',
+                        borderRadius: '0 4px 4px 0',
+                      }}
+                    />
+                  )}
+
+                  {/* Icon */}
+                  <Icon
+                    size={20}
+                    style={{
+                      color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)',
+                      flexShrink: 0,
+                    }}
+                  />
+
+                  {/* Label */}
+                  {!isCollapsed && (
+                    <span
+                      style={{
+                        color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.8)',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* BOTTOM - User Info & Logout */}

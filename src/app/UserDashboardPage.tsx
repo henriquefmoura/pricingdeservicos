@@ -276,6 +276,8 @@ export default function UserDashboardPage() {
             loading={analysisData.loading}
             error={analysisData.error}
             onRefresh={analysisData.refresh}
+            competitorContext={analysisData.competitorContext}
+            cnaeContext={analysisData.cnaeContext}
           />
         </div>
       ) : (

@@ -3,10 +3,12 @@
 // ========================================
 // Painel principal de Inteligência de Mercado para Pricing.
 // Consolida todos os blocos de análise em uma experiência unificada.
+// Agora integrado com dados de concorrência, CNAE e contexto unificado.
 
 import React from 'react';
 import { RefreshCw, Brain } from 'lucide-react';
 import type { PricingAnalysisDecisionContext } from '../../types/pricingAnalysis';
+import type { CompetitorContext, CnaeContext } from '../../types/pricingAnalysis';
 
 import { AnalysisDecisionSummary } from './AnalysisDecisionSummary';
 import { AnalysisPriceContext } from './AnalysisPriceContext';
@@ -23,15 +25,19 @@ import { AnalysisHistoricalCurve } from './AnalysisHistoricalCurve';
 import { AnalysisInsightBadges } from './AnalysisInsightBadges';
 import { AnalysisSkeleton } from './AnalysisSkeleton';
 import { AnalysisErrorState } from './AnalysisErrorState';
+import { AnalysisMarketReference } from './AnalysisMarketReference';
+import { AnalysisCnaeContext } from './AnalysisCnaeContext';
 
 interface Props {
   context: PricingAnalysisDecisionContext | null;
   loading?: boolean;
   error?: string | null;
   onRefresh?: () => void;
+  competitorContext?: CompetitorContext;
+  cnaeContext?: CnaeContext | null;
 }
 
-export function AnalysisPanel({ context, loading, error, onRefresh }: Props) {
+export function AnalysisPanel({ context, loading, error, onRefresh, competitorContext, cnaeContext }: Props) {
   if (loading) {
     return (
       <div style={{ marginTop: '24px' }}>
@@ -115,8 +121,19 @@ export function AnalysisPanel({ context, loading, error, onRefresh }: Props) {
           <AnalysisTerritorialContext context={context} />
         </div>
 
+        {/* 4.5 CNAE Context */}
+        {cnaeContext && <AnalysisCnaeContext cnae={cnaeContext} />}
+
         {/* 5. Offer Pressure */}
         <AnalysisOfferPressure context={context} />
+
+        {/* 5.5 Market Reference (Competitor Data) */}
+        {competitorContext && (
+          <AnalysisMarketReference
+            competitor={competitorContext}
+            currentPrice={context.currentPrice}
+          />
+        )}
 
         {/* 6. Alerts and Justifications */}
         <AnalysisAlertsPanel

@@ -177,6 +177,30 @@ export interface MapFeatureProperties {
 }
 
 // ----------------------------------------
+// Territorial CNAE Insight
+// ----------------------------------------
+
+export interface TerritorialCnaeInsight {
+  cnaeCode: string;
+  cnaeDescription: string;
+  relatedService: string;
+  estimatedPresenceLevel: 'baixa' | 'media' | 'alta';
+}
+
+// ----------------------------------------
+// Leroy Merlin Store
+// ----------------------------------------
+
+export interface LeroyStore {
+  id: string;
+  name: string;
+  city: string;
+  uf: string;
+  lat: number;
+  lon: number;
+}
+
+// ----------------------------------------
 // Cache
 // ----------------------------------------
 

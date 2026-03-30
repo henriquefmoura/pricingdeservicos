@@ -607,6 +607,8 @@ export default function AnalysisPage() {
             loading={analysis.loading}
             error={analysis.error}
             onRefresh={analysis.refresh}
+            competitorContext={analysis.competitorContext}
+            cnaeContext={analysis.cnaeContext}
           />
         </div>
       </div>

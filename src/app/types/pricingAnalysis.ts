@@ -151,3 +151,67 @@ export interface AnalysisPanelProps {
 
 export type SignalDirection = 'positivo' | 'neutro' | 'negativo';
 export type RecommendationAction = 'aumentar' | 'manter' | 'reduzir' | 'revisar';
+
+// ----------------------------------------
+// Competitor Context (inside analysis)
+// ----------------------------------------
+
+export interface CompetitorContext {
+  enabled: boolean;
+  priceRange?: string;
+  median?: number | null;
+  average?: number | null;
+  min?: number | null;
+  max?: number | null;
+  sampleSize?: number;
+  confidenceLevel?: 'baixa' | 'media' | 'alta';
+  sources?: CompetitorSourceRef[];
+  lastUpdated?: string;
+}
+
+export interface CompetitorSourceRef {
+  url: string;
+  title?: string;
+  sourceType: string;
+  capturedAt: string;
+}
+
+// ----------------------------------------
+// CNAE Context (inside analysis)
+// ----------------------------------------
+
+export interface CnaeContext {
+  enabled: boolean;
+  cnaeCodes?: string[];
+  cnaeDescriptions?: Array<{ id: string; descricao: string }>;
+  estimatedPresenceLevel?: 'baixa' | 'media' | 'alta';
+}
+
+// ----------------------------------------
+// Pricing Unified Context
+// ----------------------------------------
+// Objeto central que consolida TODOS os dados para decisão de preço.
+
+export interface PricingUnifiedContext {
+  service: string;
+  serviceId: string;
+  city: string;
+  price: number;
+  proposedPrice: number;
+
+  climate: PricingAnalysisDecisionContext['climateContext'] | null;
+  seasonality: PricingAnalysisDecisionContext['seasonalityContext'] | null;
+  territorial: PricingAnalysisDecisionContext['marketContext'] | null;
+  cnae: CnaeContext | null;
+  meiDensity: {
+    total?: number | null;
+    offerPressure?: 'baixa' | 'media' | 'alta';
+  } | null;
+  competitor: CompetitorContext | null;
+
+  leroyStoresNearby: import('../types/territorial').LeroyStore[];
+
+  recommendation: PricingAnalysisDecisionContext['recommendation'] | null;
+  executiveSummary: string;
+  alerts: AnalysisAlert[];
+}

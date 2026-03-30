@@ -279,7 +279,7 @@ export function TerritorialMap({
             <p className="font-semibold text-gray-700 mb-1">Densidade MEI</p>
             <div className="flex items-center gap-1">
               <span className="w-4 h-3 rounded" style={{ background: '#fee0d2' }} />
-              <span className="text-gray-500">Baixa (&lt;20)</span>
+              <span className="text-gray-500">Baixa ({'<'}20)</span>
             </div>
             <div className="flex items-center gap-1">
               <span className="w-4 h-3 rounded" style={{ background: '#fc9272' }} />

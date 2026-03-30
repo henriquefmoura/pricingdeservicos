@@ -51,7 +51,7 @@ export function generateProfessionalMarkers(
     hash = ((hash << 5) - hash + ibgeCode.charCodeAt(i)) | 0;
   }
 
-  // Simple seeded pseudo-random generator
+  // Seeded pseudo-random generator (Park-Miller LCG)
   let seed = Math.abs(hash);
   const nextRandom = () => {
     seed = (seed * 16807 + 0) % 2147483647;

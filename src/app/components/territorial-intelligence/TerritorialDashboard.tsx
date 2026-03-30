@@ -8,7 +8,6 @@ import { TerritorialMap } from './TerritorialMap';
 import { TerritorialSidebar } from './TerritorialSidebar';
 import { TerritorialFilters } from './TerritorialFilters';
 import { TerritorialSkeleton } from './TerritorialSkeleton';
-import { TerritorialErrorState } from './TerritorialErrorState';
 import { MunicipalityComparisonPanel } from './MunicipalityComparisonPanel';
 import { TerritorialChart } from './TerritorialChart';
 import { MapPin } from 'lucide-react';
@@ -57,10 +56,6 @@ export function TerritorialDashboard() {
     selectCity(ibgeCode);
   };
 
-  if (error && !selectedCity && !loading) {
-    return <TerritorialErrorState message={error} onRetry={refresh} />;
-  }
-
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -73,6 +68,21 @@ export function TerritorialDashboard() {
           <p className="text-sm text-gray-500">Análise socioeconômica e de oferta por praça</p>
         </div>
       </div>
+
+      {/* Inline error banner */}
+      {error && (
+        <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+          <p className="text-sm text-red-700">{error}</p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { clearSelection(); }}
+              className="text-xs text-red-500 hover:text-red-700 underline"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <TerritorialFilters filters={filters} ufs={ufs} onFilterChange={handleFilterChange} />

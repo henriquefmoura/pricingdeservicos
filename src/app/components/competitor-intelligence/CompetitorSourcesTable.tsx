@@ -1,8 +1,9 @@
 // ========================================
-// Competitor Sources Table
+// Competitor Sources Table — Enhanced
 // ========================================
+// Evolved with full traceability: data, link, source buttons.
 
-import { ExternalLink, Globe } from 'lucide-react';
+import { ExternalLink, Globe, Calendar, Link2 } from 'lucide-react';
 import type { NormalizedPrice, SourceType } from '../../types/competitor';
 
 interface Props {
@@ -39,6 +40,15 @@ function extractDomain(url: string): string {
   }
 }
 
+function formatDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  } catch {
+    return dateStr;
+  }
+}
+
 export function CompetitorSourcesTable({ prices }: Props) {
   if (prices.length === 0) return null;
 
@@ -62,6 +72,8 @@ export function CompetitorSourcesTable({ prices }: Props) {
               <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 uppercase">Unidade</th>
               <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 uppercase">Confiança</th>
               <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 uppercase">Cidade</th>
+              <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 uppercase">Data</th>
+              <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 uppercase">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -94,6 +106,26 @@ export function CompetitorSourcesTable({ prices }: Props) {
                 </td>
                 <td className="py-2.5 px-3 text-center text-xs text-gray-500">
                   {price.city ?? '—'}
+                </td>
+                <td className="py-2.5 px-3 text-center">
+                  <span className="inline-flex items-center gap-1 text-xs text-gray-500" title={price.extractedAt}>
+                    <Calendar className="w-3 h-3" />
+                    {formatDate(price.extractedAt)}
+                  </span>
+                </td>
+                <td className="py-2.5 px-3 text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <a
+                      href={price.source}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                      title="Abrir link da fonte"
+                    >
+                      <Link2 className="w-3 h-3" />
+                      Abrir
+                    </a>
+                  </div>
                 </td>
               </tr>
             ))}

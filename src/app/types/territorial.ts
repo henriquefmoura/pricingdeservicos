@@ -45,6 +45,11 @@ export interface StateComparisonDelta {
 // Main Summary
 // ----------------------------------------
 
+export interface TerritorialCnaeInfo {
+  code: string;
+  description: string;
+}
+
 export interface TerritorialInsightSummary {
   city: string;
   ibgeCode: string;
@@ -59,6 +64,7 @@ export interface TerritorialInsightSummary {
   offerPressure?: OfferPressureLevel;
   pricingProfile?: TerritorialPricingProfile;
   comparisonVsState?: StateComparisonDelta;
+  cnaeInfo?: TerritorialCnaeInfo[];
   insights: TerritorialInsight[];
 }
 

@@ -17,6 +17,7 @@ export const SERVICE_CNAE_MAPPINGS: ServiceCnaeMapping[] = [
   { serviceId: 'telhado-reparo', serviceName: 'Telhado / Coberturas', cnaeCodes: ['4399-1/03'], keywords: ['telhado', 'cobertura'] },
   { serviceId: 'jardinagem', serviceName: 'Jardinagem', cnaeCodes: ['8130-3/00'], keywords: ['jardinagem', 'paisagismo'] },
   { serviceId: 'limpeza', serviceName: 'Limpeza', cnaeCodes: ['8121-4/00'], keywords: ['limpeza', 'faxina'] },
+  { serviceId: 'obras-construcoes', serviceName: 'Obras e Construções', cnaeCodes: ['4120-4/00', '4399-1/01', '4399-1/03', '4399-1/99'], keywords: ['obras', 'construção', 'construcao', 'reforma', 'alvenaria', 'edificação'] },
 ];
 
 export function getMappingByServiceId(serviceId: string): ServiceCnaeMapping | null {

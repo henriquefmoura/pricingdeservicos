@@ -2,13 +2,15 @@
 // Territorial Pricing Engine — Consolidation
 // ========================================
 
-import type { TerritorialInsightSummary, TerritorialComparisonResult, IBGEMunicipio, MunicipalityData, CompanyData } from '../types/territorial';
+import type { TerritorialInsightSummary, TerritorialComparisonResult, IBGEMunicipio, MunicipalityData, CompanyData, TerritorialCnaeInfo } from '../types/territorial';
 import { fetchMunicipioById } from './ibgeLocalitiesService';
 import { fetchMunicipalityIndicators, fetchStateAverages } from './ibgeIndicatorsService';
 import { fetchCompaniesByMunicipality } from './companySupplyService';
 import { normalizeMunicipalityData, buildTerritorialSummary } from '../utils/territorialMapper';
 import { getCnaeCodesForService } from '../utils/serviceCnaeMappings';
 import { compareMunicipalities, rankByPricingAttractiveness } from '../utils/territorialComparators';
+import { mapServiceToCnae } from './ibge/cnaeService';
+import { SERVICE_CNAE_MAPPINGS } from '../utils/serviceCnaeMappings';
 
 const UF_NUM_TO_SIGLA: Record<string, string> = {
   '11': 'RO', '12': 'AC', '13': 'AM', '14': 'RR', '15': 'PA', '16': 'AP', '17': 'TO',
@@ -69,12 +71,18 @@ export async function runTerritorialAnalysis(
   const totalCompanies = companies?.totalCompanies ?? 0;
   const totalMEIs = companies?.totalMEIs ?? 0;
 
-  return buildTerritorialSummary(munData, companies, {
+  const summary = buildTerritorialSummary(munData, companies, {
     avgIncome: stateAvg.avgIncome,
     // Approximate state averages as fractions of the local values (mock heuristic)
     avgCompanies: Math.round(totalCompanies * 0.8),
     avgMEIs: Math.round(totalMEIs * 0.75),
   });
+
+  // Fetch CNAE descriptions from IBGE API for the selected service (or all services)
+  const cnaeInfo = await fetchCnaeInfoForCity(serviceId);
+  summary.cnaeInfo = cnaeInfo;
+
+  return summary;
 }
 
 export async function compareTerritorial(
@@ -95,4 +103,40 @@ export async function rankCities(
 ): Promise<TerritorialInsightSummary[]> {
   const results = await Promise.all(ibgeCodes.map((c) => runTerritorialAnalysis(c, serviceId)));
   return rankByPricingAttractiveness(results);
+}
+
+/**
+ * Fetch CNAE descriptions from IBGE API for the selected service or all mapped services.
+ * Returns an array of TerritorialCnaeInfo with code + official description.
+ */
+async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnaeInfo[]> {
+  try {
+    if (serviceId) {
+      const result = await mapServiceToCnae(serviceId);
+      if (!result) return [];
+      return result.cnaeDescriptions.map((d) => ({
+        code: d.id,
+        description: d.descricao,
+      }));
+    }
+    // When no service selected, fetch CNAE descriptions from IBGE API for all mapped codes
+    const seen = new Set<string>();
+    const fetchPromises: Promise<TerritorialCnaeInfo | null>[] = [];
+    for (const mapping of SERVICE_CNAE_MAPPINGS) {
+      for (const code of mapping.cnaeCodes) {
+        if (seen.has(code)) continue;
+        seen.add(code);
+        fetchPromises.push(
+          mapServiceToCnae(mapping.serviceId).then((result) => {
+            const desc = result?.cnaeDescriptions.find((d) => d.id === code.replace(/[-/]/g, '') || d.id === code);
+            return { code, description: desc?.descricao ?? `${mapping.serviceName} (${code})` };
+          }).catch(() => ({ code, description: `${mapping.serviceName} (${code})` }))
+        );
+      }
+    }
+    const results = await Promise.all(fetchPromises);
+    return results.filter((r): r is TerritorialCnaeInfo => r !== null);
+  } catch {
+    return [];
+  }
 }

@@ -100,13 +100,9 @@ export function useTerritorialIntelligence(serviceId?: string): UseTerritorialIn
     if (selectedCity) await selectCity(selectedCity.ibgeCode);
   }, [selectedCity, selectCity]);
 
-  const filtered = filters.searchQuery
-    ? municipalities.filter((m) => m.name.toLowerCase().includes(filters.searchQuery!.toLowerCase()))
-    : municipalities;
-
   return {
     ufs,
-    municipalities: filtered,
+    municipalities,
     filters,
     setFilters,
     selectedCity,

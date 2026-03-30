@@ -178,10 +178,8 @@ export function AnalysisMarketReference({ competitor, currentPrice }: Props) {
                   padding: '3px 8px', borderRadius: '6px',
                   backgroundColor: '#F3F4F6', color: '#4B5563',
                   fontSize: '11px', textDecoration: 'none',
-                  transition: 'background-color 0.15s',
                 }}
-                onMouseEnter={(e) => { (e.target as HTMLElement).style.backgroundColor = '#E5E7EB'; }}
-                onMouseLeave={(e) => { (e.target as HTMLElement).style.backgroundColor = '#F3F4F6'; }}
+                className="hover:bg-gray-200 transition-colors"
                 title={`Coletado em ${formatDate(src.capturedAt)}`}
               >
                 <ExternalLink size={10} />

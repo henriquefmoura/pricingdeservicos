@@ -125,8 +125,7 @@ export async function mapServiceToCnae(serviceId: string): Promise<ServiceCnaeRe
     if (result) {
       descriptions.push(result);
     } else {
-      // Fallback: use the code with a generic description
-      descriptions.push({ id: code, descricao: `CNAE ${code}` });
+      descriptions.push({ id: code, descricao: `Subclasse CNAE ${code}` });
     }
   }
 

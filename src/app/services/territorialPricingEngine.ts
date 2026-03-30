@@ -119,17 +119,23 @@ async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnae
         description: d.descricao,
       }));
     }
-    // When no service selected, gather CNAE info for all mapped services
+    // When no service selected, fetch CNAE descriptions from IBGE API for all mapped codes
     const seen = new Set<string>();
-    const infos: TerritorialCnaeInfo[] = [];
+    const fetchPromises: Promise<TerritorialCnaeInfo | null>[] = [];
     for (const mapping of SERVICE_CNAE_MAPPINGS) {
       for (const code of mapping.cnaeCodes) {
         if (seen.has(code)) continue;
         seen.add(code);
-        infos.push({ code, description: mapping.serviceName });
+        fetchPromises.push(
+          mapServiceToCnae(mapping.serviceId).then((result) => {
+            const desc = result?.cnaeDescriptions.find((d) => d.id === code.replace(/[-/]/g, '') || d.id === code);
+            return { code, description: desc?.descricao ?? `${mapping.serviceName} (${code})` };
+          }).catch(() => ({ code, description: `${mapping.serviceName} (${code})` }))
+        );
       }
     }
-    return infos;
+    const results = await Promise.all(fetchPromises);
+    return results.filter((r): r is TerritorialCnaeInfo => r !== null);
   } catch {
     return [];
   }

@@ -90,6 +90,17 @@ const cnaeMeiIcon = new L.DivIcon({
   popupAnchor: [0, -11],
 });
 
+function getMarkerProps(type: 'company' | 'mei' | 'instalador') {
+  switch (type) {
+    case 'instalador':
+      return { icon: cnaeInstaladorIcon, label: 'Instalador CNAE', color: '#2563eb' };
+    case 'mei':
+      return { icon: cnaeMeiIcon, label: 'MEI', color: '#f59e0b' };
+    default:
+      return { icon: cnaeCompanyIcon, label: 'Empresa', color: '#3b82f6' };
+  }
+}
+
 function MapUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
   useEffect(() => { map.setView(center, zoom); }, [map, center, zoom]);
@@ -377,21 +388,7 @@ export function TerritorialMap({
 
         {/* CNAE Professional markers layer */}
         {layerToggles.cnaeProfessionals && professionalMarkers.map((prof) => {
-          const icon = prof.type === 'instalador'
-            ? cnaeInstaladorIcon
-            : prof.type === 'mei'
-              ? cnaeMeiIcon
-              : cnaeCompanyIcon;
-          const label = prof.type === 'instalador'
-            ? 'Instalador CNAE'
-            : prof.type === 'mei'
-              ? 'MEI'
-              : 'Empresa';
-          const color = prof.type === 'instalador'
-            ? '#2563eb'
-            : prof.type === 'mei'
-              ? '#f59e0b'
-              : '#3b82f6';
+          const { icon, label, color } = getMarkerProps(prof.type);
           return (
             <Marker
               key={prof.id}

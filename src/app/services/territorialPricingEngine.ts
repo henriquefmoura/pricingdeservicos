@@ -71,6 +71,7 @@ export async function runTerritorialAnalysis(
 
   return buildTerritorialSummary(munData, companies, {
     avgIncome: stateAvg.avgIncome,
+    // Approximate state averages as fractions of the local values (mock heuristic)
     avgCompanies: Math.round(totalCompanies * 0.8),
     avgMEIs: Math.round(totalMEIs * 0.75),
   });

@@ -33,7 +33,12 @@ export function getCompanyDensity(companies: number, population: number | null):
   return (companies / population) * 1000;
 }
 
-// CNAE codes that represent installation/assembly services
+/**
+ * CNAE codes representing installation, assembly, and maintenance services.
+ * These codes are from the IBGE CNAE 2.0 classification and correspond
+ * to the service categories mapped in serviceCnaeMappings.ts.
+ * Providers with these codes are displayed as "Instalador" on the map.
+ */
 const INSTALLATION_CNAE_CODES = new Set([
   '4321-5/00', // Instalação Elétrica
   '4322-3/02', // Ar-Condicionado (Instalação)

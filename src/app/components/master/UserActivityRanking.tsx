@@ -91,7 +91,7 @@ export function UserActivityRanking() {
                         color: user.role === 'admin' ? '#78BE20' : '#3B82F6',
                       }}
                     >
-                      {user.role === 'admin' ? <Crown size={10} /> : <User size={10} />}
+                      {user.role === 'admin' ? <Crown size={10} aria-hidden="true" /> : <User size={10} aria-hidden="true" />}
                       {user.role === 'admin' ? 'Admin' : 'Usuário'}
                     </span>
                   </div>

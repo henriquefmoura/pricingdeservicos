@@ -19,6 +19,13 @@ const cardStyle: React.CSSProperties = {
   boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04)',
 };
 
+function getAlertMessage(plazas: { plaza: string }[]): string {
+  if (plazas.length === 1) {
+    return `A praça ${plazas[0].plaza} precisa de atenção — consistência abaixo de 70%.`;
+  }
+  return `${plazas.length} praças precisam de atenção — consistência abaixo de 70%: ${plazas.map((p) => p.plaza).join(', ')}.`;
+}
+
 function scoreColor(score: number): string {
   if (score >= 85) return '#16A34A';
   if (score >= 70) return '#78BE20';
@@ -74,9 +81,7 @@ export function PricingConsistencyView() {
         >
           <AlertTriangle size={16} color="#F59E0B" />
           <span style={{ fontSize: '13px', color: '#92400E' }}>
-            {alertPlazas.length === 1
-              ? `A praça ${alertPlazas[0].plaza} precisa de atenção — consistência abaixo de 70%.`
-              : `${alertPlazas.length} praças precisam de atenção — consistência abaixo de 70%: ${alertPlazas.map((p) => p.plaza).join(', ')}.`}
+            {getAlertMessage(alertPlazas)}
           </span>
         </div>
       )}

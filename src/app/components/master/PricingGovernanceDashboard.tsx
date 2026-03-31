@@ -249,7 +249,7 @@ export function PricingGovernanceDashboard() {
           Detalhamento por Usuário — Processo de Precificação
         </h3>
         <p style={{ fontSize: '13px', color: COLORS.gray, margin: '0 0 16px 0' }}>
-          Acessos, códigos precificados, pesquisas de mercado, aprovações e rejeições
+          Função, praça, acessos, códigos precificados, pesquisas de mercado, aprovações, rejeições e consistência
         </p>
 
         <div style={{ overflowX: 'auto' }}>

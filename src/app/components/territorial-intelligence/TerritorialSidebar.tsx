@@ -2,7 +2,7 @@
 // Territorial Sidebar — City Detail Panel
 // ========================================
 
-import { X, MapPin, RefreshCw, Tag } from 'lucide-react';
+import { X, MapPin, RefreshCw, Tag, Navigation } from 'lucide-react';
 import type { TerritorialInsightSummary } from '../../types/territorial';
 import { OfferPressureBadge, PricingProfileBadge } from './TerritorialBadges';
 import { TerritorialSummaryCards } from './TerritorialSummaryCards';
@@ -49,6 +49,31 @@ export function TerritorialSidebar({ summary, loading, onClose, onRefresh, onCom
 
         {/* Summary Cards */}
         <TerritorialSummaryCards summary={summary} />
+
+        {/* Address / Location */}
+        {summary.addressInfo && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Navigation className="w-4 h-4 text-[#78BE20]" />
+              <h3 className="text-sm font-semibold text-gray-700">Localização</h3>
+            </div>
+            <div className="space-y-2 text-sm text-gray-600">
+              <p className="leading-relaxed">{summary.addressInfo.displayName}</p>
+              {summary.addressInfo.postcode && (
+                <p className="text-xs text-gray-500">CEP: {summary.addressInfo.postcode}</p>
+              )}
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(summary.addressInfo.displayName)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-[#78BE20] hover:text-[#5a9a10] font-medium mt-1"
+              >
+                <MapPin className="w-3 h-3" />
+                Ver no Google Maps
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* CNAE Information */}
         {summary.cnaeInfo && summary.cnaeInfo.length > 0 && (

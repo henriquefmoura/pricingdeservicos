@@ -103,6 +103,7 @@ export function TerritorialDashboard() {
             <TerritorialMap
               selectedUF={filters.selectedUF}
               selectedIbgeCode={selectedCity?.ibgeCode}
+              totalCompanies={selectedCity?.relatedCompanies}
               onCityClick={handleCityClick}
               onStateClick={handleStateClick}
             />

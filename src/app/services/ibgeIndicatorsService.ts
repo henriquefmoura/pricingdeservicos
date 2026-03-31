@@ -79,8 +79,40 @@ function parseSidraValue(data: any): number | null {
   }
 }
 
-/** Deterministic mock based on IBGE code hash */
+/** 
+ * Deterministic mock based on IBGE code hash.
+ * Uses real population data for known major cities from IBGE Census / RAIS base.
+ */
 export function getMockIndicators(ibgeCode: string): { population: number; income: number } {
+  // Reference data from IBGE Census for major Brazilian cities
+  const KNOWN_POPULATIONS: Record<string, { population: number; income: number }> = {
+    '3550308': { population: 12_330_000, income: 2_850 },   // São Paulo
+    '3304557': { population: 6_748_000, income: 2_400 },    // Rio de Janeiro
+    '5300108': { population: 3_056_000, income: 2_900 },    // Brasília
+    '2927408': { population: 2_887_000, income: 1_350 },    // Salvador
+    '2304400': { population: 2_687_000, income: 1_200 },    // Fortaleza
+    '3106200': { population: 2_523_000, income: 2_100 },    // Belo Horizonte
+    '1302603': { population: 2_256_000, income: 1_050 },    // Manaus
+    '4106902': { population: 1_963_000, income: 2_300 },    // Curitiba
+    '2611606': { population: 1_654_000, income: 1_300 },    // Recife
+    '5208707': { population: 1_556_000, income: 1_600 },    // Goiânia
+    '1501402': { population: 1_506_000, income: 1_000 },    // Belém
+    '4314902': { population: 1_492_000, income: 2_000 },    // Porto Alegre
+    '3518800': { population: 1_392_000, income: 1_500 },    // Guarulhos
+    '3509502': { population: 1_224_000, income: 2_200 },    // Campinas
+    '2111300': { population: 1_115_000, income: 1_050 },    // São Luís
+    '3548500': { population: 433_000, income: 2_400 },      // Santos
+    '3549805': { population: 763_000, income: 2_500 },      // São José dos Campos
+    '3552205': { population: 533_000, income: 1_800 },      // Sorocaba
+    '3534401': { population: 710_000, income: 1_700 },      // Osasco
+    '4205407': { population: 516_000, income: 2_100 },      // Florianópolis
+    '3170206': { population: 701_000, income: 1_600 },      // Uberlândia
+    '4209102': { population: 614_000, income: 1_900 },      // Joinville
+  };
+
+  const known = KNOWN_POPULATIONS[ibgeCode];
+  if (known) return known;
+
   let hash = 0;
   for (let i = 0; i < ibgeCode.length; i++) {
     hash = ((hash << 5) - hash + ibgeCode.charCodeAt(i)) | 0;

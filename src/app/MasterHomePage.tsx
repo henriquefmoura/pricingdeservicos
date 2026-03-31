@@ -129,7 +129,7 @@ export default function MasterHomePage() {
   }
 
   return (
-    <AppLayout activeNav="Upload" title="Upload de Dados" subtitle="Upload de dados de precificação">
+    <AppLayout activeNav="Upload" title="Upload de Dados" subtitle="Faça upload de arquivos Excel com preços das praças">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1440px' }}>
         {/* Upload Card */}
         <HighlightedCard>

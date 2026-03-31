@@ -7,6 +7,7 @@
 import { getTerritorialCache, setTerritorialCache, LOCALITIES_TTL_MS } from '../utils/territorialCache';
 
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org';
+const USER_AGENT = 'PricingDeServicos/1.0';
 
 export interface GeocodingAddressResult {
   displayName: string;
@@ -33,7 +34,7 @@ export async function reverseGeocode(lat: number, lon: number): Promise<Geocodin
   try {
     const url = `${NOMINATIM_BASE}/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1&accept-language=pt-BR`;
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'PricingDeServicos/1.0' },
+      headers: { 'User-Agent': USER_AGENT },
     });
     if (!res.ok) return null;
 
@@ -41,10 +42,14 @@ export async function reverseGeocode(lat: number, lon: number): Promise<Geocodin
     if (!data || data.error) return null;
 
     const address = data.address ?? {};
+    const parsedLat = parseFloat(data.lat);
+    const parsedLon = parseFloat(data.lon);
+    if (isNaN(parsedLat) || isNaN(parsedLon)) return null;
+
     const result: GeocodingAddressResult = {
       displayName: data.display_name ?? '',
-      lat: parseFloat(data.lat) || lat,
-      lon: parseFloat(data.lon) || lon,
+      lat: parsedLat,
+      lon: parsedLon,
       road: address.road ?? address.pedestrian ?? address.highway ?? undefined,
       neighbourhood: address.neighbourhood ?? address.quarter ?? undefined,
       suburb: address.suburb ?? undefined,
@@ -74,7 +79,7 @@ export async function searchCityAddress(cityName: string, uf: string): Promise<G
     const query = encodeURIComponent(`${cityName}, ${uf}, Brasil`);
     const url = `${NOMINATIM_BASE}/search?q=${query}&format=json&addressdetails=1&limit=1&accept-language=pt-BR`;
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'PricingDeServicos/1.0' },
+      headers: { 'User-Agent': USER_AGENT },
     });
     if (!res.ok) return null;
 
@@ -83,10 +88,14 @@ export async function searchCityAddress(cityName: string, uf: string): Promise<G
 
     const item = data[0];
     const address = item.address ?? {};
+    const parsedLat = parseFloat(item.lat);
+    const parsedLon = parseFloat(item.lon);
+    if (isNaN(parsedLat) || isNaN(parsedLon)) return null;
+
     const result: GeocodingAddressResult = {
       displayName: item.display_name ?? '',
-      lat: parseFloat(item.lat) || 0,
-      lon: parseFloat(item.lon) || 0,
+      lat: parsedLat,
+      lon: parsedLon,
       road: address.road ?? address.pedestrian ?? address.highway ?? undefined,
       neighbourhood: address.neighbourhood ?? address.quarter ?? undefined,
       suburb: address.suburb ?? undefined,

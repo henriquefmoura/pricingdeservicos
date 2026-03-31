@@ -2,7 +2,7 @@
 // Territorial Pricing Engine — Consolidation
 // ========================================
 
-import type { TerritorialInsightSummary, TerritorialComparisonResult, IBGEMunicipio, MunicipalityData, CompanyData, TerritorialCnaeInfo } from '../types/territorial';
+import type { TerritorialInsightSummary, TerritorialComparisonResult, IBGEMunicipio, MunicipalityData, CompanyData, TerritorialCnaeInfo, TerritorialAddressInfo } from '../types/territorial';
 import { fetchMunicipioById } from './ibgeLocalitiesService';
 import { fetchMunicipalityIndicators, fetchStateAverages } from './ibgeIndicatorsService';
 import { fetchCompaniesByMunicipality } from './companySupplyService';
@@ -11,6 +11,7 @@ import { getCnaeCodesForService } from '../utils/serviceCnaeMappings';
 import { compareMunicipalities, rankByPricingAttractiveness } from '../utils/territorialComparators';
 import { mapServiceToCnae } from './ibge/cnaeService';
 import { SERVICE_CNAE_MAPPINGS } from '../utils/serviceCnaeMappings';
+import { searchCityAddress } from './reverseGeocodingService';
 
 const UF_NUM_TO_SIGLA: Record<string, string> = {
   '11': 'RO', '12': 'AC', '13': 'AM', '14': 'RR', '15': 'PA', '16': 'AP', '17': 'TO',
@@ -82,6 +83,10 @@ export async function runTerritorialAnalysis(
   const cnaeInfo = await fetchCnaeInfoForCity(serviceId);
   summary.cnaeInfo = cnaeInfo;
 
+  // Fetch address info via Nominatim (best-effort, non-blocking)
+  const addressInfo = await fetchAddressForCity(munData.name, munData.uf);
+  if (addressInfo) summary.addressInfo = addressInfo;
+
   return summary;
 }
 
@@ -106,37 +111,93 @@ export async function rankCities(
 }
 
 /**
- * Fetch CNAE descriptions from IBGE API for the selected service or all mapped services.
- * Returns an array of TerritorialCnaeInfo with code + official description.
+ * Fetch address/location info for a city using Nominatim geocoding.
+ * Returns formatted address data or null if unavailable.
+ */
+async function fetchAddressForCity(cityName: string, uf: string): Promise<TerritorialAddressInfo | null> {
+  try {
+    const result = await searchCityAddress(cityName, uf);
+    if (!result) return null;
+    return {
+      displayName: result.displayName,
+      road: result.road,
+      neighbourhood: result.neighbourhood,
+      suburb: result.suburb,
+      city: result.city,
+      state: result.state,
+      postcode: result.postcode,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch CNAE descriptions for the selected service or all mapped services.
+ * Uses local SERVICE_CNAE_MAPPINGS as primary source and tries to enrich
+ * descriptions from the IBGE API. Falls back to local data if API fails.
  */
 async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnaeInfo[]> {
-  try {
-    if (serviceId) {
+  if (serviceId) {
+    // Single service: try IBGE API first, fall back to local mapping
+    const mapping = SERVICE_CNAE_MAPPINGS.find((m) => m.serviceId === serviceId);
+    if (!mapping) return [];
+
+    try {
       const result = await mapServiceToCnae(serviceId);
-      if (!result) return [];
-      return result.cnaeDescriptions.map((d) => ({
-        code: d.id,
-        description: d.descricao,
-      }));
-    }
-    // When no service selected, fetch CNAE descriptions from IBGE API for all mapped codes
-    const seen = new Set<string>();
-    const fetchPromises: Promise<TerritorialCnaeInfo | null>[] = [];
-    for (const mapping of SERVICE_CNAE_MAPPINGS) {
-      for (const code of mapping.cnaeCodes) {
-        if (seen.has(code)) continue;
-        seen.add(code);
-        fetchPromises.push(
-          mapServiceToCnae(mapping.serviceId).then((result) => {
-            const desc = result?.cnaeDescriptions.find((d) => d.id === code.replace(/[-/]/g, '') || d.id === code);
-            return { code, description: desc?.descricao ?? `${mapping.serviceName} (${code})` };
-          }).catch(() => ({ code, description: `${mapping.serviceName} (${code})` }))
-        );
+      if (result && result.cnaeDescriptions.length > 0) {
+        return result.cnaeDescriptions.map((d) => ({
+          code: d.id,
+          description: d.descricao,
+        }));
       }
+    } catch {
+      // Fall through to local data
     }
-    const results = await Promise.all(fetchPromises);
-    return results.filter((r): r is TerritorialCnaeInfo => r !== null);
+
+    return mapping.cnaeCodes.map((code) => ({
+      code,
+      description: `${mapping.serviceName} (${code})`,
+    }));
+  }
+
+  // When no service selected, build CNAE list from all local mappings
+  // then try to enrich descriptions from IBGE API in the background
+  const seen = new Set<string>();
+  const localCnaeInfo: TerritorialCnaeInfo[] = [];
+
+  for (const mapping of SERVICE_CNAE_MAPPINGS) {
+    for (const code of mapping.cnaeCodes) {
+      if (seen.has(code)) continue;
+      seen.add(code);
+      localCnaeInfo.push({
+        code,
+        description: `${mapping.serviceName} (${code})`,
+      });
+    }
+  }
+
+  // Try to enrich with official IBGE descriptions (best-effort, non-blocking)
+  try {
+    const enrichPromises = localCnaeInfo.map(async (info) => {
+      const mapping = SERVICE_CNAE_MAPPINGS.find((m) => m.cnaeCodes.includes(info.code));
+      if (!mapping) return info;
+      try {
+        const result = await mapServiceToCnae(mapping.serviceId);
+        const cleanCode = info.code.replace(/[-/]/g, '');
+        const desc = result?.cnaeDescriptions.find((d) => d.id === cleanCode || d.id === info.code);
+        if (desc) return { code: info.code, description: desc.descricao };
+      } catch {
+        // Keep local description
+      }
+      return info;
+    });
+    const enriched = await Promise.allSettled(enrichPromises);
+    return enriched
+      .filter((r): r is PromiseFulfilledResult<TerritorialCnaeInfo> => r.status === 'fulfilled')
+      .map((r) => r.value);
   } catch {
-    return [];
+    // If enrichment fails entirely, return local data
+    return localCnaeInfo;
   }
 }

@@ -50,6 +50,16 @@ export interface TerritorialCnaeInfo {
   description: string;
 }
 
+export interface TerritorialAddressInfo {
+  displayName: string;
+  road?: string;
+  neighbourhood?: string;
+  suburb?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+}
+
 export interface TerritorialInsightSummary {
   city: string;
   ibgeCode: string;
@@ -65,6 +75,7 @@ export interface TerritorialInsightSummary {
   pricingProfile?: TerritorialPricingProfile;
   comparisonVsState?: StateComparisonDelta;
   cnaeInfo?: TerritorialCnaeInfo[];
+  addressInfo?: TerritorialAddressInfo;
   insights: TerritorialInsight[];
 }
 

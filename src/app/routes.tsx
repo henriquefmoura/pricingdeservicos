@@ -11,6 +11,7 @@ import WeatherPage from "./pages/WeatherPage";
 import TerritorialIntelligencePage from "./pages/TerritorialIntelligencePage";
 import CompetitorIntelligencePage from "./pages/CompetitorIntelligencePage";
 import GovernancePage from "./pages/GovernancePage";
+import PricingCodesPage from "./pages/PricingCodesPage";
 
 // Old pages that still have unique functionality
 import { Comparison } from "./pages/Comparison";
@@ -46,6 +47,10 @@ export const router = createBrowserRouter([
   {
     path: "/governance",
     Component: GovernancePage,
+  },
+  {
+    path: "/pricing-codes",
+    Component: PricingCodesPage,
   },
   {
     path: "/comparison/:plaza1/:plaza2",

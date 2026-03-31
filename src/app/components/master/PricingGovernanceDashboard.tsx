@@ -225,13 +225,13 @@ export function PricingGovernanceDashboard() {
       </div>
 
       {/* Row 1: User ranking + Volume chart */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <UserActivityRanking />
         <PricingVolumeChart />
       </div>
 
       {/* Row 2: Approval vs Rejection + Consistency */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <ApprovalVsRejectionChart />
         <PricingConsistencyView />
       </div>

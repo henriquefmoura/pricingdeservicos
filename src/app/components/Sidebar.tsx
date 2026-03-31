@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Upload, BarChart2, Calculator, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, CloudSun, MapPin, Crosshair, Shield, CheckCircle, FileText, Lightbulb } from 'lucide-react';
+import { Upload, BarChart2, Calculator, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, CloudSun, MapPin, Crosshair, Shield, CheckCircle, FileText, Lightbulb, ListChecks } from 'lucide-react';
 import { Logo } from './Logo';
 
 export type UserRole = 'Master' | 'Admin' | 'Usuário';
-export type NavItem = 'Upload' | 'Análise' | 'Simulador' | 'Dashboard' | 'Admin' | 'Clima' | 'Territorial' | 'Concorrência' | 'Governança';
+export type NavItem = 'Upload' | 'Análise' | 'Simulador' | 'Dashboard' | 'Admin' | 'Clima' | 'Territorial' | 'Concorrência' | 'Governança' | 'Códigos';
 
 interface NavItemConfig {
   id: NavItem;
@@ -30,9 +30,10 @@ const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemCon
         {
           group: 'Gestão',
           items: [
-            { id: 'Upload', label: 'Upload de Dados', icon: Upload },
             { id: 'Análise', label: 'Análise', icon: BarChart2 },
             { id: 'Governança', label: 'Governança', icon: Shield },
+            { id: 'Códigos', label: 'Códigos para Precificação', icon: ListChecks },
+            { id: 'Upload', label: 'Upload de Dados', icon: Upload },
           ],
         },
         {

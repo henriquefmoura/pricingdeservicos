@@ -48,6 +48,9 @@ export function AppLayout({ children, activeNav, title, subtitle }: AppLayoutPro
       case 'Governança':
         navigate('/governance');
         break;
+      case 'Códigos':
+        navigate('/pricing-codes');
+        break;
     }
   };
 

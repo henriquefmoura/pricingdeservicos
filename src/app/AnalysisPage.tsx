@@ -335,9 +335,9 @@ export default function AnalysisPage() {
           <KPICard label="Praças Parâmetro" value={hasRealData ? String(parameterPlazas.length) : '3'} icon={<AlertTriangle size={20} />} iconBgColor="amber" />
         </div>
 
-        {/* Two Column Layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '65% 35%', gap: '24px', marginBottom: '32px' }}>
-          {/* LEFT - Bar Chart */}
+        {/* Single Column Layout */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '32px' }}>
+          {/* Bar Chart */}
           <Card>
             <h2 style={{ font: 'var(--font-card-title)', color: 'var(--text-card-title)', marginBottom: '24px' }}>
               Comparação com São Paulo
@@ -376,7 +376,7 @@ export default function AnalysisPage() {
             </ResponsiveContainer>
           </Card>
 
-          {/* RIGHT - Parameter Plazas */}
+          {/* Parameter Plazas */}
           <HighlightedCard>
             <h2 style={{ font: 'var(--font-card-title)', color: 'var(--text-card-title)', marginBottom: '20px' }}>
               Praças Parâmetro

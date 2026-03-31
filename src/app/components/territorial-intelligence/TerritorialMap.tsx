@@ -17,6 +17,7 @@ import { Store, Users, Briefcase } from 'lucide-react';
 interface Props {
   selectedUF?: string;
   selectedIbgeCode?: string;
+  totalCompanies?: number | null;
   onCityClick?: (ibgeCode: string, name: string) => void;
   onStateClick?: (ufCode: string) => void;
   showLeroyStores?: boolean;
@@ -110,6 +111,7 @@ function MapUpdater({ center, zoom }: { center: [number, number]; zoom: number }
 export function TerritorialMap({
   selectedUF,
   selectedIbgeCode,
+  totalCompanies,
   onCityClick,
   onStateClick,
   showLeroyStores = true,
@@ -136,7 +138,7 @@ export function TerritorialMap({
     return generateMeiDensityForMunicipalities(munGeo.features);
   }, [munGeo]);
 
-  // Professional markers for selected city
+  // Professional markers for selected city — count proportional to company data
   const professionalMarkers = useMemo<CnaeProfessionalMarker[]>(() => {
     if (!selectedIbgeCode || !munGeo) return [];
     // Find the centroid of the selected municipality from GeoJSON
@@ -149,8 +151,14 @@ export function TerritorialMap({
     const centroid = computeGeometryCentroid(feature.geometry);
     if (!centroid) return [];
 
-    return generateProfessionalMarkers(selectedIbgeCode, centroid[0], centroid[1]);
-  }, [selectedIbgeCode, munGeo]);
+    return generateProfessionalMarkers(
+      selectedIbgeCode,
+      centroid[0],
+      centroid[1],
+      undefined,
+      totalCompanies ?? undefined,
+    );
+  }, [selectedIbgeCode, munGeo, totalCompanies]);
 
   // Auto-enable CNAE professionals layer when a city is selected
   useEffect(() => {
@@ -322,7 +330,8 @@ export function TerritorialMap({
         {/* CNAE professionals legend */}
         {layerToggles.cnaeProfessionals && selectedIbgeCode && (
           <div className="bg-white rounded-lg shadow-md p-2 text-xs">
-            <p className="font-semibold text-gray-700 mb-1">Profissionais CNAE</p>
+            <p className="font-semibold text-gray-700 mb-1">Profissionais CNAE/RAIS</p>
+            <p className="text-gray-400 mb-1">{professionalMarkers.length} pontos representados</p>
             <div className="flex items-center gap-1.5">
               <span className="w-3.5 h-3.5 rounded-full border-2 border-white" style={{ background: '#2563eb', boxShadow: '0 1px 3px rgba(37,99,235,0.4)' }} />
               <span className="text-gray-600 font-medium">Instalador CNAE</span>

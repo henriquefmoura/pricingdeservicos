@@ -94,6 +94,20 @@ export function useTerritorialIntelligence(serviceId?: string): UseTerritorialIn
     }
   }, [selectedCity, serviceId]);
 
+  // Auto-refresh when serviceId changes and a city is already selected
+  useEffect(() => {
+    if (!selectedCity) return;
+    let cancelled = false;
+    setLoadingCity(true);
+    setError(null);
+    runTerritorialAnalysis(selectedCity.ibgeCode, serviceId)
+      .then((summary) => { if (!cancelled) setSelectedCity(summary); })
+      .catch(() => { if (!cancelled) setError('Erro ao atualizar dados do município.'); })
+      .finally(() => { if (!cancelled) setLoadingCity(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serviceId]);
+
   const clearComparison = useCallback(() => setComparison(null), []);
 
   const refresh = useCallback(async () => {

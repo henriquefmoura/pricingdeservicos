@@ -56,7 +56,9 @@ export function UserActivityRanking() {
               <th style={headerStyle}>#</th>
               <th style={headerStyle}>Usuário</th>
               <th style={headerStyle}>Praça</th>
+              <th style={{ ...headerStyle, textAlign: 'center' }}>Acessos</th>
               <th style={{ ...headerStyle, textAlign: 'center' }}>Precificações</th>
+              <th style={{ ...headerStyle, textAlign: 'center' }}>Pesq. Mercado</th>
               <th style={{ ...headerStyle, textAlign: 'center' }}>Aprovações</th>
               <th style={{ ...headerStyle, textAlign: 'center' }}>Rejeições</th>
               <th style={{ ...headerStyle, textAlign: 'center' }}>Consistência</th>
@@ -99,8 +101,14 @@ export function UserActivityRanking() {
                   </div>
                 </td>
                 <td style={cellStyle}>{user.plaza}</td>
+                <td style={{ ...cellStyle, textAlign: 'center', fontWeight: 600, color: '#6366F1' }}>
+                  {user.totalLogins}
+                </td>
                 <td style={{ ...cellStyle, textAlign: 'center', fontWeight: 600 }}>
                   {user.totalPricesSet}
+                </td>
+                <td style={{ ...cellStyle, textAlign: 'center', fontWeight: 600, color: '#0EA5E9' }}>
+                  {user.marketResearchUsage}
                 </td>
                 <td style={{ ...cellStyle, textAlign: 'center', fontWeight: 600, color: '#16A34A' }}>
                   {user.totalApprovals}

@@ -105,6 +105,9 @@ export function useTerritorialIntelligence(serviceId?: string): UseTerritorialIn
       .catch(() => { if (!cancelled) setError('Erro ao atualizar dados do município.'); })
       .finally(() => { if (!cancelled) setLoadingCity(false); });
     return () => { cancelled = true; };
+    // We intentionally depend only on serviceId here: this effect re-fetches
+    // the already-selected city whenever the service filter changes.
+    // selectedCity is read but not a dependency to avoid infinite loops.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serviceId]);
 

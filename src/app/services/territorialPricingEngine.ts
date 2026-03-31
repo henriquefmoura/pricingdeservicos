@@ -84,8 +84,9 @@ export async function runTerritorialAnalysis(
   try {
     const cnaeInfo = await fetchCnaeInfoForCity(serviceId);
     summary.cnaeInfo = cnaeInfo;
-  } catch {
+  } catch (err) {
     // Ensure we always provide at least local CNAE data
+    console.warn('[TerritorialEngine] Falha ao buscar CNAEs da API IBGE, usando dados locais:', err);
     const fallbackCnae: TerritorialCnaeInfo[] = [];
     const seen = new Set<string>();
     const mappings = serviceId
@@ -220,8 +221,9 @@ async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnae
 
     // Guarantee we always return at least local data
     return results.length > 0 ? results : localCnaeInfo;
-  } catch {
+  } catch (err) {
     // If enrichment fails entirely, return local data
+    console.warn('[TerritorialEngine] Falha no enriquecimento de CNAEs, usando dados locais:', err);
     return localCnaeInfo;
   }
 }

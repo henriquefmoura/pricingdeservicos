@@ -45,9 +45,15 @@ export interface StateComparisonDelta {
 // Main Summary
 // ----------------------------------------
 
+export type CnaeServiceCategory = 'eletrica' | 'pintura' | 'hidraulica' | 'reforma' | 'outros';
+
 export interface TerritorialCnaeInfo {
   code: string;
   description: string;
+  /** Activity category used for color-coding in UI */
+  serviceCategory?: CnaeServiceCategory;
+  /** Hex color for this CNAE activity */
+  color?: string;
 }
 
 export interface TerritorialAddressInfo {

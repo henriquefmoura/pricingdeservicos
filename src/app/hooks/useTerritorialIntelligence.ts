@@ -17,6 +17,9 @@ export interface UseTerritorialIntelligenceReturn {
   selectedCity: TerritorialInsightSummary | null;
   selectCity: (ibgeCode: string) => Promise<void>;
   clearSelection: () => void;
+  pinnedCities: TerritorialInsightSummary[];
+  pinCity: (ibgeCode: string) => Promise<void>;
+  unpinCity: (ibgeCode: string) => void;
   comparison: TerritorialComparisonResult | null;
   compareWith: (ibgeCode: string) => Promise<void>;
   clearComparison: () => void;
@@ -31,6 +34,7 @@ export function useTerritorialIntelligence(serviceId?: string): UseTerritorialIn
   const [municipalities, setMunicipalities] = useState<MunicipalityData[]>([]);
   const [filters, setFiltersState] = useState<TerritorialFilterState>({});
   const [selectedCity, setSelectedCity] = useState<TerritorialInsightSummary | null>(null);
+  const [pinnedCities, setPinnedCities] = useState<TerritorialInsightSummary[]>([]);
   const [comparison, setComparison] = useState<TerritorialComparisonResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingCity, setLoadingCity] = useState(false);
@@ -81,6 +85,25 @@ export function useTerritorialIntelligence(serviceId?: string): UseTerritorialIn
 
   const clearSelection = useCallback(() => { setSelectedCity(null); setComparison(null); setError(null); }, []);
 
+  const pinCity = useCallback(async (ibgeCode: string) => {
+    // Don't pin duplicates
+    if (pinnedCities.some((c) => c.ibgeCode === ibgeCode)) return;
+    setLoadingCity(true);
+    setError(null);
+    try {
+      const summary = await runTerritorialAnalysis(ibgeCode, serviceId);
+      setPinnedCities((prev) => [...prev, summary]);
+    } catch {
+      setError('Erro ao fixar município.');
+    } finally {
+      setLoadingCity(false);
+    }
+  }, [pinnedCities, serviceId]);
+
+  const unpinCity = useCallback((ibgeCode: string) => {
+    setPinnedCities((prev) => prev.filter((c) => c.ibgeCode !== ibgeCode));
+  }, []);
+
   const compareWith = useCallback(async (ibgeCode: string) => {
     if (!selectedCity) return;
     setLoadingCity(true);
@@ -125,6 +148,9 @@ export function useTerritorialIntelligence(serviceId?: string): UseTerritorialIn
     selectedCity,
     selectCity,
     clearSelection,
+    pinnedCities,
+    pinCity,
+    unpinCity,
     comparison,
     compareWith,
     clearComparison,

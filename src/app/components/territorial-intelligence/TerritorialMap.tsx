@@ -10,22 +10,88 @@ import 'leaflet/dist/leaflet.css';
 import { fetchBrazilStatesGeoJSON, fetchMunicipiosGeoJSON } from '../../services/ibgeMapService';
 import type { GeoJSONFeatureCollection } from '../../services/ibgeMapService';
 import { generateMeiDensityForMunicipalities, generateProfessionalMarkers } from '../../services/companySupplyService';
-import type { LeroyStore, CnaeProfessionalMarker } from '../../types/territorial';
+import type { LeroyStore, CnaeProfessionalMarker, TerritorialInsightSummary } from '../../types/territorial';
 import { getLeroyStoresByUF, LEROY_MERLIN_STORES } from '../../data/leroyStores';
-import { Store, Users, Briefcase } from 'lucide-react';
+import { Store, Users, Briefcase, MapPin } from 'lucide-react';
+import { getCnaeColor, CNAE_CATEGORY_META, CNAE_CODE_CATEGORY, CNAE_CATEGORY_COLORS } from '../../utils/serviceCnaeMappings';
+import type { CnaeServiceCategory } from '../../types/territorial';
 
 interface Props {
   selectedUF?: string;
   selectedIbgeCode?: string;
   totalCompanies?: number | null;
+  pinnedCities?: TerritorialInsightSummary[];
   onCityClick?: (ibgeCode: string, name: string) => void;
   onStateClick?: (ufCode: string) => void;
   showLeroyStores?: boolean;
 }
 
 // ----------------------------------------
-// Custom icons
+// Major city coordinates for pinned-city markers
 // ----------------------------------------
+
+const MAJOR_CITY_COORDS: Record<string, { lat: number; lon: number }> = {
+  '3550308': { lat: -23.5505, lon: -46.6333 }, // São Paulo
+  '3304557': { lat: -22.9068, lon: -43.1729 }, // Rio de Janeiro
+  '5300108': { lat: -15.7801, lon: -47.9292 }, // Brasília
+  '2927408': { lat: -12.9714, lon: -38.5014 }, // Salvador
+  '2304400': { lat: -3.7327,  lon: -38.5270 }, // Fortaleza
+  '3106200': { lat: -19.9167, lon: -43.9345 }, // Belo Horizonte
+  '1302603': { lat: -3.1019,  lon: -60.0250 }, // Manaus
+  '4106902': { lat: -25.4284, lon: -49.2733 }, // Curitiba
+  '2611606': { lat: -8.0578,  lon: -34.8829 }, // Recife
+  '5208707': { lat: -16.6869, lon: -49.2648 }, // Goiânia
+  '1501402': { lat: -1.4558,  lon: -48.5044 }, // Belém
+  '4314902': { lat: -30.0346, lon: -51.2177 }, // Porto Alegre
+  '3518800': { lat: -23.4543, lon: -46.5338 }, // Guarulhos
+  '3509502': { lat: -22.9056, lon: -47.0608 }, // Campinas
+};
+
+// ----------------------------------------
+// CNAE-specific marker factory
+// ----------------------------------------
+
+/** Short label (2-3 chars) displayed inside each marker circle */
+const CNAE_MARKER_LABEL: Record<string, string> = {
+  '4321-5/00': 'EL',
+  '4330-4/04': 'PT',
+  '4322-3/01': 'HD',
+  '4322-3/02': 'AC',
+  '3104-7/00': 'MV',
+  '4330-4/02': 'IP',
+  '4330-4/99': 'FC',
+  '3321-0/00': 'MN',
+  '4399-1/03': 'TL',
+  '8130-3/00': 'JD',
+  '8121-4/00': 'LM',
+  '4120-4/00': 'RF',
+  '4399-1/01': 'OB',
+  '4399-1/99': 'CS',
+};
+
+const cnaeIconCache: Record<string, L.DivIcon> = {};
+function getCnaeMarkerIcon(cnae: string): L.DivIcon {
+  if (cnaeIconCache[cnae]) return cnaeIconCache[cnae];
+  const color = getCnaeColor(cnae);
+  const label = CNAE_MARKER_LABEL[cnae] ?? cnae.substring(0, 2).toUpperCase();
+  const icon = new L.DivIcon({
+    className: 'cnae-activity-marker',
+    html: `<div style="
+      width:24px;height:24px;
+      background:${color};
+      border:2px solid #fff;
+      border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 1px 5px rgba(0,0,0,0.35);
+      font-size:9px;font-weight:bold;color:#fff;
+    ">${label}</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
+  });
+  cnaeIconCache[cnae] = icon;
+  return icon;
+}
 
 const leroyIcon = new L.DivIcon({
   className: 'leroy-marker',
@@ -43,63 +109,23 @@ const leroyIcon = new L.DivIcon({
   popupAnchor: [0, -16],
 });
 
-const cnaeCompanyIcon = new L.DivIcon({
-  className: 'cnae-company-marker',
-  html: `<div style="
-    width: 22px; height: 22px;
-    background: #3b82f6;
-    border: 2px solid #fff;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-    font-size: 10px; font-weight: bold; color: #fff;
-  ">E</div>`,
-  iconSize: [22, 22],
-  iconAnchor: [11, 11],
-  popupAnchor: [0, -11],
-});
-
-const cnaeInstaladorIcon = new L.DivIcon({
-  className: 'cnae-instalador-marker',
-  html: `<div style="
-    width: 26px; height: 26px;
-    background: #2563eb;
-    border: 3px solid #fff;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 6px rgba(37,99,235,0.5);
-    font-size: 12px; font-weight: bold; color: #fff;
-  ">I</div>`,
-  iconSize: [26, 26],
-  iconAnchor: [13, 13],
-  popupAnchor: [0, -13],
-});
-
-const cnaeMeiIcon = new L.DivIcon({
-  className: 'cnae-mei-marker',
-  html: `<div style="
-    width: 22px; height: 22px;
-    background: #f59e0b;
-    border: 2px solid #fff;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-    font-size: 10px; font-weight: bold; color: #fff;
-  ">M</div>`,
-  iconSize: [22, 22],
-  iconAnchor: [11, 11],
-  popupAnchor: [0, -11],
-});
-
-function getMarkerProps(type: 'company' | 'mei' | 'instalador') {
-  switch (type) {
-    case 'instalador':
-      return { icon: cnaeInstaladorIcon, label: 'Instalador CNAE', color: '#2563eb' };
-    case 'mei':
-      return { icon: cnaeMeiIcon, label: 'MEI', color: '#f59e0b' };
-    default:
-      return { icon: cnaeCompanyIcon, label: 'Empresa', color: '#3b82f6' };
-  }
+function getPinnedCityIcon(city: string): L.DivIcon {
+  const initial = city.charAt(0).toUpperCase();
+  return new L.DivIcon({
+    className: 'pinned-city-marker',
+    html: `<div style="
+      width:34px;height:34px;
+      background:#7c3aed;
+      border:3px solid #fff;
+      border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 2px 8px rgba(124,58,237,0.5);
+      font-size:13px;font-weight:bold;color:#fff;
+    ">${initial}</div>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -17],
+  });
 }
 
 function MapUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
@@ -112,6 +138,7 @@ export function TerritorialMap({
   selectedUF,
   selectedIbgeCode,
   totalCompanies,
+  pinnedCities = [],
   onCityClick,
   onStateClick,
   showLeroyStores = true,
@@ -124,6 +151,7 @@ export function TerritorialMap({
     leroy: true,
     meiDensity: false,
     cnaeProfessionals: false,
+    pinnedCities: true,
   });
   const geoKeyRef = useRef(0);
 
@@ -141,7 +169,6 @@ export function TerritorialMap({
   // Professional markers for selected city — count proportional to company data
   const professionalMarkers = useMemo<CnaeProfessionalMarker[]>(() => {
     if (!selectedIbgeCode || !munGeo) return [];
-    // Find the centroid of the selected municipality from GeoJSON
     const feature = munGeo.features.find((f) => {
       const code = String(f.properties?.codarea ?? f.id ?? '');
       return code === selectedIbgeCode;
@@ -185,7 +212,6 @@ export function TerritorialMap({
     geoKeyRef.current++;
     fetchMunicipiosGeoJSON(selectedUF).then((data) => {
       setMunGeo(data);
-      // Zoom into state
       const UF_CENTERS: Record<string, [number, number]> = {
         SP: [-22.0, -49.5], RJ: [-22.5, -43.2], MG: [-18.5, -44.0], PR: [-24.5, -51.5],
         SC: [-27.5, -50.5], RS: [-29.5, -53.5], BA: [-12.5, -41.5], PE: [-8.0, -37.8],
@@ -207,7 +233,6 @@ export function TerritorialMap({
     const code = feature?.properties?.codarea ?? feature?.id;
     const isSelected = selectedIbgeCode && String(code) === String(selectedIbgeCode);
 
-    // MEI density coloring
     if (layerToggles.meiDensity && meiDensityData) {
       const density = meiDensityData[String(code)] ?? 0;
       const fillColor = getDensityColor(density);
@@ -238,7 +263,6 @@ export function TerritorialMap({
     const name = feature.properties?.nome ?? feature.properties?.name ?? '';
     const code = feature.properties?.codarea ?? feature.id;
 
-    // Enhanced tooltip with MEI density
     let tooltipContent = name;
     if (layerToggles.meiDensity && meiDensityData) {
       const density = meiDensityData[String(code)];
@@ -259,6 +283,16 @@ export function TerritorialMap({
       (layer as ReturnType<typeof import('leaflet').geoJSON>).setStyle?.(munStyle(feature));
     });
   };
+
+  // Unique CNAE categories present in current professional markers (for legend)
+  const activeCnaeCategories = useMemo<CnaeServiceCategory[]>(() => {
+    if (!layerToggles.cnaeProfessionals) return [];
+    const cats = new Set<CnaeServiceCategory>();
+    for (const m of professionalMarkers) {
+      cats.add((CNAE_CODE_CATEGORY[m.cnae] ?? 'outros') as CnaeServiceCategory);
+    }
+    return Array.from(cats);
+  }, [professionalMarkers, layerToggles.cnaeProfessionals]);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden relative">
@@ -304,6 +338,20 @@ export function TerritorialMap({
             CNAE
           </button>
         )}
+        {pinnedCities.length > 0 && (
+          <button
+            onClick={() => setLayerToggles((p) => ({ ...p, pinnedCities: !p.pinnedCities }))}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg shadow-md transition-colors ${
+              layerToggles.pinnedCities
+                ? 'bg-violet-600 text-white'
+                : 'bg-white text-gray-600 border border-gray-200'
+            }`}
+            title="Cidades fixadas"
+          >
+            <MapPin size={12} />
+            Fixadas ({pinnedCities.length})
+          </button>
+        )}
       </div>
 
       {/* Legends */}
@@ -327,23 +375,38 @@ export function TerritorialMap({
           </div>
         )}
 
-        {/* CNAE professionals legend */}
-        {layerToggles.cnaeProfessionals && selectedIbgeCode && (
+        {/* CNAE activity legend — per-category colors */}
+        {activeCnaeCategories.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-2 text-xs max-w-[150px]">
+            <p className="font-semibold text-gray-700 mb-1">Profissionais CNAE</p>
+            <p className="text-gray-400 mb-1.5">{professionalMarkers.length} pts</p>
+            {activeCnaeCategories.map((cat) => {
+              const typedCat = cat as CnaeServiceCategory;
+              const meta = CNAE_CATEGORY_META[typedCat];
+              const color = CNAE_CATEGORY_COLORS[typedCat];
+              return (
+                <div key={typedCat} className="flex items-center gap-1.5 mb-0.5">
+                  <span
+                    className="w-3.5 h-3.5 rounded-full border-2 border-white flex-shrink-0"
+                    style={{ background: color, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}
+                  />
+                  <span className="text-gray-600">{meta.icon} {meta.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Pinned cities legend */}
+        {layerToggles.pinnedCities && pinnedCities.length > 0 && (
           <div className="bg-white rounded-lg shadow-md p-2 text-xs">
-            <p className="font-semibold text-gray-700 mb-1">Profissionais CNAE/RAIS</p>
-            <p className="text-gray-400 mb-1">{professionalMarkers.length} pontos representados</p>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-full border-2 border-white" style={{ background: '#2563eb', boxShadow: '0 1px 3px rgba(37,99,235,0.4)' }} />
-              <span className="text-gray-600 font-medium">Instalador CNAE</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-blue-500 border border-white" />
-              <span className="text-gray-500">Empresa</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-amber-500 border border-white" />
-              <span className="text-gray-500">MEI</span>
-            </div>
+            <p className="font-semibold text-gray-700 mb-1">Cidades Fixadas</p>
+            {pinnedCities.map((c) => (
+              <div key={c.ibgeCode} className="flex items-center gap-1.5 mb-0.5">
+                <span className="w-3 h-3 rounded-full bg-violet-600 border border-white" />
+                <span className="text-gray-600">{c.city} ({c.uf})</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -395,22 +458,49 @@ export function TerritorialMap({
           </Marker>
         ))}
 
-        {/* CNAE Professional markers layer */}
+        {/* CNAE Professional markers — activity-specific colors */}
         {layerToggles.cnaeProfessionals && professionalMarkers.map((prof) => {
-          const { icon, label, color } = getMarkerProps(prof.type);
+          const color = getCnaeColor(prof.cnae);
+          const cat = CNAE_CODE_CATEGORY[prof.cnae] ?? 'outros';
+          const catMeta = CNAE_CATEGORY_META[cat as CnaeServiceCategory];
           return (
             <Marker
               key={prof.id}
               position={[prof.lat, prof.lon]}
-              icon={icon}
+              icon={getCnaeMarkerIcon(prof.cnae)}
             >
               <Popup>
                 <div className="text-sm">
                   <p className="font-bold" style={{ color }}>
-                    {label}
+                    {catMeta?.icon} {catMeta?.label ?? 'Profissional'}
                   </p>
                   <p className="text-gray-700 font-medium">{prof.cnaeDescription}</p>
                   <p className="text-gray-500 text-xs">CNAE: {prof.cnae}</p>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+
+        {/* Pinned city markers */}
+        {layerToggles.pinnedCities && pinnedCities.map((city) => {
+          const coords = MAJOR_CITY_COORDS[city.ibgeCode];
+          if (!coords) return null;
+          return (
+            <Marker
+              key={`pinned-${city.ibgeCode}`}
+              position={[coords.lat, coords.lon]}
+              icon={getPinnedCityIcon(city.city)}
+            >
+              <Popup>
+                <div className="text-sm">
+                  <p className="font-bold text-violet-700">{city.city} ({city.uf})</p>
+                  <p className="text-gray-500 text-xs">IBGE: {city.ibgeCode}</p>
+                  {city.population && (
+                    <p className="text-gray-600">Pop.: {city.population.toLocaleString('pt-BR')}</p>
+                  )}
+                  <p className="text-gray-600">Empresas: {(city.relatedCompanies ?? 0).toLocaleString('pt-BR')}</p>
+                  <p className="text-violet-600 font-medium mt-1">📌 Cidade fixada</p>
                 </div>
               </Popup>
             </Marker>

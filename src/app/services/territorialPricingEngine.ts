@@ -7,7 +7,7 @@ import { fetchMunicipioById } from './ibgeLocalitiesService';
 import { fetchMunicipalityIndicators, fetchStateAverages } from './ibgeIndicatorsService';
 import { fetchCompaniesByMunicipality } from './companySupplyService';
 import { normalizeMunicipalityData, buildTerritorialSummary } from '../utils/territorialMapper';
-import { getCnaeCodesForService } from '../utils/serviceCnaeMappings';
+import { getCnaeCodesForService, getCnaeCategory, getCnaeColor } from '../utils/serviceCnaeMappings';
 import { compareMunicipalities, rankByPricingAttractiveness } from '../utils/territorialComparators';
 import { mapServiceToCnae } from './ibge/cnaeService';
 import { SERVICE_CNAE_MAPPINGS } from '../utils/serviceCnaeMappings';
@@ -96,7 +96,7 @@ export async function runTerritorialAnalysis(
       for (const code of mapping.cnaeCodes) {
         if (seen.has(code)) continue;
         seen.add(code);
-        fallbackCnae.push({ code, description: `${mapping.serviceName} (${code})` });
+        fallbackCnae.push({ code, description: `${mapping.serviceName} (${code})`, serviceCategory: getCnaeCategory(code), color: getCnaeColor(code) });
       }
     }
     summary.cnaeInfo = fallbackCnae;
@@ -166,6 +166,8 @@ async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnae
     const localFallback: TerritorialCnaeInfo[] = mapping.cnaeCodes.map((code) => ({
       code,
       description: `${mapping.serviceName} (${code})`,
+      serviceCategory: getCnaeCategory(code),
+      color: getCnaeColor(code),
     }));
 
     try {
@@ -174,6 +176,8 @@ async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnae
         return result.cnaeDescriptions.map((d) => ({
           code: d.id,
           description: d.descricao,
+          serviceCategory: getCnaeCategory(d.id),
+          color: getCnaeColor(d.id),
         }));
       }
     } catch {
@@ -195,6 +199,8 @@ async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnae
       localCnaeInfo.push({
         code,
         description: `${mapping.serviceName} (${code})`,
+        serviceCategory: getCnaeCategory(code),
+        color: getCnaeColor(code),
       });
     }
   }
@@ -208,7 +214,7 @@ async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnae
         const result = await mapServiceToCnae(mapping.serviceId);
         const cleanCode = info.code.replace(/[-/]/g, '');
         const desc = result?.cnaeDescriptions.find((d) => d.id === cleanCode || d.id === info.code);
-        if (desc) return { code: info.code, description: desc.descricao };
+        if (desc) return { code: info.code, description: desc.descricao, serviceCategory: getCnaeCategory(info.code), color: getCnaeColor(info.code) };
       } catch {
         // Keep local description
       }

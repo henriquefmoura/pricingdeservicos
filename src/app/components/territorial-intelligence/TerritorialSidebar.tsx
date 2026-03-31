@@ -17,6 +17,8 @@ interface Props {
 }
 
 export function TerritorialSidebar({ summary, loading, onClose, onRefresh, onCompareClick }: Props) {
+  const hasCnae = summary.cnaeInfo && summary.cnaeInfo.length > 0;
+
   return (
     <div className="bg-white border-l border-gray-200 w-full lg:w-[480px] h-full overflow-y-auto shadow-lg">
       {/* Header */}
@@ -76,22 +78,49 @@ export function TerritorialSidebar({ summary, loading, onClose, onRefresh, onCom
         )}
 
         {/* CNAE Information */}
-        {summary.cnaeInfo && summary.cnaeInfo.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="flex items-center gap-2 mb-3">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
               <Tag className="w-4 h-4 text-[#78BE20]" />
               <h3 className="text-sm font-semibold text-gray-700">CNAEs Relacionados (IBGE)</h3>
             </div>
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                disabled={loading}
+                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-[#78BE20] hover:bg-[#78BE20]/10 rounded-lg transition-colors disabled:opacity-50"
+                title="Atualizar CNAEs"
+              >
+                <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </button>
+            )}
+          </div>
+          {hasCnae ? (
             <div className="space-y-2">
-              {summary.cnaeInfo.map((cnae) => (
+              {summary.cnaeInfo!.map((cnae) => (
                 <div key={cnae.code} className="flex items-start gap-2 px-3 py-2 bg-gray-50 rounded-lg">
                   <span className="text-xs font-mono text-[#78BE20] bg-[#78BE20]/10 px-2 py-0.5 rounded whitespace-nowrap">{cnae.code}</span>
                   <span className="text-sm text-gray-700">{cnae.description}</span>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-500 mb-2">Nenhum CNAE encontrado</p>
+              {onRefresh && (
+                <button
+                  onClick={onRefresh}
+                  disabled={loading}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-[#78BE20] hover:bg-[#5a9a10] rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                  Buscar CNAEs
+                </button>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Insights */}
         <TerritorialInsightsPanel insights={summary.insights} />

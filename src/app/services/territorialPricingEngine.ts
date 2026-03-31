@@ -80,8 +80,27 @@ export async function runTerritorialAnalysis(
   });
 
   // Fetch CNAE descriptions from IBGE API for the selected service (or all services)
-  const cnaeInfo = await fetchCnaeInfoForCity(serviceId);
-  summary.cnaeInfo = cnaeInfo;
+  // Wrap in try/catch so a CNAE fetch failure never blocks the entire analysis
+  try {
+    const cnaeInfo = await fetchCnaeInfoForCity(serviceId);
+    summary.cnaeInfo = cnaeInfo;
+  } catch (err) {
+    // Ensure we always provide at least local CNAE data
+    console.warn('[TerritorialEngine] Falha ao buscar CNAEs da API IBGE, usando dados locais:', err);
+    const fallbackCnae: TerritorialCnaeInfo[] = [];
+    const seen = new Set<string>();
+    const mappings = serviceId
+      ? SERVICE_CNAE_MAPPINGS.filter((m) => m.serviceId === serviceId)
+      : SERVICE_CNAE_MAPPINGS;
+    for (const mapping of mappings) {
+      for (const code of mapping.cnaeCodes) {
+        if (seen.has(code)) continue;
+        seen.add(code);
+        fallbackCnae.push({ code, description: `${mapping.serviceName} (${code})` });
+      }
+    }
+    summary.cnaeInfo = fallbackCnae;
+  }
 
   // Fetch address info via Nominatim (best-effort, non-blocking)
   const addressInfo = await fetchAddressForCity(munData.name, munData.uf);
@@ -143,6 +162,12 @@ async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnae
     const mapping = SERVICE_CNAE_MAPPINGS.find((m) => m.serviceId === serviceId);
     if (!mapping) return [];
 
+    // Build local fallback first so it's always available
+    const localFallback: TerritorialCnaeInfo[] = mapping.cnaeCodes.map((code) => ({
+      code,
+      description: `${mapping.serviceName} (${code})`,
+    }));
+
     try {
       const result = await mapServiceToCnae(serviceId);
       if (result && result.cnaeDescriptions.length > 0) {
@@ -155,10 +180,7 @@ async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnae
       // Fall through to local data
     }
 
-    return mapping.cnaeCodes.map((code) => ({
-      code,
-      description: `${mapping.serviceName} (${code})`,
-    }));
+    return localFallback;
   }
 
   // When no service selected, build CNAE list from all local mappings
@@ -193,11 +215,15 @@ async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnae
       return info;
     });
     const enriched = await Promise.allSettled(enrichPromises);
-    return enriched
+    const results = enriched
       .filter((r): r is PromiseFulfilledResult<TerritorialCnaeInfo> => r.status === 'fulfilled')
       .map((r) => r.value);
-  } catch {
+
+    // Guarantee we always return at least local data
+    return results.length > 0 ? results : localCnaeInfo;
+  } catch (err) {
     // If enrichment fails entirely, return local data
+    console.warn('[TerritorialEngine] Falha no enriquecimento de CNAEs, usando dados locais:', err);
     return localCnaeInfo;
   }
 }

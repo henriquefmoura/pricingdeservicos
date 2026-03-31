@@ -21,7 +21,7 @@ export async function fetchMEIsByMunicipality(ibgeCode: string, cnaeCodes?: stri
   const estimatedPop = 10_000 + (h % 2_000_000);
   const total = Math.max(10, Math.round(estimatedPop * (2.2 + (h % 15) / 10) / 1000));
   const byCnae: Record<string, number> = {};
-  // Use all CNAE codes by default, ensuring full coverage
+  // Distribute MEIs across CNAE codes proportionally (5–25% each, varying by hash bits)
   const codes = cnaeCodes ?? getAllCnaeCodes();
   codes.forEach((code, i) => {
     byCnae[code] = Math.round(total * ((5 + ((h >> (i % 16)) % 20)) / 100));

@@ -60,8 +60,8 @@ const RAIS_REFERENCE_DATA: Record<string, { population: number; companies: numbe
   '3549805': { population: 763_000, companies: 3_600, meis: 2_500, radiusDeg: 0.07 },       // São José dos Campos
   '4205407': { population: 516_000, companies: 3_100, meis: 2_200, radiusDeg: 0.06 },       // Florianópolis
   '3170206': { population: 701_000, companies: 2_800, meis: 2_000, radiusDeg: 0.07 },       // Uberlândia
-  '3530607': { population: 444_000, companies: 2_200, meis: 1_600, radiusDeg: 0.06 },       // Niterói (using approx IBGE)
-  '3552502': { population: 449_000, companies: 2_100, meis: 1_500, radiusDeg: 0.06 },       // Suzano (proxy for SP metro)
+  '3530607': { population: 444_000, companies: 2_200, meis: 1_600, radiusDeg: 0.06 },       // Niterói (estimated from IBGE Census)
+  '3552502': { population: 449_000, companies: 2_100, meis: 1_500, radiusDeg: 0.06 },       // Suzano (estimated from SP metro average density)
   '4209102': { population: 614_000, companies: 3_500, meis: 2_500, radiusDeg: 0.07 },       // Joinville
 };
 
@@ -252,7 +252,7 @@ function generateMockCompanyData(ibgeCode: string, cnaeCodes?: string[]): Compan
 
   const companiesByCnae: Record<string, number> = {};
   const meisByCnae: Record<string, number> = {};
-  // Use all CNAE codes from mappings by default, ensuring full RAIS coverage
+  // Distribute companies across CNAE codes proportionally (5–30% each, varying by hash bits)
   const codes = cnaeCodes ?? getAllCnaeCodes();
   codes.forEach((code, i) => {
     const cRatio = (5 + ((h >> (i % 16)) % 25)) / 100;

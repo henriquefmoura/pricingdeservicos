@@ -87,8 +87,8 @@ export default function UserDashboardPage() {
       toast.error('Venda deve ser maior que repasse');
       return;
     }
-    // Reject with new suggested price
-    rejectPrice(id, user?.name || 'Usuário', `Novo preço sugerido: R$ ${venda.toFixed(2)}`);
+    // Reject and apply new suggested price directly
+    rejectPrice(id, user?.name || 'Usuário', '');
     applyRejectedPrice(id, repasse, venda);
     toast.success('Preço rejeitado e novo valor sugerido com sucesso!');
     setEditingPrice(null);
@@ -378,11 +378,7 @@ export default function UserDashboardPage() {
                     >
                       {isRejected ? 'Rejeitado' : 'Aprovado'} por {item.reviewedBy || 'você'}
                     </p>
-                    {item.comments && (
-                      <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '8px' }}>
-                        Motivo: {item.comments}
-                      </p>
-                    )}
+                    {/* Price details shown below */}
                     <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: '#001022' }}>
                       <span>Repasse: <span style={{ fontWeight: 700 }}>R$ {item.proposedRepasse.toFixed(2)}</span></span>
                       <span>Venda: <span style={{ fontWeight: 700 }}>R$ {item.proposedVenda.toFixed(2)}</span></span>
@@ -461,9 +457,6 @@ export default function UserDashboardPage() {
               {/* Inline New Price Form (shown on reject) */}
               {showComment && !isRejected && !isApproved && (
                 <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' }}>
-                  <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '12px' }}>
-                    Sugira um novo preço:
-                  </p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr auto auto', gap: '16px', alignItems: 'end' }}>
                     <CurrencyInput
                       label="Repasse (R$)"

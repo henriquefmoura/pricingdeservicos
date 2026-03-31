@@ -51,14 +51,13 @@ const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemCon
           items: [
             { id: 'Admin', label: 'Precificar', icon: Settings },
             { id: 'Simulador', label: 'Simulador', icon: Calculator },
-            { id: 'Dashboard', label: 'Aprovações', icon: CheckCircle },
           ],
         },
         {
-          group: 'Análises',
+          group: 'Contexto & Análises',
           items: [
-            { id: 'Clima', label: 'Clima', icon: CloudSun },
-            { id: 'Territorial', label: 'Territorial', icon: MapPin },
+            { id: 'Clima', label: 'Clima e Sazonalidade', icon: CloudSun },
+            { id: 'Territorial', label: 'Inteligência Territorial', icon: MapPin },
             { id: 'Concorrência', label: 'Concorrência', icon: Crosshair },
             { id: 'Análise', label: 'Análise Geral', icon: BarChart2 },
           ],
@@ -73,10 +72,10 @@ const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemCon
           ],
         },
         {
-          group: 'Análises',
+          group: 'Contexto & Análises',
           items: [
-            { id: 'Clima', label: 'Clima', icon: CloudSun },
-            { id: 'Territorial', label: 'Territorial', icon: MapPin },
+            { id: 'Clima', label: 'Clima e Sazonalidade', icon: CloudSun },
+            { id: 'Territorial', label: 'Inteligência Territorial', icon: MapPin },
             { id: 'Concorrência', label: 'Concorrência', icon: Crosshair },
             { id: 'Análise', label: 'Análise Geral', icon: BarChart2 },
           ],

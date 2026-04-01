@@ -19,6 +19,8 @@ import type { CnaeServiceCategory } from '../../types/territorial';
 interface Props {
   selectedUF?: string;
   selectedIbgeCode?: string;
+  /** Municipality being loaded (click pending) — highlighted immediately before data arrives */
+  pendingIbgeCode?: string;
   selectedCityName?: string;
   totalCompanies?: number | null;
   cityLat?: number | null;
@@ -58,19 +60,57 @@ const MAJOR_CITY_COORDS: Record<string, { lat: number; lon: number }> = {
 /** Short label (2-3 chars) displayed inside each marker circle */
 const CNAE_MARKER_LABEL: Record<string, string> = {
   '4321-5/00': 'EL',
+  '4321-5/01': 'EL',
+  '4321-5/02': 'EL',
   '4330-4/04': 'PT',
+  '4211-1/02': 'PT',
   '4322-3/01': 'HD',
+  '4222-7/01': 'SA',
+  '4222-7/02': 'IR',
+  '4399-1/05': 'PO',
   '4322-3/02': 'AC',
+  '4329-1/03': 'AC',
+  '4329-1/04': 'EV',
   '3104-7/00': 'MV',
   '4330-4/02': 'IP',
   '4330-4/99': 'FC',
+  '4329-1/99': 'AU',
+  '4329-1/05': 'TR',
   '3321-0/00': 'MN',
-  '4399-1/03': 'TL',
+  '4399-1/03': 'AL',
   '8130-3/00': 'JD',
   '8121-4/00': 'LM',
-  '4120-4/00': 'RF',
+  '8129-0/00': 'LM',
+  '4120-4/00': 'ED',
+  '4110-7/00': 'IM',
   '4399-1/01': 'OB',
   '4399-1/99': 'CS',
+  '4399-1/02': 'AN',
+  '4399-1/04': 'EQ',
+  '4391-7/00': 'FN',
+  '4330-4/07': 'FN',
+  '4311-8/01': 'DM',
+  '4311-8/02': 'CT',
+  '4312-6/00': 'SD',
+  '4313-4/00': 'TP',
+  '4319-3/00': 'TP',
+  '4211-1/01': 'RV',
+  '4212-0/00': 'OA',
+  '4213-8/00': 'UR',
+  '4221-9/01': 'EN',
+  '4221-9/02': 'EN',
+  '4223-5/00': 'DT',
+  '4291-0/00': 'PT',
+  '4292-8/00': 'MT',
+  '4299-5/01': 'ES',
+  '4299-5/99': 'EC',
+  '4329-1/01': 'PB',
+  '4329-1/02': 'NV',
+  '4330-4/01': 'IM',
+  '4330-4/03': 'GS',
+  '4330-4/05': 'RV',
+  '4330-4/06': 'GS',
+  '4330-4/08': 'RF',
 };
 
 const cnaeIconCache: Record<string, L.DivIcon> = {};
@@ -141,6 +181,7 @@ function MapUpdater({ center, zoom }: { center: [number, number]; zoom: number }
 export function TerritorialMap({
   selectedUF,
   selectedIbgeCode,
+  pendingIbgeCode,
   selectedCityName,
   totalCompanies,
   cityLat,
@@ -258,23 +299,25 @@ export function TerritorialMap({
   const munStyle = (feature?: GeoJSON.Feature) => {
     const code = feature?.properties?.codarea ?? feature?.id;
     const isSelected = selectedIbgeCode && String(code) === String(selectedIbgeCode);
+    // Highlight the pending city (click registered, data still loading)
+    const isPending = !isSelected && pendingIbgeCode && String(code) === String(pendingIbgeCode);
 
     if (layerToggles.meiDensity && meiDensityData) {
       const density = meiDensityData[String(code)] ?? 0;
       const fillColor = getDensityColor(density);
       return {
-        color: isSelected ? '#78BE20' : '#666',
-        weight: isSelected ? 3 : 0.8,
-        fillColor: isSelected ? '#78BE20' : fillColor,
-        fillOpacity: isSelected ? 0.5 : 0.4,
+        color: isSelected ? '#78BE20' : isPending ? '#f59e0b' : '#666',
+        weight: isSelected || isPending ? 3 : 0.8,
+        fillColor: isSelected ? '#78BE20' : isPending ? '#fde68a' : fillColor,
+        fillOpacity: isSelected ? 0.5 : isPending ? 0.4 : 0.4,
       };
     }
 
     return {
-      color: isSelected ? '#78BE20' : '#666',
-      weight: isSelected ? 3 : 0.8,
-      fillColor: isSelected ? '#78BE20' : '#ccc',
-      fillOpacity: isSelected ? 0.5 : 0.2,
+      color: isSelected ? '#78BE20' : isPending ? '#f59e0b' : '#666',
+      weight: isSelected || isPending ? 3 : 0.8,
+      fillColor: isSelected ? '#78BE20' : isPending ? '#fde68a' : '#ccc',
+      fillOpacity: isSelected ? 0.5 : isPending ? 0.35 : 0.2,
     };
   };
 
@@ -322,6 +365,13 @@ export function TerritorialMap({
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden relative">
+      {/* Loading indicator when a city click is pending */}
+      {pendingIbgeCode && !selectedIbgeCode && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-amber-500 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 animate-pulse">
+          <span className="w-2 h-2 rounded-full bg-white inline-block" />
+          Carregando município…
+        </div>
+      )}
       {/* Layer controls */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1">
         <button
@@ -464,7 +514,7 @@ export function TerritorialMap({
         {/* Municipalities layer */}
         {munGeo && (
           <GeoJSON
-            key={`mun-${geoKeyRef.current}-${selectedIbgeCode}-${layerToggles.meiDensity}`}
+            key={`mun-${geoKeyRef.current}-${selectedIbgeCode ?? pendingIbgeCode ?? 'none'}-${layerToggles.meiDensity}`}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             data={munGeo as any}
             style={munStyle}

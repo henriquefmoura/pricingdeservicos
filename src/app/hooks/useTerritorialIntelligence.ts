@@ -2,7 +2,7 @@
 // useTerritorialIntelligence Hook
 // ========================================
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { TerritorialInsightSummary, TerritorialComparisonResult, TerritorialFilterState, MunicipalityData } from '../types/territorial';
 import type { IBGEUF } from '../types/territorial';
 import { runTerritorialAnalysis, compareTerritorial } from '../services/territorialPricingEngine';
@@ -33,6 +33,9 @@ export function useTerritorialIntelligence(serviceId?: string): UseTerritorialIn
   const [ufs, setUFs] = useState<IBGEUF[]>([]);
   const [municipalities, setMunicipalities] = useState<MunicipalityData[]>([]);
   const [filters, setFiltersState] = useState<TerritorialFilterState>({});
+  // Ref always holds the latest filters value so setFilters can compare
+  // without adding `filters` to its useCallback dependency array.
+  const filtersRef = useRef<TerritorialFilterState>({});
   const [selectedCity, setSelectedCity] = useState<TerritorialInsightSummary | null>(null);
   const [pinnedCities, setPinnedCities] = useState<TerritorialInsightSummary[]>([]);
   const [comparison, setComparison] = useState<TerritorialComparisonResult | null>(null);
@@ -61,9 +64,18 @@ export function useTerritorialIntelligence(serviceId?: string): UseTerritorialIn
     return () => { cancelled = true; };
   }, [filters.selectedUF]);
 
+  // Keep the ref in sync on every render (safe render-time assignment in hooks)
+  filtersRef.current = filters;
+
   const setFilters = useCallback((partial: Partial<TerritorialFilterState>) => {
-    setFiltersState((prev) => ({ ...prev, ...partial }));
-    if (partial.selectedUF || partial.selectedRegion) {
+    const prev = filtersRef.current;
+    // Only clear the selected city when UF or region actually changes to a different
+    // value. Quick-selecting a city in the same UF must not wipe the current selection
+    // before the new analysis result arrives, avoiding a "no city" flash.
+    const ufChanging = partial.selectedUF !== undefined && partial.selectedUF !== prev.selectedUF;
+    const regionChanging = partial.selectedRegion !== undefined && partial.selectedRegion !== prev.selectedRegion;
+    setFiltersState((p) => ({ ...p, ...partial }));
+    if (ufChanging || regionChanging) {
       setSelectedCity(null);
       setComparison(null);
       setError(null);

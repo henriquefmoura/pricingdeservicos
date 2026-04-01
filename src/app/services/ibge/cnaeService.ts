@@ -155,9 +155,11 @@ export async function fetchAllConstructionCnaes(): Promise<CnaeSubclass[]> {
     if (!res.ok) return [];
     const data: Array<{ id: string; descricao: string }> = await res.json();
 
-    // Filter: Section F (41xx, 42xx, 43xx), plus related service codes
+    // Filter: Section F (41xx, 42xx, 43xx), plus related service codes.
+    // EXTRA_CODES must use the 7-char cleaned format (hyphens/slashes removed)
+    // to match what String(d.id).replace(/[-/]/g,'') produces from IBGE API IDs.
     const CONSTRUCTION_PREFIXES = ['41', '42', '43'];
-    const EXTRA_CODES = new Set(['81214', '81290', '81303', '31047', '33210']);
+    const EXTRA_CODES = new Set(['8121400', '8129000', '8130300', '3104700', '3321000']);
 
     const result: CnaeSubclass[] = (Array.isArray(data) ? data : [])
       .filter((d) => {

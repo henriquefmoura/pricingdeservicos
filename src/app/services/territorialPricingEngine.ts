@@ -46,6 +46,10 @@ export async function runTerritorialAnalysis(
 ): Promise<TerritorialInsightSummary> {
   const cnaeCodes = serviceId ? getCnaeCodesForService(serviceId) : undefined;
 
+  // Start CNAE fetch immediately — it does not depend on municipality data.
+  // This lets it run in parallel with the slower IBGE localities/indicators calls.
+  const cnaePromise = fetchCnaeInfoForCity(serviceId);
+
   // Fetch each resource independently so a single failure doesn't block the rest
   let municipio: IBGEMunicipio | null = null;
   let indicators: { population: number | null; income: number | null } = { population: null, income: null };
@@ -66,8 +70,17 @@ export async function runTerritorialAnalysis(
   munData.population = indicators.population;
   munData.income = indicators.income;
 
-  const ufCode = munData.uf;
-  const stateAvg = await fetchStateAverages(ufCode);
+  // Run stateAvg and address fetch in parallel with the already-running CNAE promise.
+  // Nominatim (address) is best-effort and must never delay CNAE or summary resolution.
+  const [stateAvgResult, cnaeResult, addressResult] = await Promise.allSettled([
+    fetchStateAverages(munData.uf),
+    cnaePromise,
+    fetchAddressForCity(munData.name, munData.uf),
+  ]);
+
+  const stateAvg = stateAvgResult.status === 'fulfilled'
+    ? stateAvgResult.value
+    : { avgIncome: null as null, avgCompanies: null as null, avgMEIs: null as null };
 
   const totalCompanies = companies?.totalCompanies ?? 0;
   const totalMEIs = companies?.totalMEIs ?? 0;
@@ -79,14 +92,14 @@ export async function runTerritorialAnalysis(
     avgMEIs: Math.round(totalMEIs * 0.75),
   });
 
-  // Fetch CNAE descriptions from IBGE API for the selected service (or all services)
-  // Wrap in try/catch so a CNAE fetch failure never blocks the entire analysis
-  try {
-    const cnaeInfo = await fetchCnaeInfoForCity(serviceId);
-    summary.cnaeInfo = cnaeInfo;
-  } catch (err) {
-    // Ensure we always provide at least local CNAE data
-    console.warn('[TerritorialEngine] Falha ao buscar CNAEs da API IBGE, usando dados locais:', err);
+  // Apply CNAE info — always guaranteed to have local fallback data
+  if (cnaeResult.status === 'fulfilled' && cnaeResult.value.length > 0) {
+    summary.cnaeInfo = cnaeResult.value;
+  } else {
+    // Build local fallback so CNAEs are always available even if IBGE API is unavailable
+    if (cnaeResult.status === 'rejected') {
+      console.warn('[TerritorialEngine] Falha ao buscar CNAEs da API IBGE, usando dados locais:', cnaeResult.reason);
+    }
     const fallbackCnae: TerritorialCnaeInfo[] = [];
     const seen = new Set<string>();
     const mappings = serviceId
@@ -99,12 +112,23 @@ export async function runTerritorialAnalysis(
         fallbackCnae.push({ code, description: `${mapping.serviceName} (${code})`, serviceCategory: getCnaeCategory(code), color: getCnaeColor(code) });
       }
     }
+    // When no service filter is active, also include any codes in CNAE_CODE_CATEGORY
+    // not already covered by SERVICE_CNAE_MAPPINGS.  When a specific service is
+    // selected we deliberately skip this block so unrelated CNAEs are not shown.
+    if (!serviceId) {
+      for (const code of Object.keys(CNAE_CODE_CATEGORY)) {
+        if (seen.has(code)) continue;
+        seen.add(code);
+        fallbackCnae.push({ code, description: `CNAE ${code}`, serviceCategory: getCnaeCategory(code), color: getCnaeColor(code) });
+      }
+    }
     summary.cnaeInfo = fallbackCnae;
   }
 
-  // Fetch address info via Nominatim (best-effort, non-blocking)
-  const addressInfo = await fetchAddressForCity(munData.name, munData.uf);
-  if (addressInfo) summary.addressInfo = addressInfo;
+  // Apply Nominatim address info (best-effort, non-blocking)
+  if (addressResult.status === 'fulfilled' && addressResult.value) {
+    summary.addressInfo = addressResult.value;
+  }
 
   return summary;
 }

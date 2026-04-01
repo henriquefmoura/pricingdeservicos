@@ -263,6 +263,22 @@ export function TerritorialMap({
     }
   }, [selectedIbgeCode, professionalMarkers.length]);
 
+  // When a specific city is selected, zoom the map to that city so the CNAE
+  // markers and popup are immediately visible without the user having to pan.
+  // cityCenterRef holds the latest cityCenter without making it an effect
+  // dependency — we only want to fire on city change, not every time the
+  // centroid is refined when the GeoJSON finishes loading.
+  const cityCenterRef = useRef<[number, number] | null>(null);
+  cityCenterRef.current = cityCenter;
+  const prevSelectedIbgeRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (selectedIbgeCode && selectedIbgeCode !== prevSelectedIbgeRef.current && cityCenterRef.current) {
+      setCenter(cityCenterRef.current);
+      setZoom(11);
+    }
+    prevSelectedIbgeRef.current = selectedIbgeCode;
+  }, [selectedIbgeCode]);
+
   // Load Brazil states on mount
   useEffect(() => {
     fetchBrazilStatesGeoJSON().then(setStatesGeo);

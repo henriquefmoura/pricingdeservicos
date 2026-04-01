@@ -45,7 +45,7 @@ export interface StateComparisonDelta {
 // Main Summary
 // ----------------------------------------
 
-export type CnaeServiceCategory = 'eletrica' | 'pintura' | 'hidraulica' | 'reforma' | 'outros';
+export type CnaeServiceCategory = 'eletrica' | 'pintura' | 'hidraulica' | 'reforma' | 'construcao' | 'outros';
 
 export interface TerritorialCnaeInfo {
   code: string;
@@ -183,6 +183,7 @@ export interface TerritorialFilterState {
   selectedUF?: string;
   selectedMunicipality?: string;
   selectedService?: string;
+  selectedCnaeCategory?: CnaeServiceCategory | 'all';
   searchQuery?: string;
 }
 

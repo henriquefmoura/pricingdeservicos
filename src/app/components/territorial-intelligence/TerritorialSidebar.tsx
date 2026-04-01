@@ -2,6 +2,7 @@
 // Territorial Sidebar — City Detail Panel
 // ========================================
 
+import { useState } from 'react';
 import { X, MapPin, RefreshCw, Tag, Navigation, Pin } from 'lucide-react';
 import type { TerritorialInsightSummary } from '../../types/territorial';
 import type { CnaeServiceCategory } from '../../types/territorial';
@@ -23,7 +24,7 @@ interface Props {
 // Group CNAE items by service category
 function groupCnaeByCategory(cnaeInfo: TerritorialInsightSummary['cnaeInfo']) {
   const groups: Partial<Record<CnaeServiceCategory, typeof cnaeInfo>> = {};
-  const order: CnaeServiceCategory[] = ['eletrica', 'pintura', 'hidraulica', 'reforma', 'outros'];
+  const order: CnaeServiceCategory[] = ['eletrica', 'pintura', 'hidraulica', 'reforma', 'construcao', 'outros'];
   for (const item of cnaeInfo ?? []) {
     const cat: CnaeServiceCategory = (item.serviceCategory as CnaeServiceCategory) ?? 'outros';
     if (!groups[cat]) groups[cat] = [];
@@ -33,8 +34,15 @@ function groupCnaeByCategory(cnaeInfo: TerritorialInsightSummary['cnaeInfo']) {
 }
 
 export function TerritorialSidebar({ summary, loading, onClose, onRefresh, onCompareClick, onPinClick, isPinned }: Props) {
+  const [activeCnaeFilter, setActiveCnaeFilter] = useState<CnaeServiceCategory | null>(null);
+
   const hasCnae = summary.cnaeInfo && summary.cnaeInfo.length > 0;
   const cnaeGroups = groupCnaeByCategory(summary.cnaeInfo);
+
+  // Apply category filter
+  const visibleGroups = activeCnaeFilter
+    ? cnaeGroups.filter((g) => g.category === activeCnaeFilter)
+    : cnaeGroups;
 
   return (
     <div className="bg-white border-l border-gray-200 w-full lg:w-[480px] h-full overflow-y-auto shadow-lg">
@@ -123,9 +131,43 @@ export function TerritorialSidebar({ summary, loading, onClose, onRefresh, onCom
             )}
           </div>
 
+          {/* Category filter chips */}
+          {hasCnae && cnaeGroups.length > 1 && (
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              <button
+                onClick={() => setActiveCnaeFilter(null)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+                  activeCnaeFilter === null
+                    ? 'bg-gray-800 text-white border-gray-800'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+                }`}
+              >
+                Todos ({summary.cnaeInfo?.length ?? 0})
+              </button>
+              {cnaeGroups.map(({ category, items }) => {
+                const meta = CNAE_CATEGORY_META[category];
+                const color = CNAE_CATEGORY_COLORS[category];
+                const isActive = activeCnaeFilter === category;
+                return (
+                  <button
+                    key={category}
+                    onClick={() => setActiveCnaeFilter(isActive ? null : category)}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+                      isActive ? 'text-white border-transparent' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+                    }`}
+                    style={isActive ? { background: color, borderColor: color } : {}}
+                  >
+                    <span>{meta.icon}</span>
+                    {meta.label} ({items.length})
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {hasCnae ? (
             <div className="space-y-3">
-              {cnaeGroups.map(({ category, items }) => {
+              {visibleGroups.map(({ category, items }) => {
                 const meta = CNAE_CATEGORY_META[category];
                 const color = CNAE_CATEGORY_COLORS[category];
                 return (
@@ -186,3 +228,4 @@ export function TerritorialSidebar({ summary, loading, onClose, onRefresh, onCom
     </div>
   );
 }
+

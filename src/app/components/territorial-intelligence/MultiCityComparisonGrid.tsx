@@ -136,7 +136,7 @@ export function MultiCityComparisonGrid({ cities, onRemoveCity, onSelectCity }: 
         const sorted = [...cities].sort((a, b) => (b.income ?? 0) - (a.income ?? 0));
         const best = sorted[0];
         const worst = sorted[sorted.length - 1];
-        if (!best.income || !worst.income || best.ibgeCode === worst.ibgeCode) return null;
+        if (!best.income || !worst.income || worst.income === 0 || best.ibgeCode === worst.ibgeCode) return null;
         return (
           <div className="mt-3 pt-3 border-t border-violet-100 flex items-start gap-2 text-xs text-violet-700 bg-violet-50 rounded-lg px-3 py-2">
             <TrendingUp className="w-3 h-3 mt-0.5 flex-shrink-0" />

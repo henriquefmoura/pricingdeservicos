@@ -211,7 +211,7 @@ export function TerritorialDashboard() {
             )}
 
             {/* Multi-city comparison grid (shown when 2+ cities pinned) */}
-            {pinnedCities.length >= 1 && (
+            {pinnedCities.length >= 2 && (
               <MultiCityComparisonGrid
                 cities={pinnedCities}
                 onRemoveCity={unpinCity}

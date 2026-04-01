@@ -343,7 +343,14 @@ export function TerritorialMap({
     layer.bindTooltip(tooltipContent, { sticky: true, className: 'text-sm' });
     layer.on('click', (e: LeafletMouseEvent) => {
       e.originalEvent?.stopPropagation();
-      onCityClick?.(String(code), name);
+      // Guard: only fire if we have a valid 7-digit IBGE code to prevent
+      // undefined/empty codes from reaching the API call chain
+      const codeStr = String(code ?? '');
+      if (!codeStr || !/^\d{7}$/.test(codeStr)) {
+        console.warn('[TerritorialMap] Código IBGE inválido capturado no clique:', code, 'feature:', feature.properties);
+        return;
+      }
+      onCityClick?.(codeStr, name);
     });
     layer.on('mouseover', () => {
       (layer as ReturnType<typeof import('leaflet').geoJSON>).setStyle?.({ fillOpacity: 0.5, weight: 2 });

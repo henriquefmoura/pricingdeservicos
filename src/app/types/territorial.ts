@@ -54,6 +54,10 @@ export interface TerritorialCnaeInfo {
   serviceCategory?: CnaeServiceCategory;
   /** Hex color for this CNAE activity */
   color?: string;
+  /** Number of formal companies with this CNAE in the selected municipality (RAIS/mock) */
+  companiesCount?: number;
+  /** Number of MEIs with this CNAE in the selected municipality (RAIS/mock) */
+  meisCount?: number;
 }
 
 export interface TerritorialAddressInfo {

@@ -79,11 +79,13 @@ export async function runTerritorialAnalysis(
     avgMEIs: Math.round(totalMEIs * 0.75),
   });
 
-  // Fetch CNAE descriptions from IBGE API for the selected service (or all services)
-  // Wrap in try/catch so a CNAE fetch failure never blocks the entire analysis
+  // Fetch CNAE descriptions from IBGE API for the selected service (or all services).
+  // After fetching, enrich each CNAE entry with the per-municipality company/MEI counts
+  // from the companies data already loaded above (companies.companiesByCnae).
+  // Wrap in try/catch so a CNAE fetch failure never blocks the entire analysis.
   try {
     const cnaeInfo = await fetchCnaeInfoForCity(serviceId);
-    summary.cnaeInfo = cnaeInfo;
+    summary.cnaeInfo = enrichCnaeWithCompanyCounts(cnaeInfo, companies);
   } catch (err) {
     // Ensure we always provide at least local CNAE data
     console.warn('[TerritorialEngine] Falha ao buscar CNAEs da API IBGE, usando dados locais:', err);
@@ -99,7 +101,7 @@ export async function runTerritorialAnalysis(
         fallbackCnae.push({ code, description: `${mapping.serviceName} (${code})`, serviceCategory: getCnaeCategory(code), color: getCnaeColor(code) });
       }
     }
-    summary.cnaeInfo = fallbackCnae;
+    summary.cnaeInfo = enrichCnaeWithCompanyCounts(fallbackCnae, companies);
   }
 
   // Fetch address info via Nominatim (best-effort, non-blocking)
@@ -151,6 +153,26 @@ async function fetchAddressForCity(cityName: string, uf: string): Promise<Territ
   } catch {
     return null;
   }
+}
+
+/**
+ * Enrich a list of TerritorialCnaeInfo items with per-municipality company and MEI
+ * counts sourced from the CompanyData already fetched for this municipality.
+ * Also sorts the result by companiesCount descending so the most active segments
+ * appear first in the UI.
+ */
+function enrichCnaeWithCompanyCounts(
+  cnaeInfo: TerritorialCnaeInfo[],
+  companies: CompanyData | null,
+): TerritorialCnaeInfo[] {
+  const enriched = cnaeInfo.map((cnae) => ({
+    ...cnae,
+    companiesCount: companies?.companiesByCnae?.[cnae.code] ?? 0,
+    meisCount: companies?.meisByCnae?.[cnae.code] ?? 0,
+  }));
+  // Sort by company count descending so most active CNAEs appear first
+  enriched.sort((a, b) => (b.companiesCount ?? 0) - (a.companiesCount ?? 0));
+  return enriched;
 }
 
 /**

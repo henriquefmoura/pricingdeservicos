@@ -187,7 +187,12 @@ export function TerritorialSidebar({ summary, loading, onClose, onRefresh, onCom
                           <span className="text-xs font-mono px-2 py-0.5 rounded whitespace-nowrap text-white" style={{ background: color }}>
                             {cnae.code}
                           </span>
-                          <span className="text-sm text-gray-700">{cnae.description}</span>
+                          <span className="text-sm text-gray-700 flex-1">{cnae.description}</span>
+                          {(cnae.companiesCount ?? 0) > 0 && (
+                            <span className="text-xs text-gray-500 whitespace-nowrap" title="Empresas nesta cidade">
+                              {cnae.companiesCount?.toLocaleString('pt-BR')} emp.
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>

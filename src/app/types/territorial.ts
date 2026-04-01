@@ -58,6 +58,8 @@ export interface TerritorialCnaeInfo {
 
 export interface TerritorialAddressInfo {
   displayName: string;
+  lat?: number;
+  lon?: number;
   road?: string;
   neighbourhood?: string;
   suburb?: string;

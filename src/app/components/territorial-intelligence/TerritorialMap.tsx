@@ -20,6 +20,8 @@ interface Props {
   selectedUF?: string;
   selectedIbgeCode?: string;
   totalCompanies?: number | null;
+  cityLat?: number | null;
+  cityLon?: number | null;
   pinnedCities?: TerritorialInsightSummary[];
   onCityClick?: (ibgeCode: string, name: string) => void;
   onStateClick?: (ufCode: string) => void;
@@ -138,6 +140,8 @@ export function TerritorialMap({
   selectedUF,
   selectedIbgeCode,
   totalCompanies,
+  cityLat,
+  cityLon,
   pinnedCities = [],
   onCityClick,
   onStateClick,
@@ -183,7 +187,12 @@ export function TerritorialMap({
       }
     }
 
-    // Fallback: use known coordinates for major cities so quick-select always works
+    // Fallback 1: use geocoded coordinates from Nominatim (available for any city)
+    if (!centroid && cityLat != null && cityLon != null) {
+      centroid = [cityLat, cityLon];
+    }
+
+    // Fallback 2: use hard-coded coordinates for major cities
     if (!centroid) {
       const known = MAJOR_CITY_COORDS[selectedIbgeCode];
       if (known) centroid = [known.lat, known.lon];
@@ -198,7 +207,7 @@ export function TerritorialMap({
       undefined,
       totalCompanies ?? undefined,
     );
-  }, [selectedIbgeCode, munGeo, totalCompanies]);
+  }, [selectedIbgeCode, munGeo, totalCompanies, cityLat, cityLon]);
 
   // Auto-enable CNAE professionals layer when a city is selected
   useEffect(() => {

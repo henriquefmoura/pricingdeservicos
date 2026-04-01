@@ -139,6 +139,8 @@ async function fetchAddressForCity(cityName: string, uf: string): Promise<Territ
     if (!result) return null;
     return {
       displayName: result.displayName,
+      lat: result.lat,
+      lon: result.lon,
       road: result.road,
       neighbourhood: result.neighbourhood,
       suburb: result.suburb,

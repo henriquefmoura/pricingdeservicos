@@ -11,6 +11,7 @@ import { TerritorialSkeleton } from './TerritorialSkeleton';
 import { MunicipalityComparisonPanel } from './MunicipalityComparisonPanel';
 import { TerritorialChart } from './TerritorialChart';
 import { MultiCityComparisonGrid } from './MultiCityComparisonGrid';
+import { CnaeMarkersTable } from './CnaeMarkersTable';
 import { MapPin, X } from 'lucide-react';
 
 // Major cities quick-select (expandable list)
@@ -200,6 +201,8 @@ export function TerritorialDashboard() {
               selectedUF={filters.selectedUF}
               selectedIbgeCode={selectedCity?.ibgeCode}
               totalCompanies={selectedCity?.relatedCompanies}
+              cityLat={selectedCity?.addressInfo?.lat}
+              cityLon={selectedCity?.addressInfo?.lon}
               pinnedCities={pinnedCities}
               onCityClick={handleCityClick}
               onStateClick={handleStateClick}
@@ -220,6 +223,11 @@ export function TerritorialDashboard() {
                   selectCity(city.ibgeCode);
                 }}
               />
+            )}
+
+            {/* CNAE Markers Table — shown when a city with CNAE data is selected */}
+            {selectedCity && selectedCity.cnaeInfo && selectedCity.cnaeInfo.length > 0 && (
+              <CnaeMarkersTable selectedCity={selectedCity} />
             )}
 
             {/* Chart preview when a city is selected */}

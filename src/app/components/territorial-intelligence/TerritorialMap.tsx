@@ -414,7 +414,7 @@ export function TerritorialMap({
       <MapContainer
         center={center}
         zoom={zoom}
-        style={{ height: 500, width: '100%' }}
+        style={{ height: 650, width: '100%' }}
         scrollWheelZoom={true}
         zoomControl={true}
       >

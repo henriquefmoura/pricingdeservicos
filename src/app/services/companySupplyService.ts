@@ -11,20 +11,33 @@ import { getTerritorialCache, setTerritorialCache, COMPANIES_TTL_MS, companyCach
 import { getAllCnaeCodes } from '../utils/serviceCnaeMappings';
 
 const CNAE_DESCRIPTIONS: Record<string, string> = {
-  '4321-5/00': 'Instalação Elétrica',
-  '4330-4/04': 'Pintura',
-  '4322-3/02': 'Ar-Condicionado',
-  '4322-3/01': 'Hidráulica',
-  '3104-7/00': 'Montagem de Móveis',
-  '4330-4/02': 'Impermeabilização',
-  '4330-4/99': 'Serviços Especializados',
-  '3321-0/00': 'Manutenção de Equipamentos',
-  '4399-1/03': 'Telhado / Coberturas',
-  '8130-3/00': 'Jardinagem',
-  '8121-4/00': 'Limpeza',
-  '4120-4/00': 'Construção de Edifícios',
+  // ── Elétrica ──────────────────────────────────────────────
+  '4321-5/00': 'Instalação e Manutenção Elétrica',
+  // ── Pintura ───────────────────────────────────────────────
+  '4330-4/04': 'Pintura de Edifícios',
+  // ── Hidráulica ────────────────────────────────────────────
+  '4322-3/01': 'Instalações Hidráulicas, Sanitárias e de Gás',
+  // ── Acabamento / Reforma ──────────────────────────────────
+  '4330-4/01': 'Impermeabilização em Obras de Engenharia Civil',
+  '4330-4/02': 'Instalação de Portas, Janelas, Tetos, Divisórias e Armários Embutidos',
+  '4330-4/03': 'Obras de Acabamento em Gesso e Estuque',
+  '4330-4/05': 'Aplicação de Revestimentos e de Resinas em Interiores e Exteriores',
+  '4399-1/03': 'Obras de Alvenaria',
   '4399-1/01': 'Administração de Obras',
   '4399-1/99': 'Serviços Especializados para Construção',
+  // ── Construção Civil ─────────────────────────────────────
+  '4120-4/00': 'Construção de Edifícios',
+  '4211-1/01': 'Construção de Rodovias e Ferrovias',
+  '4221-9/01': 'Construção de Barragens e Represas',
+  '4299-5/99': 'Outras Obras de Engenharia Civil',
+  // ── Outros ────────────────────────────────────────────────
+  '4322-3/02': 'Instalação de Sistemas de Ar-Condicionado',
+  '4329-1/99': 'Outras Instalações em Construções (Automação, Segurança)',
+  '3104-7/00': 'Marceneiro / Móveis Planejados e Montagem',
+  '4330-4/99': 'Serviços Especializados (Fechaduras, Automação)',
+  '3321-0/00': 'Manutenção e Reparação de Equipamentos',
+  '8130-3/00': 'Jardinagem e Paisagismo',
+  '8121-4/00': 'Limpeza em Prédios e Domicílios',
 };
 
 /**
@@ -89,12 +102,16 @@ const INSTALLATION_CNAE_CODES = new Set([
   '4321-5/00', // Instalação Elétrica
   '4322-3/02', // Ar-Condicionado (Instalação)
   '4322-3/01', // Hidráulica (Instalação)
-  '3104-7/00', // Montagem de Móveis
-  '4330-4/02', // Impermeabilização
-  '4330-4/99', // Serviços Especializados (Fechadura Digital)
-  '4330-4/04', // Pintura / Papel de Parede
+  '3104-7/00', // Marceneiro / Montagem de Móveis
+  '4330-4/01', // Impermeabilização
+  '4330-4/02', // Instalação de Portas e Janelas
+  '4330-4/03', // Gesso e Estuque
+  '4330-4/04', // Pintura
+  '4330-4/05', // Revestimentos
+  '4330-4/99', // Serviços Especializados (Fechaduras)
+  '4329-1/99', // Outras Instalações (Automação, Segurança)
   '3321-0/00', // Manutenção de Equipamentos
-  '4399-1/03', // Telhado / Coberturas
+  '4399-1/03', // Obras de Alvenaria
 ]);
 
 /**

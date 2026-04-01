@@ -10,19 +10,28 @@ import { TerritorialFilters } from './TerritorialFilters';
 import { TerritorialSkeleton } from './TerritorialSkeleton';
 import { MunicipalityComparisonPanel } from './MunicipalityComparisonPanel';
 import { TerritorialChart } from './TerritorialChart';
-import { MapPin, Pin, X } from 'lucide-react';
+import { MultiCityComparisonGrid } from './MultiCityComparisonGrid';
+import { MapPin, X } from 'lucide-react';
 
-// Major cities quick-select
+// Major cities quick-select (expandable list)
 const QUICK_CITIES = [
-  { ibgeCode: '3550308', name: 'São Paulo', uf: 'SP' },
-  { ibgeCode: '3304557', name: 'Rio de Janeiro', uf: 'RJ' },
-  { ibgeCode: '3106200', name: 'Belo Horizonte', uf: 'MG' },
-  { ibgeCode: '4106902', name: 'Curitiba', uf: 'PR' },
-  { ibgeCode: '4314902', name: 'Porto Alegre', uf: 'RS' },
+  { ibgeCode: '3550308', name: 'São Paulo',            uf: 'SP' },
+  { ibgeCode: '3304557', name: 'Rio de Janeiro',       uf: 'RJ' },
+  { ibgeCode: '3106200', name: 'Belo Horizonte',       uf: 'MG' },
+  { ibgeCode: '4106902', name: 'Curitiba',             uf: 'PR' },
+  { ibgeCode: '4314902', name: 'Porto Alegre',         uf: 'RS' },
+  { ibgeCode: '5300108', name: 'Brasília',             uf: 'DF' },
+  { ibgeCode: '3509502', name: 'Campinas',             uf: 'SP' },
+  { ibgeCode: '3518800', name: 'Guarulhos',            uf: 'SP' },
+  { ibgeCode: '5208707', name: 'Goiânia',              uf: 'GO' },
+  { ibgeCode: '2927408', name: 'Salvador',             uf: 'BA' },
+  { ibgeCode: '2304400', name: 'Fortaleza',            uf: 'CE' },
+  { ibgeCode: '2611606', name: 'Recife',               uf: 'PE' },
 ];
 
 export function TerritorialDashboard() {
   const [activeService, setActiveService] = useState<string | undefined>(undefined);
+  const [showAllCities, setShowAllCities] = useState(false);
 
   const {
     ufs,
@@ -68,10 +77,21 @@ export function TerritorialDashboard() {
     selectCity(ibgeCode);
   };
 
-  // Quick-select a major city: auto-set UF filter, load city data
+  // Quick-select a major city: load it as selected city AND auto-pin if not already pinned
   const handleQuickCity = (ibgeCode: string, uf: string) => {
     handleFilterChange({ selectedUF: uf, selectedMunicipality: ibgeCode });
     selectCity(ibgeCode);
+  };
+
+  // Toggle pin for a quick-select city (allows multi-city comparison)
+  const handleQuickCityPin = (ibgeCode: string, uf: string) => {
+    const isPinnedAlready = pinnedCities.some((c) => c.ibgeCode === ibgeCode);
+    if (isPinnedAlready) {
+      unpinCity(ibgeCode);
+    } else {
+      handleFilterChange({ selectedUF: uf, selectedMunicipality: ibgeCode });
+      pinCity(ibgeCode);
+    }
   };
 
   const isPinned = selectedCity ? pinnedCities.some((c) => c.ibgeCode === selectedCity.ibgeCode) : false;
@@ -83,6 +103,8 @@ export function TerritorialDashboard() {
       pinCity(selectedCity.ibgeCode);
     }
   };
+
+  const visibleCities = showAllCities ? QUICK_CITIES : QUICK_CITIES.slice(0, 7);
 
   return (
     <div className="space-y-5">
@@ -97,55 +119,52 @@ export function TerritorialDashboard() {
         </div>
       </div>
 
-      {/* Quick city selection */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium text-gray-500">Acesso rápido:</span>
-        {QUICK_CITIES.map((city) => (
+      {/* Quick city selection — click to open detail, right-click or shift-click to pin for comparison */}
+      <div className="bg-white rounded-xl border border-gray-200 p-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold text-gray-500">
+            Acesso rápido · <span className="text-gray-400 font-normal">Clique para abrir · Segure Shift para adicionar à comparação</span>
+          </span>
           <button
-            key={city.ibgeCode}
-            onClick={() => handleQuickCity(city.ibgeCode, city.uf)}
-            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-              selectedCity?.ibgeCode === city.ibgeCode
-                ? 'bg-[#78BE20] text-white border-[#78BE20]'
-                : 'bg-white text-gray-700 border-gray-200 hover:border-[#78BE20] hover:text-[#78BE20]'
-            }`}
+            onClick={() => setShowAllCities(!showAllCities)}
+            className="text-xs text-[#78BE20] hover:text-[#5a9a10] font-medium"
           >
-            <MapPin className="w-3 h-3" />
-            {city.name} ({city.uf})
+            {showAllCities ? 'Ver menos' : `+ ${QUICK_CITIES.length - 7} mais`}
           </button>
-        ))}
-      </div>
-
-      {/* Pinned cities bar */}
-      {pinnedCities.length > 0 && (
-        <div className="bg-violet-50 border border-violet-200 rounded-xl px-4 py-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Pin className="w-4 h-4 text-violet-600" />
-            <span className="text-xs font-semibold text-violet-700">Cidades Fixadas ({pinnedCities.length})</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {pinnedCities.map((city) => (
-              <div key={city.ibgeCode} className="flex items-center gap-1.5 bg-white border border-violet-200 rounded-lg px-2.5 py-1">
-                <button
-                  onClick={() => {
-                    handleFilterChange({ selectedUF: city.uf, selectedMunicipality: city.ibgeCode });
-                    selectCity(city.ibgeCode);
-                  }}
-                  className="text-xs font-medium text-violet-700 hover:text-violet-900"
-                >
-                  {city.city} ({city.uf})
-                </button>
-                <button
-                  onClick={() => unpinCity(city.ibgeCode)}
-                  className="text-violet-400 hover:text-violet-700"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-          </div>
         </div>
-      )}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {visibleCities.map((city) => {
+            const isSelected = selectedCity?.ibgeCode === city.ibgeCode;
+            const isPinnedCity = pinnedCities.some((c) => c.ibgeCode === city.ibgeCode);
+            return (
+              <button
+                key={city.ibgeCode}
+                onClick={(e) => {
+                  if (e.shiftKey) {
+                    handleQuickCityPin(city.ibgeCode, city.uf);
+                  } else {
+                    handleQuickCity(city.ibgeCode, city.uf);
+                  }
+                }}
+                title={`${city.name} — Clique para analisar · Shift+Clique para comparar`}
+                className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  isSelected
+                    ? 'bg-[#78BE20] text-white border-[#78BE20]'
+                    : isPinnedCity
+                    ? 'bg-violet-100 text-violet-700 border-violet-300'
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-[#78BE20] hover:text-[#78BE20]'
+                }`}
+              >
+                <MapPin className="w-3 h-3" />
+                {city.name}
+                {isPinnedCity && !isSelected && (
+                  <span className="ml-0.5 w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Inline error banner */}
       {error && (
@@ -175,7 +194,7 @@ export function TerritorialDashboard() {
         <TerritorialSkeleton />
       ) : (
         <div className="flex flex-col lg:flex-row gap-5">
-          {/* Map + Charts */}
+          {/* Map + Charts + Multi-city grid */}
           <div className="flex-1 space-y-5">
             <TerritorialMap
               selectedUF={filters.selectedUF}
@@ -191,7 +210,19 @@ export function TerritorialDashboard() {
               <MunicipalityComparisonPanel comparison={comparison} onClose={clearComparison} />
             )}
 
-            {/* Chart preview when multiple cities analyzed */}
+            {/* Multi-city comparison grid (shown when 2+ cities pinned) */}
+            {pinnedCities.length >= 1 && (
+              <MultiCityComparisonGrid
+                cities={pinnedCities}
+                onRemoveCity={unpinCity}
+                onSelectCity={(city) => {
+                  handleFilterChange({ selectedUF: city.uf, selectedMunicipality: city.ibgeCode });
+                  selectCity(city.ibgeCode);
+                }}
+              />
+            )}
+
+            {/* Chart preview when a city is selected */}
             {selectedCity && municipalities.length > 0 && (
               <TerritorialChart
                 cities={[selectedCity]}

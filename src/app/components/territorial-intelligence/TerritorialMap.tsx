@@ -511,16 +511,21 @@ export function TerritorialMap({
           />
         )}
 
-        {/* Municipalities layer */}
-        {munGeo && (
-          <GeoJSON
-            key={`mun-${geoKeyRef.current}-${selectedIbgeCode ?? pendingIbgeCode ?? 'none'}-${layerToggles.meiDensity}`}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data={munGeo as any}
-            style={munStyle}
-            onEachFeature={onEachMun}
-          />
-        )}
+        {/* Municipalities layer — key includes active/pending city code so the layer
+            re-mounts (and re-applies styles) immediately when a click is registered */}
+        {munGeo && (() => {
+          const activeCode = selectedIbgeCode ?? pendingIbgeCode ?? 'none';
+          const munGeoKey = `mun-${geoKeyRef.current}-${activeCode}-${String(layerToggles.meiDensity)}`;
+          return (
+            <GeoJSON
+              key={munGeoKey}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              data={munGeo as any}
+              style={munStyle}
+              onEachFeature={onEachMun}
+            />
+          );
+        })()}
 
         {/* Leroy Merlin stores layer */}
         {showLeroyStores && layerToggles.leroy && visibleStores.map((store) => (

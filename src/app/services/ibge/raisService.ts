@@ -10,8 +10,8 @@
 //
 // APIs abertas utilizadas:
 //   IBGE SIDRA: https://servicodados.ibge.gov.br/api/v3/agregados
-//   Tabela 6369 — Empregos formais por seção CNAE 2.0 e município (RAIS)
-//   Tabela 6388 — Empregos formais por classe CNAE 2.0 e município (RAIS)
+//   Tabela 6393 — Estabelecimentos e vínculos por seção CNAE 2.0 e município (RAIS)
+//   Tabela 6382 — Movimentação de empregos (admissões/desligamentos) por município (CAGED)
 //   MTE CAGED: https://api.inteligencia.mte.gov.br (best-effort, sem autenticação)
 
 import { getTerritorialCache, setTerritorialCache, INDICATORS_TTL_MS } from '../../utils/territorialCache';

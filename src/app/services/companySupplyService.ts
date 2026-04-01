@@ -156,7 +156,9 @@ function buildCompanyDataFromRais(
   cnaeCodes?: string[],
 ): CompanyData {
   const totalCompanies = rais.constructionEstablishments ?? rais.totalEstablishments ?? 0;
-  // MEIs are typically ~65% of formal construction businesses
+  // MEIs are typically ~65% of formal construction businesses.
+  // Heuristic derived from RAIS micro-data ratios in the construction sector
+  // (seção F, CNAE 2.0). See: https://www.gov.br/trabalho-e-emprego/pt-br/rais
   const totalMEIs = Math.round(totalCompanies * 0.65);
 
   const codes = cnaeCodes ?? getAllCnaeCodes();

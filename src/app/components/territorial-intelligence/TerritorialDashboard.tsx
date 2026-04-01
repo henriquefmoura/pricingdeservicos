@@ -200,9 +200,11 @@ export function TerritorialDashboard() {
             <TerritorialMap
               selectedUF={filters.selectedUF}
               selectedIbgeCode={selectedCity?.ibgeCode}
+              selectedCityName={selectedCity?.city}
               totalCompanies={selectedCity?.relatedCompanies}
               cityLat={selectedCity?.addressInfo?.lat}
               cityLon={selectedCity?.addressInfo?.lon}
+              cnaeInfo={selectedCity?.cnaeInfo}
               pinnedCities={pinnedCities}
               onCityClick={handleCityClick}
               onStateClick={handleStateClick}

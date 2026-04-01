@@ -10,7 +10,7 @@ import 'leaflet/dist/leaflet.css';
 import { fetchBrazilStatesGeoJSON, fetchMunicipiosGeoJSON } from '../../services/ibgeMapService';
 import type { GeoJSONFeatureCollection } from '../../services/ibgeMapService';
 import { generateMeiDensityForMunicipalities, generateProfessionalMarkers } from '../../services/companySupplyService';
-import type { LeroyStore, CnaeProfessionalMarker, TerritorialInsightSummary } from '../../types/territorial';
+import type { LeroyStore, CnaeProfessionalMarker, TerritorialInsightSummary, TerritorialCnaeInfo } from '../../types/territorial';
 import { getLeroyStoresByUF, LEROY_MERLIN_STORES } from '../../data/leroyStores';
 import { Store, Users, Briefcase, MapPin } from 'lucide-react';
 import { getCnaeColor, CNAE_CATEGORY_META, CNAE_CODE_CATEGORY, CNAE_CATEGORY_COLORS } from '../../utils/serviceCnaeMappings';
@@ -19,9 +19,11 @@ import type { CnaeServiceCategory } from '../../types/territorial';
 interface Props {
   selectedUF?: string;
   selectedIbgeCode?: string;
+  selectedCityName?: string;
   totalCompanies?: number | null;
   cityLat?: number | null;
   cityLon?: number | null;
+  cnaeInfo?: TerritorialCnaeInfo[];
   pinnedCities?: TerritorialInsightSummary[];
   onCityClick?: (ibgeCode: string, name: string) => void;
   onStateClick?: (ufCode: string) => void;
@@ -139,9 +141,11 @@ function MapUpdater({ center, zoom }: { center: [number, number]; zoom: number }
 export function TerritorialMap({
   selectedUF,
   selectedIbgeCode,
+  selectedCityName,
   totalCompanies,
   cityLat,
   cityLon,
+  cnaeInfo,
   pinnedCities = [],
   onCityClick,
   onStateClick,
@@ -170,11 +174,9 @@ export function TerritorialMap({
     return generateMeiDensityForMunicipalities(munGeo.features);
   }, [munGeo]);
 
-  // Professional markers for selected city — count proportional to company data
-  const professionalMarkers = useMemo<CnaeProfessionalMarker[]>(() => {
-    if (!selectedIbgeCode) return [];
-
-    let centroid: [number, number] | null = null;
+  // Centroid of selected city — shared by professional markers and CNAE popup
+  const cityCenter = useMemo<[number, number] | null>(() => {
+    if (!selectedIbgeCode) return null;
 
     // Try to compute centroid from loaded GeoJSON boundaries
     if (munGeo) {
@@ -183,31 +185,33 @@ export function TerritorialMap({
         return code === selectedIbgeCode;
       });
       if (feature?.geometry) {
-        centroid = computeGeometryCentroid(feature.geometry);
+        const c = computeGeometryCentroid(feature.geometry);
+        if (c) return c;
       }
     }
 
-    // Fallback 1: use geocoded coordinates from Nominatim (available for any city)
-    if (!centroid && cityLat != null && cityLon != null) {
-      centroid = [cityLat, cityLon];
-    }
+    // Fallback 1: geocoded coordinates from Nominatim
+    if (cityLat != null && cityLon != null) return [cityLat, cityLon];
 
-    // Fallback 2: use hard-coded coordinates for major cities
-    if (!centroid) {
-      const known = MAJOR_CITY_COORDS[selectedIbgeCode];
-      if (known) centroid = [known.lat, known.lon];
-    }
+    // Fallback 2: hard-coded coordinates for major cities
+    const known = MAJOR_CITY_COORDS[selectedIbgeCode];
+    if (known) return [known.lat, known.lon];
 
-    if (!centroid) return [];
+    return null;
+  }, [selectedIbgeCode, munGeo, cityLat, cityLon]);
+
+  // Professional markers for selected city — count proportional to company data
+  const professionalMarkers = useMemo<CnaeProfessionalMarker[]>(() => {
+    if (!selectedIbgeCode || !cityCenter) return [];
 
     return generateProfessionalMarkers(
       selectedIbgeCode,
-      centroid[0],
-      centroid[1],
+      cityCenter[0],
+      cityCenter[1],
       undefined,
       totalCompanies ?? undefined,
     );
-  }, [selectedIbgeCode, munGeo, totalCompanies, cityLat, cityLon]);
+  }, [selectedIbgeCode, cityCenter, totalCompanies]);
 
   // Auto-enable CNAE professionals layer when a city is selected
   useEffect(() => {
@@ -528,6 +532,34 @@ export function TerritorialMap({
             </Marker>
           );
         })}
+
+        {/* CNAE available popup — opens automatically when a city with CNAE data is selected */}
+        {selectedIbgeCode && cityCenter && cnaeInfo && cnaeInfo.length > 0 && (
+          <Popup
+            key={`cnae-popup-${selectedIbgeCode}`}
+            position={cityCenter}
+          >
+            <div className="text-sm min-w-[200px] max-w-[260px]">
+              <p className="font-bold text-gray-800 mb-1">
+                📋 CNAEs disponíveis{selectedCityName ? ` — ${selectedCityName}` : ''}
+              </p>
+              <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+                {cnaeInfo.map((cnae) => (
+                  <div key={cnae.code} className="flex items-start gap-1.5">
+                    <span
+                      className="mt-0.5 w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ background: cnae.color ?? getCnaeColor(cnae.code) }}
+                    />
+                    <div>
+                      <span className="font-mono text-xs text-gray-500">{cnae.code}</span>
+                      <p className="text-xs text-gray-700 leading-tight">{cnae.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Popup>
+        )}
       </MapContainer>
     </div>
   );

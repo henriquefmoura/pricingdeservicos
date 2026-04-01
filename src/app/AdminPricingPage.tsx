@@ -250,23 +250,18 @@ export default function AdminPricingPage() {
       )}
 
       {activeTab === 'pricing' && (
-        <div style={{ display: 'flex', gap: '24px' }}>
-          {/* LEFT PANEL - Search + Stats */}
-          <div style={{ width: '280px', flexShrink: 0 }}>
-            {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                <p style={{ fontSize: '24px', fontWeight: 700, color: '#F59E0B' }}>{filteredCodes.length}</p>
-                <p style={{ fontSize: '11px', color: '#6B7280' }}>Pendentes</p>
-              </div>
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                <p style={{ fontSize: '24px', fontWeight: 700, color: '#78BE20' }}>{completedByMe}</p>
-                <p style={{ fontSize: '11px', color: '#6B7280' }}>Precificados</p>
-              </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Top Bar - Stats + Search */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ padding: '12px 20px', borderRadius: '8px', backgroundColor: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <p style={{ fontSize: '22px', fontWeight: 700, color: '#F59E0B', lineHeight: 1 }}>{filteredCodes.length}</p>
+              <p style={{ fontSize: '12px', color: '#6B7280' }}>Pendentes</p>
             </div>
-
-            {/* Search */}
-            <div style={{ position: 'relative', marginBottom: '16px' }}>
+            <div style={{ padding: '12px 20px', borderRadius: '8px', backgroundColor: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <p style={{ fontSize: '22px', fontWeight: 700, color: '#78BE20', lineHeight: 1 }}>{completedByMe}</p>
+              <p style={{ fontSize: '12px', color: '#6B7280' }}>Precificados</p>
+            </div>
+            <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
               <Search
                 size={16}
                 style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }}
@@ -278,362 +273,350 @@ export default function AdminPricingPage() {
                 style={{ paddingLeft: '36px', fontSize: '13px' }}
               />
             </div>
-
-            {/* Code List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: 'calc(100vh - 350px)', overflow: 'auto' }}>
-              {filteredCodes.map((code) => {
-                const isActive = editingCode === code.id;
-                return (
-                  <button
-                    key={code.id}
-                    onClick={() => setEditingCode(code.id)}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: 'none',
-                      backgroundColor: isActive ? '#F0FDF4' : '#FFFFFF',
-                      borderLeft: isActive ? '3px solid #78BE20' : '3px solid transparent',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      borderRadius: '4px',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <span
-                        style={{
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          backgroundColor: code.tipo === 'Serviço' ? '#D1FAE5' : code.tipo === 'Visita Técnica' ? '#FEF3C7' : code.tipo === 'Complementar' ? '#DBEAFE' : '#F3E8FF',
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          color: code.tipo === 'Serviço' ? '#065F46' : code.tipo === 'Visita Técnica' ? '#92400E' : code.tipo === 'Complementar' ? '#1E40AF' : '#6B21A8',
-                        }}
-                      >
-                        {code.tipo}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '13px', fontWeight: 500, color: '#001022', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {code.descricao}
-                    </p>
-                    <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#6B7280' }}>{code.codigoAvulso}</span>
-                  </button>
-                );
-              })}
-            </div>
           </div>
 
-          {/* RIGHT PANEL - Pricing Form */}
-          <div style={{ flex: 1 }}>
-            {editingCode ? (
-              (() => {
-                const code = filteredCodes.find((c) => c.id === editingCode);
-                if (!code) return <p>Código não encontrado</p>;
-                const margem = calculateMargem(code.id);
-                const research = getResearchByCode(code.codigoAvulso);
-                const prestadorPrices = code.prices
-                  ? Object.values(code.prices).map((p) => p.venda)
-                  : [];
-                const suggestedPrice = getSuggestedPrice(code.codigoAvulso, prestadorPrices);
+          {/* Code Cards List */}
+          {filteredCodes.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
+              <div
+                style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(120, 190, 32, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '16px',
+                }}
+              >
+                <TrendingUp size={36} style={{ color: '#78BE20' }} />
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#001022', marginBottom: '8px' }}>
+                Nenhum código pendente
+              </h3>
+              <p style={{ fontSize: '14px', color: '#6B7280', textAlign: 'center', maxWidth: '400px' }}>
+                Todos os códigos já foram precificados para a praça {user?.plaza}
+              </p>
+            </div>
+          ) : (
+            filteredCodes.map((code) => {
+              const isOpen = editingCode === code.id;
+              const margem = calculateMargem(code.id);
+              const research = getResearchByCode(code.codigoAvulso);
+              const prestadorPrices = code.prices
+                ? Object.values(code.prices).map((p) => p.venda)
+                : [];
+              const suggestedPrice = getSuggestedPrice(code.codigoAvulso, prestadorPrices);
 
-                // Get replication targets
-                let targetPlazas: string[] = [];
-                if (user?.plaza && isPlazaReplicator(user.plaza)) {
-                  targetPlazas = getTargetPlazasForReplicator(user.plaza);
-                } else if (user?.plaza) {
-                  targetPlazas = getSimilarPlazas(user.plaza);
-                }
+              let targetPlazas: string[] = [];
+              if (user?.plaza && isPlazaReplicator(user.plaza)) {
+                targetPlazas = getTargetPlazasForReplicator(user.plaza);
+              } else if (user?.plaza) {
+                targetPlazas = getSimilarPlazas(user.plaza);
+              }
 
-                return (
-                  <div style={{ maxWidth: '900px' }}>
-                    {/* Header */}
-                    <div style={{ marginBottom: '24px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                        <span
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            backgroundColor: code.tipo === 'Serviço' ? '#D1FAE5' : code.tipo === 'Visita Técnica' ? '#FEF3C7' : code.tipo === 'Complementar' ? '#DBEAFE' : '#F3E8FF',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            color: code.tipo === 'Serviço' ? '#065F46' : code.tipo === 'Visita Técnica' ? '#92400E' : code.tipo === 'Complementar' ? '#1E40AF' : '#6B21A8',
-                          }}
-                        >
-                          {code.tipo}
-                        </span>
-                        <h2 style={{ fontSize: '20px', fontWeight: 600, color: '#001022' }}>
-                          {code.descricao}
-                        </h2>
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <span style={{ fontFamily: 'monospace', fontSize: '12px', padding: '4px 8px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563' }}>
-                          {code.codigoAvulso}
-                        </span>
-                        <span style={{ fontSize: '12px', padding: '4px 8px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563', fontWeight: 600 }}>
-                          {code.unidade}
-                        </span>
-                        <span style={{ fontSize: '12px', padding: '6px 12px', backgroundColor: '#FEF3C7', borderRadius: '6px', color: '#92400E', fontWeight: 600 }}>
-                          Prazo: {code.prazo}
-                        </span>
-                      </div>
-                    </div>
+              const tipoBg = code.tipo === 'Serviço' ? '#D1FAE5' : code.tipo === 'Visita Técnica' ? '#FEF3C7' : code.tipo === 'Complementar' ? '#DBEAFE' : '#F3E8FF';
+              const tipoColor = code.tipo === 'Serviço' ? '#065F46' : code.tipo === 'Visita Técnica' ? '#92400E' : code.tipo === 'Complementar' ? '#1E40AF' : '#6B21A8';
 
-                    {/* AI Suggestion */}
-                    {suggestedPrice && (
-                      <AISuggestionCard style={{ marginBottom: '24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-                          <div
-                            style={{
-                              width: '48px',
-                              height: '48px',
-                              borderRadius: '50%',
-                              backgroundColor: '#CEDC00',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                            }}
-                          >
-                            <Sparkles size={24} style={{ color: '#001022' }} />
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#001022', marginBottom: '8px' }}>
-                              Sugestão de IA
-                            </h3>
-                            <p style={{ fontSize: '24px', fontWeight: 700, color: '#001022', marginBottom: '12px' }}>
-                              R$ {suggestedPrice.toFixed(2)}
-                            </p>
-                            {research && research.precosConcorrentes.length > 0 && (
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-                                {research.precosConcorrentes.map((comp) => (
-                                  <span key={comp.id} style={{ fontSize: '12px', color: '#6B7280' }}>
-                                    {comp.concorrente}: R$ {comp.preco.toFixed(2)}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            <button
-                              onClick={() => {
-                                setPriceInputs((prev) => ({
-                                  ...prev,
-                                  [code.id]: {
-                                    ...prev[code.id],
-                                    venda: suggestedPrice.toFixed(2),
-                                  },
-                                }));
-                                toast.success('Preço sugerido aplicado ao campo de venda');
-                              }}
-                              style={{
-                                padding: '8px 16px',
-                                borderRadius: '6px',
-                                border: '1px solid #CEDC00',
-                                backgroundColor: 'transparent',
-                                color: '#001022',
-                                fontSize: '13px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                              }}
-                            >
-                              <Lightbulb size={14} />
-                              Usar Preço Sugerido
-                            </button>
-                          </div>
-                        </div>
-                      </AISuggestionCard>
-                    )}
-
-                    {/* Competitor Prices */}
-                    {research && research.precosConcorrentes.length > 0 && (
-                      <div style={{ marginBottom: '24px' }}>
-                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '12px' }}>
-                          Preços de concorrentes:
-                        </p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                          {research.precosConcorrentes.map((comp) => (
-                            <div
-                              key={comp.id}
-                              style={{
-                                padding: '8px 14px',
-                                borderRadius: '8px',
-                                backgroundColor: '#FFFFFF',
-                                border: '1px solid #E5E7EB',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                              }}
-                            >
-                              <span style={{ fontSize: '13px', color: '#6B7280' }}>{comp.concorrente}:</span>
-                              <span style={{ fontSize: '14px', fontWeight: 700, color: '#001022' }}>
-                                R$ {comp.preco.toFixed(2)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Pricing Inputs */}
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr auto 1fr auto',
-                        gap: '16px',
-                        alignItems: 'end',
-                        marginBottom: '24px',
-                        padding: '24px',
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '12px',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                      }}
-                    >
-                      <CurrencyInput
-                        label="Repasse (R$)"
-                        value={priceInputs[code.id]?.repasse || ''}
-                        onValueChange={(v) => handlePriceChange(code.id, 'repasse', v)}
-                        placeholder="0.00"
-                      />
-
-                      <div style={{ paddingBottom: '8px' }}>
-                        {(() => {
-                          if (margem === null) return null;
-                          const getMarginStyle = (m: number) => {
-                            if (m > 30) return { bg: '#D1FAE5', text: '#065F46' };
-                            if (m >= 15) return { bg: '#FEF3C7', text: '#92400E' };
-                            return { bg: '#FEE2E2', text: '#991B1B' };
-                          };
-                          const s = getMarginStyle(margem);
-                          return (
-                            <div style={{ padding: '8px 16px', borderRadius: '100px', backgroundColor: s.bg, whiteSpace: 'nowrap' }}>
-                              <span style={{ fontSize: '14px', fontWeight: 700, color: s.text }}>
-                                Margem: {margem.toFixed(1)}%
-                              </span>
-                            </div>
-                          );
-                        })()}
-                      </div>
-
-                      <CurrencyInput
-                        label="Venda (R$)"
-                        value={priceInputs[code.id]?.venda || ''}
-                        onValueChange={(v) => handlePriceChange(code.id, 'venda', v)}
-                        placeholder="0.00"
-                      />
-
-                      <button
-                        onClick={() => handleSavePrice(code)}
-                        disabled={!priceInputs[code.id]?.repasse || !priceInputs[code.id]?.venda}
-                        style={{
-                          padding: '12px 24px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          backgroundColor: priceInputs[code.id]?.repasse && priceInputs[code.id]?.venda ? '#78BE20' : '#D1D5DB',
-                          color: '#FFFFFF',
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          cursor: priceInputs[code.id]?.repasse && priceInputs[code.id]?.venda ? 'pointer' : 'not-allowed',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          marginBottom: '8px',
-                        }}
-                      >
-                        <Save size={16} />
-                        Salvar
-                      </button>
-                    </div>
-
-                    {/* Margin Alerts */}
-                    {margem !== null && (
-                      <div style={{ marginBottom: '24px' }}>
-                        {margem < 10 && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '8px', backgroundColor: '#FEE2E2', border: '1px solid #FCA5A5' }}>
-                            <AlertCircle size={16} style={{ color: '#DC2626' }} />
-                            <span style={{ fontSize: '13px', color: '#991B1B' }}>Atenção: Margem abaixo de 10%, pode não ser rentável.</span>
-                          </div>
-                        )}
-                        {margem >= 10 && margem < 15 && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '8px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D' }}>
-                            <AlertCircle size={16} style={{ color: '#F59E0B' }} />
-                            <span style={{ fontSize: '13px', color: '#92400E' }}>Margem entre 10-15%, dentro do aceitável mas pode ser otimizada.</span>
-                          </div>
-                        )}
-                        {margem >= 15 && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '8px', backgroundColor: '#D1FAE5', border: '1px solid #86EFAC' }}>
-                            <CheckCircle2 size={16} style={{ color: '#16A34A' }} />
-                            <span style={{ fontSize: '13px', color: '#065F46' }}>Excelente! Margem acima de 15%, dentro do ideal.</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Replication Preview */}
-                    {targetPlazas.length > 0 && (
-                      <div
-                        style={{
-                          padding: '20px',
-                          borderRadius: '8px',
-                          backgroundColor: '#F0FDF4',
-                          border: '1px solid #D1FAE5',
-                          marginBottom: '24px',
-                        }}
-                      >
-                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '12px' }}>
-                          Este preço será replicado para aprovação em:
-                        </p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-                          {targetPlazas.map((plaza) => (
-                            <div
-                              key={plaza}
-                              style={{
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                backgroundColor: '#78BE20',
-                                fontSize: '13px',
-                                fontWeight: 700,
-                                color: '#FFFFFF',
-                              }}
-                            >
-                              {plaza}
-                            </div>
-                          ))}
-                        </div>
-                        <p style={{ fontSize: '12px', color: '#6B7280' }}>
-                          Via {isPlazaReplicator(user?.plaza || '') ? 'configuração do Master' : 'análise de correlação'}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()
-            ) : (
-              /* No code selected - show overview */
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px' }}>
+              return (
                 <div
+                  key={code.id}
                   style={{
-                    width: '80px',
-                    height: '80px',
-                    borderRadius: '50%',
-                    backgroundColor: 'rgba(120, 190, 32, 0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '16px',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                    border: isOpen ? '2px solid #78BE20' : '2px solid transparent',
+                    overflow: 'hidden',
+                    transition: 'border-color 0.15s ease',
                   }}
                 >
-                  <TrendingUp size={36} style={{ color: '#78BE20' }} />
+                  {/* Card Header - always visible, click to expand */}
+                  <button
+                    onClick={() => setEditingCode(isOpen ? null : code.id)}
+                    style={{
+                      width: '100%',
+                      padding: '16px 20px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '16px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        backgroundColor: tipoBg,
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: tipoColor,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {code.tipo}
+                    </span>
+                    <span style={{ fontSize: '15px', fontWeight: 600, color: '#001022', flex: 1, minWidth: '120px' }}>
+                      {code.descricao}
+                    </span>
+                    <span style={{ fontFamily: 'monospace', fontSize: '12px', padding: '4px 8px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563', flexShrink: 0 }}>
+                      {code.codigoAvulso}
+                    </span>
+                    <span style={{ fontSize: '12px', padding: '4px 8px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563', fontWeight: 600, flexShrink: 0 }}>
+                      {code.unidade}
+                    </span>
+                    <span style={{ fontSize: '12px', padding: '4px 10px', backgroundColor: '#FEF3C7', borderRadius: '6px', color: '#92400E', fontWeight: 600, flexShrink: 0 }}>
+                      Prazo: {code.prazo}
+                    </span>
+                    <span style={{ fontSize: '13px', color: '#78BE20', fontWeight: 600, flexShrink: 0 }}>
+                      {isOpen ? '▲ Fechar' : '▼ Precificar'}
+                    </span>
+                  </button>
+
+                  {/* Expanded Pricing Form */}
+                  {isOpen && (
+                    <div style={{ padding: '0 20px 20px' }}>
+                      {/* AI Suggestion */}
+                      {suggestedPrice && (
+                        <AISuggestionCard style={{ marginBottom: '20px' }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                            <div
+                              style={{
+                                width: '44px',
+                                height: '44px',
+                                borderRadius: '50%',
+                                backgroundColor: '#CEDC00',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Sparkles size={22} style={{ color: '#001022' }} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#001022', marginBottom: '4px' }}>
+                                Sugestão de IA
+                              </h3>
+                              <p style={{ fontSize: '22px', fontWeight: 700, color: '#001022', marginBottom: '10px' }}>
+                                R$ {suggestedPrice.toFixed(2)}
+                              </p>
+                              {research && research.precosConcorrentes.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                                  {research.precosConcorrentes.map((comp) => (
+                                    <span key={comp.id} style={{ fontSize: '12px', color: '#6B7280' }}>
+                                      {comp.concorrente}: R$ {comp.preco.toFixed(2)}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              <button
+                                onClick={() => {
+                                  setPriceInputs((prev) => ({
+                                    ...prev,
+                                    [code.id]: {
+                                      ...prev[code.id],
+                                      venda: suggestedPrice.toFixed(2),
+                                    },
+                                  }));
+                                  toast.success('Preço sugerido aplicado ao campo de venda');
+                                }}
+                                style={{
+                                  padding: '7px 14px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #CEDC00',
+                                  backgroundColor: 'transparent',
+                                  color: '#001022',
+                                  fontSize: '13px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                }}
+                              >
+                                <Lightbulb size={14} />
+                                Usar Preço Sugerido
+                              </button>
+                            </div>
+                          </div>
+                        </AISuggestionCard>
+                      )}
+
+                      {/* Competitor Prices */}
+                      {research && research.precosConcorrentes.length > 0 && (
+                        <div style={{ marginBottom: '20px' }}>
+                          <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '10px' }}>
+                            Preços de concorrentes:
+                          </p>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            {research.precosConcorrentes.map((comp) => (
+                              <div
+                                key={comp.id}
+                                style={{
+                                  padding: '8px 14px',
+                                  borderRadius: '8px',
+                                  backgroundColor: '#F9FAFB',
+                                  border: '1px solid #E5E7EB',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                }}
+                              >
+                                <span style={{ fontSize: '13px', color: '#6B7280' }}>{comp.concorrente}:</span>
+                                <span style={{ fontSize: '14px', fontWeight: 700, color: '#001022' }}>
+                                  R$ {comp.preco.toFixed(2)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Pricing Inputs - horizontal row */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-end',
+                          gap: '16px',
+                          flexWrap: 'wrap',
+                          padding: '20px',
+                          backgroundColor: '#F9FAFB',
+                          borderRadius: '10px',
+                          marginBottom: '16px',
+                        }}
+                      >
+                        <div style={{ flex: '1 1 160px' }}>
+                          <CurrencyInput
+                            label="Repasse (R$)"
+                            value={priceInputs[code.id]?.repasse || ''}
+                            onValueChange={(v) => handlePriceChange(code.id, 'repasse', v)}
+                            placeholder="0.00"
+                          />
+                        </div>
+
+                        {margem !== null && (
+                          <div style={{ paddingBottom: '8px', flexShrink: 0 }}>
+                            {(() => {
+                              const getMarginStyle = (m: number) => {
+                                if (m > 30) return { bg: '#D1FAE5', text: '#065F46' };
+                                if (m >= 15) return { bg: '#FEF3C7', text: '#92400E' };
+                                return { bg: '#FEE2E2', text: '#991B1B' };
+                              };
+                              const s = getMarginStyle(margem);
+                              return (
+                                <div style={{ padding: '8px 16px', borderRadius: '100px', backgroundColor: s.bg, whiteSpace: 'nowrap' }}>
+                                  <span style={{ fontSize: '14px', fontWeight: 700, color: s.text }}>
+                                    Margem: {margem.toFixed(1)}%
+                                  </span>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+
+                        <div style={{ flex: '1 1 160px' }}>
+                          <CurrencyInput
+                            label="Venda (R$)"
+                            value={priceInputs[code.id]?.venda || ''}
+                            onValueChange={(v) => handlePriceChange(code.id, 'venda', v)}
+                            placeholder="0.00"
+                          />
+                        </div>
+
+                        <button
+                          onClick={() => handleSavePrice(code)}
+                          disabled={!priceInputs[code.id]?.repasse || !priceInputs[code.id]?.venda}
+                          style={{
+                            padding: '12px 24px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            backgroundColor: priceInputs[code.id]?.repasse && priceInputs[code.id]?.venda ? '#78BE20' : '#D1D5DB',
+                            color: '#FFFFFF',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: priceInputs[code.id]?.repasse && priceInputs[code.id]?.venda ? 'pointer' : 'not-allowed',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            flexShrink: 0,
+                            marginBottom: '8px',
+                          }}
+                        >
+                          <Save size={16} />
+                          Salvar
+                        </button>
+                      </div>
+
+                      {/* Margin Alerts */}
+                      {margem !== null && (
+                        <div style={{ marginBottom: '16px' }}>
+                          {margem < 10 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '8px', backgroundColor: '#FEE2E2', border: '1px solid #FCA5A5' }}>
+                              <AlertCircle size={16} style={{ color: '#DC2626' }} />
+                              <span style={{ fontSize: '13px', color: '#991B1B' }}>Atenção: Margem abaixo de 10%, pode não ser rentável.</span>
+                            </div>
+                          )}
+                          {margem >= 10 && margem < 15 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '8px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D' }}>
+                              <AlertCircle size={16} style={{ color: '#F59E0B' }} />
+                              <span style={{ fontSize: '13px', color: '#92400E' }}>Margem entre 10-15%, dentro do aceitável mas pode ser otimizada.</span>
+                            </div>
+                          )}
+                          {margem >= 15 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '8px', backgroundColor: '#D1FAE5', border: '1px solid #86EFAC' }}>
+                              <CheckCircle2 size={16} style={{ color: '#16A34A' }} />
+                              <span style={{ fontSize: '13px', color: '#065F46' }}>Excelente! Margem acima de 15%, dentro do ideal.</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Replication Preview */}
+                      {targetPlazas.length > 0 && (
+                        <div
+                          style={{
+                            padding: '16px 20px',
+                            borderRadius: '8px',
+                            backgroundColor: '#F0FDF4',
+                            border: '1px solid #D1FAE5',
+                          }}
+                        >
+                          <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '10px' }}>
+                            Este preço será replicado para aprovação em:
+                          </p>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                            {targetPlazas.map((plaza) => (
+                              <div
+                                key={plaza}
+                                style={{
+                                  padding: '6px 12px',
+                                  borderRadius: '6px',
+                                  backgroundColor: '#78BE20',
+                                  fontSize: '13px',
+                                  fontWeight: 700,
+                                  color: '#FFFFFF',
+                                }}
+                              >
+                                {plaza}
+                              </div>
+                            ))}
+                          </div>
+                          <p style={{ fontSize: '12px', color: '#6B7280' }}>
+                            Via {isPlazaReplicator(user?.plaza || '') ? 'configuração do Master' : 'análise de correlação'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#001022', marginBottom: '8px' }}>
-                  Selecione um código à esquerda
-                </h3>
-                <p style={{ fontSize: '14px', color: '#6B7280', textAlign: 'center', maxWidth: '400px' }}>
-                  Escolha um código de serviço da lista para definir os preços de repasse e venda para a praça {user?.plaza}
-                </p>
-              </div>
-            )}
-          </div>
+              );
+            })
+          )}
         </div>
       )}
     </AppLayout>

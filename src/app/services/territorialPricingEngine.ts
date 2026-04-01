@@ -9,8 +9,8 @@ import { fetchCompaniesByMunicipality } from './companySupplyService';
 import { normalizeMunicipalityData, buildTerritorialSummary } from '../utils/territorialMapper';
 import { getCnaeCodesForService, getCnaeCategory, getCnaeColor } from '../utils/serviceCnaeMappings';
 import { compareMunicipalities, rankByPricingAttractiveness } from '../utils/territorialComparators';
-import { mapServiceToCnae } from './ibge/cnaeService';
-import { SERVICE_CNAE_MAPPINGS } from '../utils/serviceCnaeMappings';
+import { mapServiceToCnae, fetchAllConstructionCnaes } from './ibge/cnaeService';
+import { SERVICE_CNAE_MAPPINGS, CNAE_CODE_CATEGORY } from '../utils/serviceCnaeMappings';
 import { searchCityAddress } from './reverseGeocodingService';
 
 const UF_NUM_TO_SIGLA: Record<string, string> = {
@@ -155,8 +155,12 @@ async function fetchAddressForCity(cityName: string, uf: string): Promise<Territ
 
 /**
  * Fetch CNAE descriptions for the selected service or all mapped services.
- * Uses local SERVICE_CNAE_MAPPINGS as primary source and tries to enrich
- * descriptions from the IBGE API. Falls back to local data if API fails.
+ * When no service is selected, fetches the FULL list of construction-sector
+ * CNAE subclasses (Section F — 41xx/42xx/43xx and related) from the IBGE
+ * CNAE API. This replaces the previous 23-code local list with the complete
+ * CAGED/RAIS base for the construction and services sector.
+ *
+ * Falls back to local SERVICE_CNAE_MAPPINGS data if the API is unavailable.
  */
 async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnaeInfo[]> {
   if (serviceId) {
@@ -189,8 +193,30 @@ async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnae
     return localFallback;
   }
 
-  // When no service selected, build CNAE list from all local mappings
-  // then try to enrich descriptions from IBGE API in the background
+  // When no service is selected: fetch ALL construction CNAEs from IBGE API
+  // This covers the complete CAGED/RAIS base for the construction sector.
+  try {
+    const allConstructionCnaes = await fetchAllConstructionCnaes();
+    if (allConstructionCnaes.length > 0) {
+      // Normalise the id returned by IBGE (may be numeric "43215") to our format ("4321-5/00")
+      return allConstructionCnaes.map((d) => {
+        // Try to find the canonical code format from local category map
+        const localCode = Object.keys(CNAE_CODE_CATEGORY).find(
+          (k) => k.replace(/[-/]/g, '') === String(d.id).replace(/[-/]/g, '')
+        ) ?? d.id;
+        return {
+          code: localCode,
+          description: d.descricao,
+          serviceCategory: getCnaeCategory(localCode),
+          color: getCnaeColor(localCode),
+        };
+      });
+    }
+  } catch (err) {
+    console.warn('[TerritorialEngine] Falha ao buscar CNAEs da Seção F via API IBGE, usando dados locais:', err);
+  }
+
+  // Fallback: build from all local mappings (the expanded set)
   const seen = new Set<string>();
   const localCnaeInfo: TerritorialCnaeInfo[] = [];
 
@@ -207,31 +233,17 @@ async function fetchCnaeInfoForCity(serviceId?: string): Promise<TerritorialCnae
     }
   }
 
-  // Try to enrich with official IBGE descriptions (best-effort, non-blocking)
-  try {
-    const enrichPromises = localCnaeInfo.map(async (info) => {
-      const mapping = SERVICE_CNAE_MAPPINGS.find((m) => m.cnaeCodes.includes(info.code));
-      if (!mapping) return info;
-      try {
-        const result = await mapServiceToCnae(mapping.serviceId);
-        const cleanCode = info.code.replace(/[-/]/g, '');
-        const desc = result?.cnaeDescriptions.find((d) => d.id === cleanCode || d.id === info.code);
-        if (desc) return { code: info.code, description: desc.descricao, serviceCategory: getCnaeCategory(info.code), color: getCnaeColor(info.code) };
-      } catch {
-        // Keep local description
-      }
-      return info;
+  // Also add any codes in CNAE_CODE_CATEGORY that aren't yet in the list
+  for (const code of Object.keys(CNAE_CODE_CATEGORY)) {
+    if (seen.has(code)) continue;
+    seen.add(code);
+    localCnaeInfo.push({
+      code,
+      description: `CNAE ${code}`,
+      serviceCategory: getCnaeCategory(code),
+      color: getCnaeColor(code),
     });
-    const enriched = await Promise.allSettled(enrichPromises);
-    const results = enriched
-      .filter((r): r is PromiseFulfilledResult<TerritorialCnaeInfo> => r.status === 'fulfilled')
-      .map((r) => r.value);
-
-    // Guarantee we always return at least local data
-    return results.length > 0 ? results : localCnaeInfo;
-  } catch (err) {
-    // If enrichment fails entirely, return local data
-    console.warn('[TerritorialEngine] Falha no enriquecimento de CNAEs, usando dados locais:', err);
-    return localCnaeInfo;
   }
+
+  return localCnaeInfo;
 }

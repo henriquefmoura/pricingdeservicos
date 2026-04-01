@@ -33,6 +33,7 @@ const QUICK_CITIES = [
 export function TerritorialDashboard() {
   const [activeService, setActiveService] = useState<string | undefined>(undefined);
   const [showAllCities, setShowAllCities] = useState(false);
+  const [pendingCityCode, setPendingCityCode] = useState<string | null>(null);
 
   const {
     ufs,
@@ -74,14 +75,16 @@ export function TerritorialDashboard() {
   };
 
   const handleCityClick = (ibgeCode: string, _name: string) => {
+    setPendingCityCode(ibgeCode);
     setFilters({ selectedMunicipality: ibgeCode });
-    selectCity(ibgeCode);
+    selectCity(ibgeCode).finally(() => setPendingCityCode(null));
   };
 
   // Quick-select a major city: load it as selected city AND auto-pin if not already pinned
   const handleQuickCity = (ibgeCode: string, uf: string) => {
+    setPendingCityCode(ibgeCode);
     handleFilterChange({ selectedUF: uf, selectedMunicipality: ibgeCode });
-    selectCity(ibgeCode);
+    selectCity(ibgeCode).finally(() => setPendingCityCode(null));
   };
 
   // Toggle pin for a quick-select city (allows multi-city comparison)
@@ -200,6 +203,7 @@ export function TerritorialDashboard() {
             <TerritorialMap
               selectedUF={filters.selectedUF}
               selectedIbgeCode={selectedCity?.ibgeCode}
+              pendingIbgeCode={pendingCityCode ?? undefined}
               selectedCityName={selectedCity?.city}
               totalCompanies={selectedCity?.relatedCompanies}
               cityLat={selectedCity?.addressInfo?.lat}

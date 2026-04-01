@@ -138,8 +138,45 @@ export async function mapServiceToCnae(serviceId: string): Promise<ServiceCnaeRe
 }
 
 /**
- * Busca CNAEs por texto de busca.
+ * Busca todas as subclasses CNAE da seção F (Construção) e serviços correlatos
+ * diretamente da API oficial do IBGE CNAE 2.0.
+ * Inclui divisões 41xx, 42xx, 43xx e serviços 8121, 8129, 8130, 3104, 3321.
+ *
+ * Esta função é a fonte primária de CNAEs para a Inteligência Territorial,
+ * cobrindo toda a base de estabelecimentos do CAGED/RAIS para construção civil.
  */
+export async function fetchAllConstructionCnaes(): Promise<CnaeSubclass[]> {
+  const CACHE_KEY = 'cnae_construction_all';
+  const cached = getTerritorialCache<CnaeSubclass[]>(CACHE_KEY);
+  if (cached) return cached;
+
+  try {
+    const res = await fetch(`${BASE}/subclasses`);
+    if (!res.ok) return [];
+    const data: Array<{ id: string; descricao: string }> = await res.json();
+
+    // Filter: Section F (41xx, 42xx, 43xx), plus related service codes
+    const CONSTRUCTION_PREFIXES = ['41', '42', '43'];
+    const EXTRA_CODES = new Set(['81214', '81290', '81303', '31047', '33210']);
+
+    const result: CnaeSubclass[] = (Array.isArray(data) ? data : [])
+      .filter((d) => {
+        const id = String(d.id).replace(/[-/]/g, '');
+        return (
+          CONSTRUCTION_PREFIXES.some((p) => id.startsWith(p)) ||
+          EXTRA_CODES.has(id)
+        );
+      })
+      .map((d) => ({ id: d.id, descricao: d.descricao }));
+
+    if (result.length > 0) {
+      setTerritorialCache(CACHE_KEY, result, LOCALITIES_TTL_MS);
+    }
+    return result;
+  } catch {
+    return [];
+  }
+}
 export async function searchCnae(query: string): Promise<CnaeSubclass[]> {
   try {
     const res = await fetch(`${BASE}/subclasses`);

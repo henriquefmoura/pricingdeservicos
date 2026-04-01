@@ -168,14 +168,27 @@ export function TerritorialMap({
 
   // Professional markers for selected city — count proportional to company data
   const professionalMarkers = useMemo<CnaeProfessionalMarker[]>(() => {
-    if (!selectedIbgeCode || !munGeo) return [];
-    const feature = munGeo.features.find((f) => {
-      const code = String(f.properties?.codarea ?? f.id ?? '');
-      return code === selectedIbgeCode;
-    });
-    if (!feature?.geometry) return [];
+    if (!selectedIbgeCode) return [];
 
-    const centroid = computeGeometryCentroid(feature.geometry);
+    let centroid: [number, number] | null = null;
+
+    // Try to compute centroid from loaded GeoJSON boundaries
+    if (munGeo) {
+      const feature = munGeo.features.find((f) => {
+        const code = String(f.properties?.codarea ?? f.id ?? '');
+        return code === selectedIbgeCode;
+      });
+      if (feature?.geometry) {
+        centroid = computeGeometryCentroid(feature.geometry);
+      }
+    }
+
+    // Fallback: use known coordinates for major cities so quick-select always works
+    if (!centroid) {
+      const known = MAJOR_CITY_COORDS[selectedIbgeCode];
+      if (known) centroid = [known.lat, known.lon];
+    }
+
     if (!centroid) return [];
 
     return generateProfessionalMarkers(

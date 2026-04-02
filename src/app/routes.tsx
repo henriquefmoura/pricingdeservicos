@@ -12,6 +12,8 @@ import TerritorialIntelligencePage from "./pages/TerritorialIntelligencePage";
 import CompetitorIntelligencePage from "./pages/CompetitorIntelligencePage";
 import GovernancePage from "./pages/GovernancePage";
 import PricingCodesPage from "./pages/PricingCodesPage";
+import MarketResearchPage from "./pages/MarketResearchPage";
+import MarketAnalysisPage from "./pages/MarketAnalysisPage";
 
 // Old pages that still have unique functionality
 import { Comparison } from "./pages/Comparison";
@@ -75,6 +77,14 @@ export const router = createBrowserRouter([
   {
     path: "/competitor",
     Component: CompetitorIntelligencePage,
+  },
+  {
+    path: "/market-research",
+    Component: MarketResearchPage,
+  },
+  {
+    path: "/market-analysis",
+    Component: MarketAnalysisPage,
   },
   {
     path: "*",

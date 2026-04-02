@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Upload, BarChart2, Calculator, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, CloudSun, MapPin, Crosshair, Shield, CheckCircle, FileText, Lightbulb, ListChecks } from 'lucide-react';
+import { Upload, BarChart2, Calculator, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, CloudSun, MapPin, Crosshair, Shield, CheckCircle, FileText, Lightbulb, ListChecks, Search, TrendingUp } from 'lucide-react';
 import { Logo } from './Logo';
 
 export type UserRole = 'Master' | 'Admin' | 'Usuário';
-export type NavItem = 'Upload' | 'Análise' | 'Simulador' | 'Dashboard' | 'Admin' | 'Clima' | 'Territorial' | 'Concorrência' | 'Governança' | 'Códigos';
+export type NavItem = 'Upload' | 'Análise' | 'Simulador' | 'Dashboard' | 'Admin' | 'Clima' | 'Territorial' | 'Concorrência' | 'Governança' | 'Códigos' | 'PesquisaMercado' | 'AnaliseMercado';
 
 interface NavItemConfig {
   id: NavItem;
@@ -51,6 +51,8 @@ const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemCon
           group: 'Precificação',
           items: [
             { id: 'Admin', label: 'Precificar', icon: Settings },
+            { id: 'PesquisaMercado', label: 'Pesquisa de Mercado', icon: Search },
+            { id: 'AnaliseMercado', label: 'Análise de Mercado', icon: TrendingUp },
             { id: 'Simulador', label: 'Simulador', icon: Calculator },
           ],
         },

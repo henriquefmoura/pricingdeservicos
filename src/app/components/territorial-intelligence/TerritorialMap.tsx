@@ -578,7 +578,7 @@ export function TerritorialMap({
                   <p className="text-gray-500 text-xs">CNAE: {prof.cnae}</p>
                   {rating !== null && (
                     <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-gray-100">
-                      <span style={{ color: '#f59e0b', fontSize: 13 }}>{'★'.repeat(Math.round(rating))}{'☆'.repeat(5 - Math.round(rating))}</span>
+                      <span className="text-amber-400 text-sm">{'★'.repeat(Math.round(rating))}{'☆'.repeat(5 - Math.round(rating))}</span>
                       <span className="text-gray-700 text-xs font-semibold">{rating.toFixed(1)}</span>
                       {reviewCount !== null && (
                         <span className="text-gray-400 text-xs">({reviewCount} avaliações)</span>

@@ -3,6 +3,27 @@ import { persist } from 'zustand/middleware';
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
+export interface PriceAdjustmentRecord {
+  id: string;
+  approvalId: string;
+  codigo: string;
+  descricao: string;
+  grupo: string;
+  plaza: string;
+  // Preço sugerido (proposto pelo sistema/admin — antes da rejeição)
+  suggestedRepasse: number;
+  suggestedVenda: number;
+  suggestedMargem: number;
+  // Preço ajustado (definido pelo usuário após rejeição)
+  adjustedRepasse: number;
+  adjustedVenda: number;
+  adjustedMargem: number;
+  // Variação percentual sobre o preço de venda sugerido
+  variationPercent: number;
+  adjustedBy: string;
+  adjustedAt: Date;
+}
+
 export interface PriceApproval {
   id: string;
   codigo: string;
@@ -27,15 +48,18 @@ export interface PriceApproval {
 
 interface ApprovalState {
   approvals: PriceApproval[];
+  // Log de comparação: preço sugerido vs preço ajustado após rejeição (para ML)
+  adjustmentLog: PriceAdjustmentRecord[];
   addApproval: (approval: Omit<PriceApproval, 'id' | 'status' | 'requestedAt'>) => void;
   approvePrice: (id: string, reviewedBy: string, comments?: string) => void;
   rejectPrice: (id: string, reviewedBy: string, comments?: string) => void;
   getPendingApprovals: (plaza?: string) => PriceApproval[];
   getRejectedApprovals: (plaza?: string) => PriceApproval[];
   getApprovalsByStatus: (status: ApprovalStatus, plaza?: string) => PriceApproval[];
+  getAdjustmentLog: () => PriceAdjustmentRecord[];
   initializeMockData: () => void;
-  // Nova função para aplicar preço editado após rejeição
-  applyRejectedPrice: (id: string, newRepasse: number, newVenda: number) => void;
+  // Aplica preço ajustado após rejeição e registra no log para ML
+  applyRejectedPrice: (id: string, newRepasse: number, newVenda: number, adjustedBy?: string) => void;
 }
 
 // Dados mock para demonstração
@@ -118,6 +142,7 @@ export const useApprovalStore = create<ApprovalState>()(
   persist(
     (set, get) => ({
       approvals: [],
+      adjustmentLog: [],
 
       initializeMockData: () => {
         const current = get().approvals;
@@ -195,27 +220,57 @@ export const useApprovalStore = create<ApprovalState>()(
         return approvals;
       },
 
-      applyRejectedPrice: (id, newRepasse, newVenda) => {
+      getAdjustmentLog: () => {
+        return get().adjustmentLog;
+      },
+
+      applyRejectedPrice: (id, newRepasse, newVenda, adjustedBy) => {
+        const approval = get().approvals.find((a) => a.id === id);
+        if (!approval) return;
+
+        const adjustedMargem = newVenda > 0 ? ((newVenda - newRepasse) / newVenda) * 100 : 0;
+        const variationPercent =
+          approval.proposedVenda > 0
+            ? ((newVenda - approval.proposedVenda) / approval.proposedVenda) * 100
+            : 0;
+
+        // Registrar no log para aprendizado de ML
+        const logEntry: PriceAdjustmentRecord = {
+          id: `adj-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+          approvalId: id,
+          codigo: approval.codigo,
+          descricao: approval.descricao,
+          grupo: approval.grupo,
+          plaza: approval.plaza,
+          suggestedRepasse: approval.proposedRepasse,
+          suggestedVenda: approval.proposedVenda,
+          suggestedMargem: approval.proposedMargem,
+          adjustedRepasse: newRepasse,
+          adjustedVenda: newVenda,
+          adjustedMargem,
+          variationPercent,
+          adjustedBy: adjustedBy || approval.reviewedBy || 'Usuário',
+          adjustedAt: new Date(),
+        };
+
         set((state) => ({
-          approvals: state.approvals.map((approval) => {
-            if (approval.id === id) {
-              // Calcular variação correta
-              const variation = approval.currentVenda === 0 
-                ? 0 
-                : ((newVenda - approval.currentVenda) / approval.currentVenda) * 100;
-              
-              return {
-                ...approval,
-                status: 'approved' as ApprovalStatus,
-                proposedRepasse: newRepasse,
-                proposedVenda: newVenda,
-                proposedMargem: ((newVenda - newRepasse) / newVenda) * 100,
-                variation,
-                isNewService: approval.currentVenda === 0,
-                reviewedAt: new Date(),
-              };
-            }
-            return approval;
+          adjustmentLog: [...state.adjustmentLog, logEntry],
+          approvals: state.approvals.map((a) => {
+            if (a.id !== id) return a;
+            const variation =
+              a.currentVenda === 0
+                ? 0
+                : ((newVenda - a.currentVenda) / a.currentVenda) * 100;
+            return {
+              ...a,
+              status: 'approved' as ApprovalStatus,
+              proposedRepasse: newRepasse,
+              proposedVenda: newVenda,
+              proposedMargem: adjustedMargem,
+              variation,
+              isNewService: a.currentVenda === 0,
+              reviewedAt: new Date(),
+            };
           }),
         }));
       },

@@ -23,7 +23,6 @@ export default function UserDashboardPage() {
   } = useApprovalStore();
 
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'analysis'>('pending');
-  const [expandedComment, setExpandedComment] = useState<string | null>(null);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [editRepasseValue, setEditRepasseValue] = useState('');
   const [editVendaValue, setEditVendaValue] = useState('');
@@ -62,37 +61,11 @@ export default function UserDashboardPage() {
   const handleApprove = (id: string) => {
     approvePrice(id, user?.name || 'Usuário', '');
     toast.success('Preço aprovado com sucesso!');
-    setExpandedComment(null);
   };
 
-  const handleRejectWithNewPrice = (id: string) => {
-    // Direct reject → open inline new price editor
-    setExpandedComment(expandedComment === id ? null : id);
-    setEditingPrice(id);
-    const found = pendingItems.find((i) => i.id === id) || rejectedItems.find((i) => i.id === id);
-    if (found) {
-      setEditRepasseValue(found.proposedRepasse.toFixed(2));
-      setEditVendaValue(found.proposedVenda.toFixed(2));
-    }
-  };
-
-  const handleConfirmRejection = (id: string) => {
-    const repasse = parseFloat(editRepasseValue);
-    const venda = parseFloat(editVendaValue);
-    if (isNaN(repasse) || isNaN(venda)) {
-      toast.error('Valores inválidos');
-      return;
-    }
-    if (repasse >= venda) {
-      toast.error('Venda deve ser maior que repasse');
-      return;
-    }
-    // Reject and apply new suggested price directly
+  const handleReject = (id: string) => {
     rejectPrice(id, user?.name || 'Usuário', '');
-    applyRejectedPrice(id, repasse, venda);
-    toast.success('Preço rejeitado e novo valor sugerido com sucesso!');
-    setEditingPrice(null);
-    setExpandedComment(null);
+    toast.info('Preço rejeitado. Acesse a aba "Rejeitados" para definir o novo valor.');
   };
 
   const handleDefineNewPrice = (id: string) => {
@@ -115,7 +88,7 @@ export default function UserDashboardPage() {
       toast.error('Venda deve ser maior que repasse');
       return;
     }
-    applyRejectedPrice(id, repasse, venda);
+    applyRejectedPrice(id, repasse, venda, user?.name || 'Usuário');
     toast.success('Novo preço aplicado com sucesso!');
     setEditingPrice(null);
   };
@@ -264,7 +237,6 @@ export default function UserDashboardPage() {
           const isRejected = item.status === 'rejected';
           const isApproved = item.status === 'approved';
           const isEditing = editingPrice === item.id;
-          const showComment = expandedComment === item.id;
 
           return (
             <div
@@ -411,7 +383,7 @@ export default function UserDashboardPage() {
                       Aprovar
                     </button>
                     <button
-                      onClick={() => handleRejectWithNewPrice(item.id)}
+                      onClick={() => handleReject(item.id)}
                       style={{
                         padding: '10px 20px',
                         borderRadius: '8px',
@@ -428,7 +400,7 @@ export default function UserDashboardPage() {
                       }}
                     >
                       <X size={16} />
-                      Rejeitar e Sugerir Preço
+                      Rejeitar
                     </button>
                   </div>
                 )}
@@ -453,81 +425,6 @@ export default function UserDashboardPage() {
                   </button>
                 )}
               </div>
-
-              {/* Inline New Price Form (shown on reject) */}
-              {showComment && !isRejected && !isApproved && (
-                <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr auto auto', gap: '16px', alignItems: 'end' }}>
-                    <CurrencyInput
-                      label="Repasse (R$)"
-                      value={editRepasseValue}
-                      onValueChange={setEditRepasseValue}
-                      placeholder="0,00"
-                    />
-                    <div style={{ paddingBottom: '8px' }}>
-                      {(() => {
-                        const venda = parseFloat(editVendaValue.replace(',', '.'));
-                        const repasse = parseFloat(editRepasseValue.replace(',', '.'));
-                        const margin = ((venda - repasse) / venda) * 100;
-                        if (isNaN(margin)) return null;
-                        const getMarginStyle = (m: number) => {
-                          if (m > 30) return { bg: '#D1FAE5', text: '#065F46' };
-                          if (m >= 15) return { bg: '#FEF3C7', text: '#92400E' };
-                          return { bg: '#FEE2E2', text: '#991B1B' };
-                        };
-                        const s = getMarginStyle(margin);
-                        return (
-                          <div style={{ padding: '8px 14px', borderRadius: '100px', backgroundColor: s.bg, whiteSpace: 'nowrap' }}>
-                            <span style={{ fontSize: '13px', fontWeight: 700, color: s.text }}>
-                              {margin.toFixed(1)}%
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <CurrencyInput
-                      label="Venda (R$)"
-                      value={editVendaValue}
-                      onValueChange={setEditVendaValue}
-                      placeholder="0,00"
-                    />
-                    <button
-                      onClick={() => handleConfirmRejection(item.id)}
-                      style={{
-                        padding: '12px 20px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        backgroundColor: '#DA291C',
-                        color: '#FFFFFF',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        marginBottom: '8px',
-                      }}
-                    >
-                      Confirmar
-                    </button>
-                    <button
-                      onClick={() => { setExpandedComment(null); setEditingPrice(null); }}
-                      style={{
-                        padding: '12px 16px',
-                        borderRadius: '8px',
-                        border: '1px solid #D1D5DB',
-                        backgroundColor: '#FFFFFF',
-                        color: '#6B7280',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        marginBottom: '8px',
-                      }}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {/* Inline Price Edit Form */}
               {isEditing && isRejected && (

@@ -326,7 +326,7 @@ export default function MasterHomePage() {
                 <Shield size={20} style={{ color: '#78BE20' }} />
               </div>
               <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
-                Governança
+                Acompanhamento Precificação
               </h3>
             </div>
             <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', margin: '0 0 12px 0' }}>

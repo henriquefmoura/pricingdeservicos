@@ -31,7 +31,7 @@ export default function GovernancePage() {
   return (
     <AppLayout
       activeNav="Governança"
-      title="Governança de Precificação"
+      title="Acompanhamento Precificação"
       subtitle="Acompanhe o comportamento e a qualidade do processo de precificação"
     >
       <PricingGovernanceDashboard />

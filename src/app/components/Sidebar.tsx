@@ -30,8 +30,8 @@ const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemCon
         {
           group: 'Gestão',
           items: [
-            { id: 'Governança', label: 'Governança', icon: Shield },
-            { id: 'Análise', label: 'Acompanhamento Precificação', icon: BarChart2 },
+            { id: 'Governança', label: 'Acompanhamento Precificação', icon: Shield },
+            { id: 'Análise', label: 'Análise', icon: BarChart2 },
             { id: 'Códigos', label: 'Códigos para Precificação', icon: ListChecks },
             { id: 'Upload', label: 'Upload de Dados', icon: Upload },
           ],

@@ -150,7 +150,7 @@ export function PricingGovernanceDashboard() {
       {/* Header */}
       <div>
         <h2 style={{ fontSize: '20px', fontWeight: 700, color: COLORS.dark, margin: 0 }}>
-          Governança de Precificação
+          Acompanhamento Precificação
         </h2>
         <p style={{ fontSize: '14px', color: COLORS.gray, margin: '4px 0 0 0' }}>
           Acompanhamento do processo de precificação — atividade dos usuários, volume e qualidade

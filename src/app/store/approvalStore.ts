@@ -236,7 +236,7 @@ export const useApprovalStore = create<ApprovalState>()(
 
         // Registrar no log para aprendizado de ML
         const logEntry: PriceAdjustmentRecord = {
-          id: `adj-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `adj-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
           approvalId: id,
           codigo: approval.codigo,
           descricao: approval.descricao,

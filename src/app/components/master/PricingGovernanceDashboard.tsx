@@ -130,6 +130,7 @@ export function PricingGovernanceDashboard() {
   const userMetrics = getUserMetrics();
   const plazaMetrics = getPlazaMetrics();
   const adjustmentLog = getAdjustmentLog();
+  const adjustmentLogReversed = adjustmentLog.slice().reverse();
 
   const totalPricings = plazaMetrics.reduce((sum, p) => sum + p.totalPricingsReceived, 0);
   const activePlazas = plazaMetrics.filter((p) => p.activeUsers > 0).length;
@@ -401,7 +402,7 @@ export function PricingGovernanceDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {[...adjustmentLog].reverse().map((record, idx) => (
+                {adjustmentLogReversed.map((record, idx) => (
                   <tr
                     key={record.id}
                     style={{ backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#F9FAFB' }}

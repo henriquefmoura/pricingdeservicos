@@ -178,6 +178,10 @@ export interface CnaeProfessionalMarker {
   lat: number;
   lon: number;
   municipalityCode: string;
+  /** Simulated Google Review rating (1.0–5.0) */
+  rating?: number;
+  /** Simulated number of Google Reviews */
+  reviewCount?: number;
 }
 
 // ----------------------------------------

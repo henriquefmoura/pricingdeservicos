@@ -12,8 +12,6 @@ import { useMarketResearchStore } from './store/marketResearchStore';
 import { useApprovalStore } from './store/approvalStore';
 import { useCorrelationStore } from './store/correlationStore';
 import { useReplicationConfigStore } from './store/replicationConfigStore';
-import { MarketResearchForm } from './components/MarketResearchForm';
-import { SharedAnalysisPanel } from './components/shared/SharedAnalysisPanel';
 import { toast } from 'sonner';
 
 interface PriceInput {
@@ -30,7 +28,6 @@ export default function AdminPricingPage() {
   const { getSimilarPlazas, initializeMockData: initCorrelation } = useCorrelationStore();
   const { getTargetPlazasForReplicator, isPlazaReplicator } = useReplicationConfigStore();
 
-  const [activeTab, setActiveTab] = useState<'pricing' | 'market' | 'analysis'>('pricing');
   const [searchTerm, setSearchTerm] = useState('');
   const [priceInputs, setPriceInputs] = useState<Record<string, PriceInput>>({});
   const [editingCode, setEditingCode] = useState<string | null>(null);
@@ -202,70 +199,7 @@ export default function AdminPricingPage() {
 
   return (
     <AppLayout activeNav="Admin" title="Precificação" subtitle={`Defina preços de repasse e venda para praça ${user?.plaza || ''}`}>
-      {/* Tab Switcher */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-        <button
-          onClick={() => setActiveTab('pricing')}
-          style={{
-            padding: '10px 20px',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'pricing' ? '#78BE20' : '#FFFFFF',
-            color: activeTab === 'pricing' ? '#FFFFFF' : '#001022',
-            fontSize: '14px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            boxShadow: activeTab !== 'pricing' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-          }}
-        >
-          Precificação ({filteredCodes.length} pendentes)
-        </button>
-        <button
-          onClick={() => setActiveTab('market')}
-          style={{
-            padding: '10px 20px',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'market' ? '#78BE20' : '#FFFFFF',
-            color: activeTab === 'market' ? '#FFFFFF' : '#001022',
-            fontSize: '14px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            boxShadow: activeTab !== 'market' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-          }}
-        >
-          Pesquisa de Mercado
-        </button>
-        <button
-          onClick={() => setActiveTab('analysis')}
-          style={{
-            padding: '10px 20px',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'analysis' ? '#78BE20' : '#FFFFFF',
-            color: activeTab === 'analysis' ? '#FFFFFF' : '#001022',
-            fontSize: '14px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: activeTab !== 'analysis' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-          }}
-        >
-          <BarChart2 size={16} />
-          Análise de Mercado
-        </button>
-      </div>
-
-      {activeTab === 'market' && <MarketResearchForm />}
-
-      {activeTab === 'analysis' && (
-        <SharedAnalysisPanel userPlaza={user?.plaza} userRole="admin" />
-      )}
-
-      {activeTab === 'pricing' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
             {/* Top bar: Stats + Search */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -495,7 +429,6 @@ export default function AdminPricingPage() {
               })
             )}
           </div>
-      )}
     </AppLayout>
   );
 }

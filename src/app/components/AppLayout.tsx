@@ -45,6 +45,12 @@ export function AppLayout({ children, activeNav, title, subtitle }: AppLayoutPro
       case 'Admin':
         navigate('/admin');
         break;
+      case 'PesquisaMercado':
+        navigate('/market-research');
+        break;
+      case 'AnaliseMercado':
+        navigate('/market-analysis');
+        break;
       case 'Governança':
         navigate('/governance');
         break;

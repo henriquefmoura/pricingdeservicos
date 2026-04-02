@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useGovernanceStore } from '../../store/governanceStore';
+import { useApprovalStore } from '../../store/approvalStore';
 import { UserActivityRanking } from './UserActivityRanking';
 import { PricingVolumeChart } from './PricingVolumeChart';
 import { ApprovalVsRejectionChart } from './ApprovalVsRejectionChart';
@@ -15,6 +16,7 @@ import {
   Search,
   LogIn,
   FileText,
+  Brain,
 } from 'lucide-react';
 
 const COLORS = {
@@ -119,6 +121,7 @@ export function PricingGovernanceDashboard() {
   const initializeMockData = useGovernanceStore((s) => s.initializeMockData);
   const getUserMetrics = useGovernanceStore((s) => s.getUserMetrics);
   const getPlazaMetrics = useGovernanceStore((s) => s.getPlazaMetrics);
+  const getAdjustmentLog = useApprovalStore((s) => s.getAdjustmentLog);
 
   useEffect(() => {
     initializeMockData();
@@ -126,6 +129,7 @@ export function PricingGovernanceDashboard() {
 
   const userMetrics = getUserMetrics();
   const plazaMetrics = getPlazaMetrics();
+  const adjustmentLog = getAdjustmentLog();
 
   const totalPricings = plazaMetrics.reduce((sum, p) => sum + p.totalPricingsReceived, 0);
   const activePlazas = plazaMetrics.filter((p) => p.activeUsers > 0).length;
@@ -337,6 +341,157 @@ export function PricingGovernanceDashboard() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* ML Training Data: Suggested vs Adjusted Prices */}
+      <div
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04)',
+          borderTop: '4px solid #6366F1',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+          <Brain size={20} color="#6366F1" />
+          <h3 style={{ fontSize: '16px', fontWeight: 700, color: COLORS.dark, margin: 0 }}>
+            Base de Dados para ML — Variações de Preço Ajustado
+          </h3>
+        </div>
+        <p style={{ fontSize: '13px', color: COLORS.gray, margin: '0 0 16px 0' }}>
+          Comparativo entre o preço sugerido pelo sistema e o preço ajustado pelo usuário após rejeição. Esses dados alimentam o aprendizado de máquina para calibração automática de preços.
+        </p>
+
+        {adjustmentLog.length === 0 ? (
+          <div
+            style={{
+              padding: '40px',
+              textAlign: 'center',
+              backgroundColor: '#F9FAFB',
+              borderRadius: '8px',
+              border: '1px dashed #D1D5DB',
+            }}
+          >
+            <Brain size={40} color="#D1D5DB" style={{ margin: '0 auto 12px' }} />
+            <p style={{ fontSize: '14px', fontWeight: 600, color: '#6B7280', margin: '0 0 4px 0' }}>
+              Nenhum ajuste registrado ainda
+            </p>
+            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0 }}>
+              Quando usuários rejeitarem e ajustarem preços, os dados aparecerão aqui
+            </p>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={detailTableHeaderStyle}>Código</th>
+                  <th style={detailTableHeaderStyle}>Serviço</th>
+                  <th style={detailTableHeaderStyle}>Praça</th>
+                  <th style={{ ...detailTableHeaderStyle, textAlign: 'right' }}>Rep. Sugerido</th>
+                  <th style={{ ...detailTableHeaderStyle, textAlign: 'right' }}>Venda Sugerida</th>
+                  <th style={{ ...detailTableHeaderStyle, textAlign: 'right' }}>Margem Sugerida</th>
+                  <th style={{ ...detailTableHeaderStyle, textAlign: 'right' }}>Rep. Ajustado</th>
+                  <th style={{ ...detailTableHeaderStyle, textAlign: 'right' }}>Venda Ajustada</th>
+                  <th style={{ ...detailTableHeaderStyle, textAlign: 'right' }}>Margem Ajustada</th>
+                  <th style={{ ...detailTableHeaderStyle, textAlign: 'center' }}>Variação</th>
+                  <th style={detailTableHeaderStyle}>Ajustado por</th>
+                  <th style={detailTableHeaderStyle}>Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...adjustmentLog].reverse().map((record, idx) => (
+                  <tr
+                    key={record.id}
+                    style={{ backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#F9FAFB' }}
+                  >
+                    <td style={{ ...detailTableCellStyle, fontFamily: 'monospace', fontSize: '12px' }}>
+                      {record.codigo}
+                    </td>
+                    <td style={detailTableCellStyle}>{record.descricao}</td>
+                    <td style={detailTableCellStyle}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          padding: '2px 8px',
+                          borderRadius: '9999px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                          color: '#3B82F6',
+                        }}
+                      >
+                        {record.plaza}
+                      </span>
+                    </td>
+                    <td style={{ ...detailTableCellStyle, textAlign: 'right', color: '#6B7280' }}>
+                      R$ {record.suggestedRepasse.toFixed(2)}
+                    </td>
+                    <td style={{ ...detailTableCellStyle, textAlign: 'right', color: '#6B7280' }}>
+                      R$ {record.suggestedVenda.toFixed(2)}
+                    </td>
+                    <td style={{ ...detailTableCellStyle, textAlign: 'right', color: '#6B7280' }}>
+                      {record.suggestedMargem.toFixed(1)}%
+                    </td>
+                    <td style={{ ...detailTableCellStyle, textAlign: 'right', fontWeight: 600 }}>
+                      R$ {record.adjustedRepasse.toFixed(2)}
+                    </td>
+                    <td style={{ ...detailTableCellStyle, textAlign: 'right', fontWeight: 600 }}>
+                      R$ {record.adjustedVenda.toFixed(2)}
+                    </td>
+                    <td style={{ ...detailTableCellStyle, textAlign: 'right', fontWeight: 600 }}>
+                      {record.adjustedMargem.toFixed(1)}%
+                    </td>
+                    <td style={{ ...detailTableCellStyle, textAlign: 'center' }}>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          padding: '2px 8px',
+                          borderRadius: '9999px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          backgroundColor:
+                            record.variationPercent > 0
+                              ? 'rgba(22, 163, 74, 0.12)'
+                              : record.variationPercent < 0
+                              ? 'rgba(218, 41, 28, 0.12)'
+                              : 'rgba(107, 114, 128, 0.12)',
+                          color:
+                            record.variationPercent > 0
+                              ? COLORS.success
+                              : record.variationPercent < 0
+                              ? COLORS.error
+                              : COLORS.gray,
+                        }}
+                      >
+                        {record.variationPercent > 0 ? (
+                          <TrendingUp size={11} />
+                        ) : record.variationPercent < 0 ? (
+                          <TrendingDown size={11} />
+                        ) : null}
+                        {record.variationPercent > 0 ? '+' : ''}
+                        {record.variationPercent.toFixed(1)}%
+                      </span>
+                    </td>
+                    <td style={detailTableCellStyle}>{record.adjustedBy}</td>
+                    <td style={{ ...detailTableCellStyle, color: '#6B7280', fontSize: '12px' }}>
+                      {new Date(record.adjustedAt).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

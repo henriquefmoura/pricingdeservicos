@@ -90,7 +90,7 @@ export function RejectedPricesEditor() {
     updateCodePrice(code.id, user.plaza, repasse, venda, user.name);
     
     // Atualizar a aprovação com o novo preço
-    applyRejectedPrice(approval.id, repasse, venda);
+    applyRejectedPrice(approval.id, repasse, venda, user.name);
 
     // Limpar edição
     setEditingId(null);

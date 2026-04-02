@@ -314,6 +314,10 @@ export function generateProfessionalMarkers(
       lat,
       lon,
       municipalityCode: ibgeCode,
+      // Simulated Google Review rating: 3.0–5.0 (biased toward higher scores, typical for active businesses)
+      rating: Math.round((3.0 + nextRandom() * 2.0) * 10) / 10,
+      // Simulated review count: 5–250
+      reviewCount: 5 + Math.round(nextRandom() * 245),
     });
   }
 

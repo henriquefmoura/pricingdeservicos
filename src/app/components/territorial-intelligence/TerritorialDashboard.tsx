@@ -12,7 +12,7 @@ import { MunicipalityComparisonPanel } from './MunicipalityComparisonPanel';
 import { TerritorialChart } from './TerritorialChart';
 import { MultiCityComparisonGrid } from './MultiCityComparisonGrid';
 import { CnaeMarkersTable } from './CnaeMarkersTable';
-import { MapPin, X } from 'lucide-react';
+import { MapPin, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
 
 // Major cities quick-select (expandable list)
 const QUICK_CITIES = [
@@ -57,6 +57,7 @@ export function TerritorialDashboard() {
 
   const [showCompareInput, setShowCompareInput] = useState(false);
   const [compareSearch, setCompareSearch] = useState('');
+  const [sidebarVisible, setSidebarVisible] = useState(true);
 
   const handleFilterChange = (partial: Partial<typeof filters>) => {
     if (partial.selectedService !== undefined) {
@@ -246,8 +247,22 @@ export function TerritorialDashboard() {
             )}
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar toggle button (only when a city is selected) */}
           {selectedCity && (
+            <div className="flex lg:flex-col items-start">
+              <button
+                onClick={() => setSidebarVisible(!sidebarVisible)}
+                title={sidebarVisible ? 'Ocultar painel lateral' : 'Exibir painel lateral'}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 shadow-sm hover:bg-gray-50 transition-colors"
+              >
+                {sidebarVisible ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+                <span className="hidden lg:inline">{sidebarVisible ? 'Ocultar' : 'Mostrar'}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Sidebar */}
+          {selectedCity && sidebarVisible && (
             <TerritorialSidebar
               summary={selectedCity}
               loading={loadingCity}

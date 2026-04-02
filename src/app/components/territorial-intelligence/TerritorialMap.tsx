@@ -12,7 +12,7 @@ import type { GeoJSONFeatureCollection } from '../../services/ibgeMapService';
 import { generateMeiDensityForMunicipalities, generateProfessionalMarkers } from '../../services/companySupplyService';
 import type { LeroyStore, CnaeProfessionalMarker, TerritorialInsightSummary, TerritorialCnaeInfo } from '../../types/territorial';
 import { getLeroyStoresByUF, LEROY_MERLIN_STORES } from '../../data/leroyStores';
-import { Store, Users, Briefcase, MapPin } from 'lucide-react';
+import { Store, Users, Briefcase, MapPin, Maximize2, Minimize2 } from 'lucide-react';
 import { getCnaeColor, CNAE_CATEGORY_META, CNAE_CODE_CATEGORY, CNAE_CATEGORY_COLORS } from '../../utils/serviceCnaeMappings';
 import type { CnaeServiceCategory } from '../../types/territorial';
 
@@ -202,6 +202,7 @@ export function TerritorialMap({
     cnaeProfessionals: false,
     pinnedCities: true,
   });
+  const [mapExpanded, setMapExpanded] = useState(false);
   const geoKeyRef = useRef(0);
 
   // Leroy stores for current view
@@ -371,7 +372,7 @@ export function TerritorialMap({
   }, [professionalMarkers, layerToggles.cnaeProfessionals]);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden relative">
+    <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden relative${mapExpanded ? ' fixed inset-4 z-[2000] shadow-2xl' : ''}`}>
       {/* Loading indicator when a city click is pending */}
       {pendingIbgeCode && !selectedIbgeCode && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-amber-500 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 animate-pulse">
@@ -379,6 +380,15 @@ export function TerritorialMap({
           Carregando município…
         </div>
       )}
+      {/* Expand/collapse button */}
+      <button
+        onClick={() => setMapExpanded(!mapExpanded)}
+        className="absolute top-3 left-3 z-[1000] flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg shadow-md transition-colors bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+        title={mapExpanded ? 'Reduzir mapa' : 'Expandir mapa'}
+      >
+        {mapExpanded ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+        {mapExpanded ? 'Reduzir' : 'Expandir'}
+      </button>
       {/* Layer controls */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1">
         <button
@@ -497,7 +507,7 @@ export function TerritorialMap({
       <MapContainer
         center={center}
         zoom={zoom}
-        style={{ height: 650, width: '100%' }}
+        style={{ height: mapExpanded ? 'calc(100vh - 2rem)' : 650, width: '100%' }}
         scrollWheelZoom={true}
         zoomControl={true}
       >
@@ -551,6 +561,8 @@ export function TerritorialMap({
           const color = getCnaeColor(prof.cnae);
           const cat = CNAE_CODE_CATEGORY[prof.cnae] ?? 'outros';
           const catMeta = CNAE_CATEGORY_META[cat as CnaeServiceCategory];
+          const rating = prof.rating ?? null;
+          const reviewCount = prof.reviewCount ?? null;
           return (
             <Marker
               key={prof.id}
@@ -564,6 +576,15 @@ export function TerritorialMap({
                   </p>
                   <p className="text-gray-700 font-medium">{prof.cnaeDescription}</p>
                   <p className="text-gray-500 text-xs">CNAE: {prof.cnae}</p>
+                  {rating !== null && (
+                    <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-gray-100">
+                      <span style={{ color: '#f59e0b', fontSize: 13 }}>{'★'.repeat(Math.round(rating))}{'☆'.repeat(5 - Math.round(rating))}</span>
+                      <span className="text-gray-700 text-xs font-semibold">{rating.toFixed(1)}</span>
+                      {reviewCount !== null && (
+                        <span className="text-gray-400 text-xs">({reviewCount} avaliações)</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </Popup>
             </Marker>

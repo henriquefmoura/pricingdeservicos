@@ -152,7 +152,10 @@ export function MarketResearchForm() {
   return (
     <div className="space-y-6">
       {/* Cabeçalho da Página */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-lg">
+      <div
+        className="rounded-xl p-6 text-white shadow-lg"
+        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
+      >
         <div className="flex items-center gap-3">
           <div className="bg-white/20 p-3 rounded-lg">
             <Search className="w-6 h-6 text-white" />
@@ -161,7 +164,7 @@ export function MarketResearchForm() {
             <h2 className="text-2xl font-bold tracking-tight">
               Pesquisa de Mercado
             </h2>
-            <p className="text-blue-100 text-sm mt-1">
+            <p className="text-white/80 text-sm mt-1">
               Registre e acompanhe preços de concorrentes para embasar a precificação dos serviços
             </p>
           </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Plus, Trash2, TrendingUp } from 'lucide-react';
+import { Search, Plus, Trash2, TrendingUp, History, Clock, Download, ChevronDown, ChevronUp, ArrowUpDown, User } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -20,20 +20,48 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { useMarketResearchStore, PricingStrategy } from '../store/marketResearchStore';
+import { useMarketResearchStore, PricingStrategy, PriceHistoryEntry } from '../store/marketResearchStore';
 import { usePricingCodesStore } from '../store/pricingCodesStore';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'sonner';
 
+function formatDate(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function getActionLabel(acao: PriceHistoryEntry['acao']): { label: string; color: string } {
+  switch (acao) {
+    case 'added':
+      return { label: 'Adicionado', color: 'bg-green-100 text-green-700 border-green-300' };
+    case 'updated':
+      return { label: 'Atualizado', color: 'bg-blue-100 text-blue-700 border-blue-300' };
+    case 'removed':
+      return { label: 'Removido', color: 'bg-red-100 text-red-700 border-red-300' };
+  }
+}
+
 export function MarketResearchForm() {
   const { user } = useAuthStore();
   const { codes } = usePricingCodesStore();
-  const { researches, strategy, addCompetitorPrice, removeCompetitorPrice, setStrategy, getSuggestedPrice } = useMarketResearchStore();
+  const { researches, strategy, priceHistory, addCompetitorPrice, removeCompetitorPrice, setStrategy, getSuggestedPrice, getPriceHistoryByCode, exportData } = useMarketResearchStore();
   
   const [codigo, setCodigo] = useState('');
   const [concorrente, setConcorrente] = useState('');
   const [preco, setPreco] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
+  const [showFullHistory, setShowFullHistory] = useState(false);
 
   // Buscar descrição quando o código é alterado
   const handleCodigoChange = (value: string) => {
@@ -97,6 +125,28 @@ export function MarketResearchForm() {
     setDescricao('');
     setConcorrente('');
     setPreco('');
+  };
+
+  const handleExportData = () => {
+    const data = exportData();
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pesquisa-mercado-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Dados exportados com sucesso! Pronto para importar no Supabase.');
+  };
+
+  const toggleHistory = (codigoAvulso: string) => {
+    setExpandedHistory((prev) => ({
+      ...prev,
+      [codigoAvulso]: !prev[codigoAvulso],
+    }));
   };
 
   return (
@@ -296,6 +346,8 @@ export function MarketResearchForm() {
                           <TableHeader>
                             <TableRow>
                               <TableHead>Concorrente</TableHead>
+                              <TableHead className="text-center">Data</TableHead>
+                              <TableHead className="text-center">Registrado por</TableHead>
                               <TableHead className="text-right">Preço</TableHead>
                               <TableHead className="text-right w-20">Ações</TableHead>
                             </TableRow>
@@ -304,6 +356,18 @@ export function MarketResearchForm() {
                             {research.precosConcorrentes.map((comp) => (
                               <TableRow key={comp.id}>
                                 <TableCell className="font-medium">{comp.concorrente}</TableCell>
+                                <TableCell className="text-center text-xs text-gray-500">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatDate(comp.adicionadoEm)}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center text-xs text-gray-500">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <User className="w-3 h-3" />
+                                    {comp.adicionadoPor}
+                                  </div>
+                                </TableCell>
                                 <TableCell className="text-right font-semibold text-green-700">
                                   R$ {comp.preco.toFixed(2)}
                                 </TableCell>
@@ -320,6 +384,8 @@ export function MarketResearchForm() {
                             ))}
                             <TableRow className="bg-blue-50">
                               <TableCell className="font-bold">Média dos Concorrentes</TableCell>
+                              <TableCell></TableCell>
+                              <TableCell></TableCell>
                               <TableCell className="text-right font-bold text-blue-700">
                                 R${' '}
                                 {(
@@ -332,6 +398,70 @@ export function MarketResearchForm() {
                           </TableBody>
                         </Table>
                       </div>
+
+                      {/* Histórico de Preços por Serviço */}
+                      {(() => {
+                        const serviceHistory = getPriceHistoryByCode(research.codigoAvulso);
+                        if (serviceHistory.length === 0) return null;
+
+                        const isExpanded = expandedHistory[research.codigoAvulso];
+
+                        return (
+                          <div className="border border-amber-200 rounded-lg overflow-hidden">
+                            <button
+                              onClick={() => toggleHistory(research.codigoAvulso)}
+                              className="w-full flex items-center justify-between p-3 bg-amber-50 hover:bg-amber-100 transition-colors"
+                            >
+                              <div className="flex items-center gap-2">
+                                <History className="w-4 h-4 text-amber-700" />
+                                <span className="text-sm font-medium text-amber-800">
+                                  Histórico de Preços ({serviceHistory.length} registro(s))
+                                </span>
+                              </div>
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4 text-amber-700" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-amber-700" />
+                              )}
+                            </button>
+                            {isExpanded && (
+                              <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
+                                {serviceHistory.map((entry) => {
+                                  const { label, color } = getActionLabel(entry.acao);
+                                  return (
+                                    <div
+                                      key={entry.id}
+                                      className="flex items-center gap-3 p-2 bg-white border border-gray-100 rounded-md text-sm"
+                                    >
+                                      <Badge variant="outline" className={`text-xs ${color}`}>
+                                        {label}
+                                      </Badge>
+                                      <div className="flex-1">
+                                        <span className="font-medium">{entry.concorrente}</span>
+                                        {entry.acao === 'updated' && entry.precoAnterior !== undefined ? (
+                                          <span className="text-gray-600">
+                                            {' '} — R$ {entry.precoAnterior.toFixed(2)}
+                                            <ArrowUpDown className="w-3 h-3 inline mx-1" />
+                                            R$ {entry.preco.toFixed(2)}
+                                          </span>
+                                        ) : (
+                                          <span className="text-gray-600">
+                                            {' '} — R$ {entry.preco.toFixed(2)}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-xs text-gray-400 flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {formatDate(entry.timestamp)}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Preço Sugerido com Estratégia Atual */}
                       {(() => {
@@ -391,6 +521,123 @@ export function MarketResearchForm() {
               </p>
             </div>
           </CardContent>
+        </Card>
+      )}
+
+      {/* Histórico Completo de Preços */}
+      {priceHistory.length > 0 && (
+        <Card className="border-2 border-amber-200">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="w-5 h-5 text-amber-600" />
+                  Histórico Completo de Preços
+                </CardTitle>
+                <CardDescription>
+                  {priceHistory.length} registro(s) de alterações de preços de concorrentes
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFullHistory(!showFullHistory)}
+                  className="gap-1"
+                >
+                  {showFullHistory ? (
+                    <>
+                      <ChevronUp className="w-4 h-4" />
+                      Recolher
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      Expandir
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportData}
+                  className="gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                >
+                  <Download className="w-4 h-4" />
+                  Exportar JSON
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          {showFullHistory && (
+            <CardContent>
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-amber-50">
+                      <TableHead>Ação</TableHead>
+                      <TableHead>Serviço</TableHead>
+                      <TableHead>Concorrente</TableHead>
+                      <TableHead className="text-right">Preço</TableHead>
+                      <TableHead className="text-center">Data</TableHead>
+                      <TableHead className="text-center">Registrado por</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...priceHistory]
+                      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                      .map((entry) => {
+                        const { label, color } = getActionLabel(entry.acao);
+                        return (
+                          <TableRow key={entry.id}>
+                            <TableCell>
+                              <Badge variant="outline" className={`text-xs ${color}`}>
+                                {label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <span className="font-medium text-sm">{entry.descricao}</span>
+                                <span className="text-xs text-gray-500 block">Cód: {entry.codigoAvulso}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium">{entry.concorrente}</TableCell>
+                            <TableCell className="text-right">
+                              {entry.acao === 'updated' && entry.precoAnterior !== undefined ? (
+                                <div>
+                                  <span className="text-gray-400 line-through text-xs">
+                                    R$ {entry.precoAnterior.toFixed(2)}
+                                  </span>
+                                  <span className="font-semibold text-blue-700 block">
+                                    R$ {entry.preco.toFixed(2)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className={`font-semibold ${entry.acao === 'removed' ? 'text-red-600' : 'text-green-700'}`}>
+                                  R$ {entry.preco.toFixed(2)}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center text-xs text-gray-500">
+                              {formatDate(entry.timestamp)}
+                            </TableCell>
+                            <TableCell className="text-center text-xs text-gray-500">
+                              {entry.registradoPor}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                <p className="text-xs text-emerald-700">
+                  <span className="font-semibold">💾 Dados salvos localmente.</span> Todos os registros são persistidos automaticamente no navegador. 
+                  Use o botão &quot;Exportar JSON&quot; para salvar uma cópia dos dados que poderá ser importada no Supabase futuramente.
+                </p>
+              </div>
+            </CardContent>
+          )}
         </Card>
       )}
     </div>

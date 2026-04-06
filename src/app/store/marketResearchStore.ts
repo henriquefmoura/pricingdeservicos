@@ -292,7 +292,8 @@ export const useMarketResearchStore = create<MarketResearchState>()(
 
       initializeMockResearches: () => {
         const currentResearches = get().researches;
-        if (currentResearches.length === 0) {
+        const currentHistory = get().priceHistory;
+        if (currentResearches.length === 0 || currentHistory.length === 0) {
           const now = new Date().toISOString();
           const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
           const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
@@ -481,7 +482,10 @@ export const useMarketResearchStore = create<MarketResearchState>()(
             },
           ];
 
-          set({ researches: mockResearches, priceHistory: mockHistory });
+          set((state) => ({
+            researches: state.researches.length === 0 ? mockResearches : state.researches,
+            priceHistory: state.priceHistory.length === 0 ? mockHistory : state.priceHistory,
+          }));
         }
       },
     }),

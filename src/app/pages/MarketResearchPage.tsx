@@ -35,7 +35,7 @@ export default function MarketResearchPage() {
   }
 
   return (
-    <AppLayout activeNav="PesquisaMercado" title="" subtitle="">
+    <AppLayout activeNav="PesquisaMercado" title="Pesquisa de Mercado" subtitle="Registre e acompanhe preços de concorrentes para embasar a precificação dos serviços">
       <MarketResearchForm />
     </AppLayout>
   );

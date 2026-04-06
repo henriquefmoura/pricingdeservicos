@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router';
+import { AppLayout } from '../components/AppLayout';
 import { ArrowLeft, Calculator, Download, RefreshCw, AlertCircle, CheckCircle2, Sparkles, Settings2, Shield } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -438,21 +439,23 @@ export function PricingSimulator() {
 
   if (!data || !analyzer) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-96">
-          <CardHeader>
-            <CardTitle>Nenhum dado carregado</CardTitle>
-            <CardDescription>
-              Faça upload de um arquivo Excel na página inicial
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate('/')} className="w-full">
-              Ir para Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <AppLayout activeNav="Simulador" title="Simulador de Precificação" subtitle="Use as praças parâmetro para sugerir preços automaticamente">
+        <div className="flex items-center justify-center h-full">
+          <Card className="w-96">
+            <CardHeader>
+              <CardTitle>Nenhum dado carregado</CardTitle>
+              <CardDescription>
+                Faça upload de um arquivo Excel na página inicial
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate('/')} className="w-full">
+                Ir para Home
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
     );
   }
 
@@ -474,8 +477,8 @@ export function PricingSimulator() {
   }, [suggestedPrices, editedPrices]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+    <AppLayout activeNav="Simulador" title="Simulador de Precificação" subtitle="Use as praças parâmetro para sugerir preços automaticamente">
+      <div className="space-y-6">
         {/* Gradient header */}
         <div
           className="rounded-xl p-6 text-white shadow-lg"
@@ -1194,6 +1197,6 @@ export function PricingSimulator() {
           </Card>
         </div>
       )}
-    </div>
+  </AppLayout>
   );
 }

@@ -246,7 +246,7 @@ export default function AnalysisPage() {
   ];
 
   return (
-    <AppLayout activeNav="Análise" title="Análise de Correlação" subtitle={hasRealData ? `${plazaStats.length} praças • ${data!.length} serviços` : 'Correlações entre praças e identificação de parâmetros'}>
+    <AppLayout activeNav="Análise" title="Análise Geral" subtitle={hasRealData ? `${plazaStats.length} praças • ${data!.length} serviços` : 'Correlações entre praças e identificação de parâmetros'}>
       {/* Actions */}
       {hasRealData && (
         <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>

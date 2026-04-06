@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Save, CheckCircle2, AlertCircle, Lightbulb, TrendingUp } from 'lucide-react';
+import { Save, CheckCircle2, AlertCircle, Lightbulb, TrendingUp, ListChecks } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -35,6 +35,7 @@ export function AdminPricingInterface() {
   const { getTargetPlazasForReplicator, isPlazaReplicator } = useReplicationConfigStore();
   const [priceInputs, setPriceInputs] = useState<Record<string, PriceInput>>({});
   const [editingCode, setEditingCode] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'pendentes' | 'precificados'>('pendentes');
 
   // Inicializar dados mock de correlação e códigos
   useEffect(() => {
@@ -52,6 +53,11 @@ export function AdminPricingInterface() {
       // Mostrar códigos pendentes e em andamento
       return code.status === 'pendente' || code.status === 'em_andamento';
     });
+  }, [codes, user?.plaza]);
+
+  // Códigos já precificados pela praça do admin
+  const pricedCodes = useMemo(() => {
+    return codes.filter((code) => user?.plaza && !!code.prices?.[user.plaza]);
   }, [codes, user?.plaza]);
 
   const getTipoBadgeColor = (tipo: PricingCode['tipo']) => {
@@ -188,77 +194,128 @@ export function AdminPricingInterface() {
     (code) => user?.plaza && code.prices?.[user.plaza]
   ).length;
 
-  if (totalCodes === 0 && completedByMe > 0) {
+  if (totalCodes === 0 && completedByMe > 0 && activeFilter === 'pendentes') {
     return (
-      <Card className="border-2 border-green-200 bg-green-50">
-        <CardContent className="py-12">
-          <div className="text-center">
-            <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-green-900 mb-2">
-              Todos os códigos foram precificados!
-            </h3>
-            <p className="text-sm text-green-800 mb-4">
-              Você preencheu {completedByMe} código(s) para a praça {user?.plaza}
-            </p>
-            <p className="text-xs text-green-700">
-              Aguarde novos códigos serem adicionados pelo Master
-            </p>
+      <div className="space-y-6">
+        {/* Gradient header banner */}
+        <div
+          className="rounded-xl p-6 text-white shadow-lg"
+          style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-3 rounded-lg">
+              <ListChecks className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Precificação</h2>
+              <p className="text-white/80 text-sm mt-1">
+                Defina preços de repasse e venda para praça {user?.plaza}
+              </p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        {/* Filter buttons */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setActiveFilter('pendentes')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 font-semibold text-sm transition-colors ${
+              activeFilter === 'pendentes'
+                ? 'bg-orange-50 border-orange-400 text-orange-700'
+                : 'bg-white border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-600'
+            }`}
+          >
+            <span className={`text-xl font-bold ${activeFilter === 'pendentes' ? 'text-orange-600' : 'text-orange-400'}`}>
+              {totalCodes}
+            </span>
+            Pendentes
+          </button>
+          <button
+            onClick={() => setActiveFilter('precificados')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 font-semibold text-sm transition-colors ${
+              activeFilter === 'precificados'
+                ? 'bg-green-50 border-green-400 text-green-700'
+                : 'bg-white border-gray-200 text-gray-600 hover:border-green-300 hover:text-green-600'
+            }`}
+          >
+            <span className={`text-xl font-bold ${activeFilter === 'precificados' ? 'text-green-600' : 'text-green-400'}`}>
+              {completedByMe}
+            </span>
+            Precificados
+          </button>
+        </div>
+        <Card className="border-2 border-green-200 bg-green-50">
+          <CardContent className="py-12">
+            <div className="text-center">
+              <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-green-900 mb-2">
+                Todos os códigos foram precificados!
+              </h3>
+              <p className="text-sm text-green-800 mb-4">
+                Você preencheu {completedByMe} código(s) para a praça {user?.plaza}
+              </p>
+              <p className="text-xs text-green-700">
+                Aguarde novos códigos serem adicionados pelo Master
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Pendentes de Preenchimento
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-orange-600">{totalCodes}</p>
-            <p className="text-xs text-gray-500 mt-1">Praça {user?.plaza}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Já Precificados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-green-600">{completedByMe}</p>
-            <p className="text-xs text-gray-500 mt-1">Por você</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Taxa de Conclusão
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-blue-600">
-              {codes.length > 0
-                ? ((completedByMe / codes.length) * 100).toFixed(0)
-                : 0}
-              %
+      {/* Gradient header banner */}
+      <div
+        className="rounded-xl p-6 text-white shadow-lg"
+        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 p-3 rounded-lg">
+            <ListChecks className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Precificação</h2>
+            <p className="text-white/80 text-sm mt-1">
+              Defina preços de repasse e venda para praça {user?.plaza}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {completedByMe} de {codes.length} total
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter buttons */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setActiveFilter('pendentes')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 font-semibold text-sm transition-colors ${
+            activeFilter === 'pendentes'
+              ? 'bg-orange-50 border-orange-400 text-orange-700'
+              : 'bg-white border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-600'
+          }`}
+        >
+          <span className={`text-xl font-bold ${activeFilter === 'pendentes' ? 'text-orange-600' : 'text-orange-400'}`}>
+            {totalCodes}
+          </span>
+          Pendentes
+        </button>
+        <button
+          onClick={() => setActiveFilter('precificados')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 font-semibold text-sm transition-colors ${
+            activeFilter === 'precificados'
+              ? 'bg-green-50 border-green-400 text-green-700'
+              : 'bg-white border-gray-200 text-gray-600 hover:border-green-300 hover:text-green-600'
+          }`}
+        >
+          <span className={`text-xl font-bold ${activeFilter === 'precificados' ? 'text-green-600' : 'text-green-400'}`}>
+            {completedByMe}
+          </span>
+          Precificados
+        </button>
       </div>
 
       {/* Tabela de códigos para precificar */}
-      {totalCodes > 0 ? (
+      {activeFilter === 'pendentes' && (
+        totalCodes > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle>Códigos para Precificação - Praça {user?.plaza}</CardTitle>
@@ -542,6 +599,110 @@ export function AdminPricingInterface() {
             </div>
           </CardContent>
         </Card>
+      )
+      )}
+
+      {/* Precificados */}
+      {activeFilter === 'precificados' && (
+        completedByMe > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Códigos Precificados — Praça {user?.plaza}</CardTitle>
+              <CardDescription>
+                Serviços que já possuem preços definidos por você
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {pricedCodes.map((code) => {
+                  const price = code.prices?.[user!.plaza!];
+                  return (
+                    <Card key={code.id} className="border-2 border-green-200 bg-green-50/30">
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={getTipoBadgeColor(code.tipo)}>
+                                {code.tipo}
+                              </Badge>
+                              <span className="text-xs text-gray-500">
+                                Prazo: {code.prazo}
+                              </span>
+                              <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            </div>
+                            <h4 className="font-semibold text-gray-900 mb-1">
+                              {code.descricao}
+                            </h4>
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <span>
+                                <span className="font-medium">Código:</span>{' '}
+                                {code.codigoAvulso}
+                              </span>
+                              <span>
+                                <span className="font-medium">Unidade:</span>{' '}
+                                {code.unidade}
+                              </span>
+                              {code.codigoAtrelado && (
+                                <span>
+                                  <span className="font-medium">Cód. Atrelado:</span>{' '}
+                                  {code.codigoAtrelado}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {price && (
+                            <div className="flex items-center gap-4 text-sm ml-4">
+                              <div className="text-right">
+                                <p className="text-xs text-gray-500">Repasse</p>
+                                <p className="font-semibold text-gray-800">
+                                  R$ {price.repasse.toFixed(2)}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs text-gray-500">Venda</p>
+                                <p className="font-semibold text-gray-800">
+                                  R$ {price.venda.toFixed(2)}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs text-gray-500">Margem</p>
+                                <p
+                                  className={`font-semibold ${
+                                    price.margem >= 15
+                                      ? 'text-green-700'
+                                      : price.margem >= 10
+                                      ? 'text-yellow-700'
+                                      : 'text-red-700'
+                                  }`}
+                                >
+                                  {price.margem.toFixed(2)}%
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="py-12">
+              <div className="text-center">
+                <ListChecks className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Nenhum código precificado ainda
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Mude para "Pendentes" e comece a preencher os preços
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )
       )}
     </div>
   );

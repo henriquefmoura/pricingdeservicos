@@ -61,7 +61,7 @@ export function MarketResearchForm() {
   const [preco, setPreco] = useState('');
   const [descricao, setDescricao] = useState('');
   const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
-  const [showFullHistory, setShowFullHistory] = useState(false);
+  const [showFullHistory, setShowFullHistory] = useState(true);
 
   // Buscar descrição quando o código é alterado
   const handleCodigoChange = (value: string) => {
@@ -151,6 +151,23 @@ export function MarketResearchForm() {
 
   return (
     <div className="space-y-6">
+      {/* Cabeçalho da Página */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 p-3 rounded-lg">
+            <Search className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">
+              Pesquisa de Mercado
+            </h2>
+            <p className="text-blue-100 text-sm mt-1">
+              Registre e acompanhe preços de concorrentes para embasar a precificação dos serviços
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Seletor de Estratégia de Precificação */}
       <Card className="border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
         <CardHeader>

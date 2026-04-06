@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, Plus, Trash2, TrendingUp, History, Clock, Download, ChevronDown, ChevronUp, ArrowUpDown, User } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Search, Plus, Trash2, TrendingUp, History, Clock, Download, ChevronDown, ChevronUp, ArrowUpDown, User, BarChart2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -20,6 +20,17 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ReferenceLine,
+} from 'recharts';
 import { useMarketResearchStore, PricingStrategy, PriceHistoryEntry } from '../store/marketResearchStore';
 import { usePricingCodesStore } from '../store/pricingCodesStore';
 import { useAuthStore } from '../store/authStore';
@@ -51,17 +62,78 @@ function getActionLabel(acao: PriceHistoryEntry['acao']): { label: string; color
   }
 }
 
+type ActivePage = 'pesquisa' | 'historico';
+
+// Build chart data for a service: one point per date with each competitor as a key
+function buildChartData(history: PriceHistoryEntry[]) {
+  // Collect all dates (by day) and competitors
+  const dateMap: Record<string, Record<string, number>> = {};
+  const competitors = new Set<string>();
+
+  // Only consider 'added' and 'updated' actions (not 'removed')
+  const relevantHistory = [...history]
+    .filter((e) => e.acao !== 'removed')
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  relevantHistory.forEach((entry) => {
+    const day = new Date(entry.timestamp).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+    });
+    if (!dateMap[day]) dateMap[day] = {};
+    dateMap[day][entry.concorrente] = entry.preco;
+    competitors.add(entry.concorrente);
+  });
+
+  // Carry-forward: for each day, fill missing competitors from previous values
+  const days = Object.keys(dateMap);
+  const lastValues: Record<string, number> = {};
+  const points = days.map((day) => {
+    const point: Record<string, number | string> = { date: day };
+    competitors.forEach((comp) => {
+      if (dateMap[day][comp] !== undefined) {
+        lastValues[comp] = dateMap[day][comp];
+      }
+      if (lastValues[comp] !== undefined) {
+        point[comp] = lastValues[comp];
+      }
+    });
+    return point;
+  });
+
+  return { points, competitors: Array.from(competitors) };
+}
+
+const CHART_COLORS = ['#78BE20', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#14B8A6'];
+
 export function MarketResearchForm() {
   const { user } = useAuthStore();
   const { codes } = usePricingCodesStore();
   const { researches, strategy, priceHistory, addCompetitorPrice, removeCompetitorPrice, setStrategy, getSuggestedPrice, getPriceHistoryByCode, exportData } = useMarketResearchStore();
   
+  const [activePage, setActivePage] = useState<ActivePage>('pesquisa');
   const [codigo, setCodigo] = useState('');
   const [concorrente, setConcorrente] = useState('');
   const [preco, setPreco] = useState('');
   const [descricao, setDescricao] = useState('');
   const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
   const [showFullHistory, setShowFullHistory] = useState(true);
+
+  // Pre-compute chart data for all services in the history tab
+  const historyChartData = useMemo(() => {
+    return researches.map((research) => {
+      const serviceHistory = getPriceHistoryByCode(research.codigoAvulso);
+      const { points, competitors } = buildChartData(serviceHistory);
+      const suggestedPrice = getSuggestedPrice(research.codigoAvulso);
+      const avgPrice =
+        research.precosConcorrentes.length > 0
+          ? research.precosConcorrentes.reduce((s, c) => s + c.preco, 0) /
+            research.precosConcorrentes.length
+          : null;
+      return { research, points, competitors, suggestedPrice, avgPrice };
+    });
+  }, [researches, getPriceHistoryByCode, getSuggestedPrice]);
 
   // Buscar descrição quando o código é alterado
   const handleCodigoChange = (value: string) => {
@@ -156,20 +228,53 @@ export function MarketResearchForm() {
         className="rounded-xl p-6 text-white shadow-lg"
         style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
       >
-        <div className="flex items-center gap-3">
-          <div className="bg-white/20 p-3 rounded-lg">
-            <Search className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-3 rounded-lg">
+              <Search className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">
+                Pesquisa de Mercado
+              </h2>
+              <p className="text-white/80 text-sm mt-1">
+                Registre e acompanhe preços de concorrentes para embasar a precificação dos serviços
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">
+          {/* Page selector buttons */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActivePage('pesquisa')}
+              className={
+                activePage === 'pesquisa'
+                  ? 'bg-white text-gray-900 border-white hover:bg-gray-100 hover:text-gray-900'
+                  : 'bg-transparent text-white border-white/60 hover:bg-white/10 hover:text-white'
+              }
+            >
+              <Search className="w-4 h-4 mr-2" />
               Pesquisa de Mercado
-            </h2>
-            <p className="text-white/80 text-sm mt-1">
-              Registre e acompanhe preços de concorrentes para embasar a precificação dos serviços
-            </p>
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setActivePage('historico')}
+              className={
+                activePage === 'historico'
+                  ? 'bg-white text-green-700 border-white hover:bg-gray-100'
+                  : 'bg-[#78BE20] text-white border-[#78BE20] hover:bg-[#6aaa1c]'
+              }
+            >
+              <BarChart2 className="w-4 h-4 mr-2" />
+              Histórico de Preços
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* ─── Página: Pesquisa de Mercado ─── */}
+      {activePage === 'pesquisa' && <>
 
       {/* Seletor de Estratégia de Precificação */}
       <Card className="border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
@@ -659,6 +764,195 @@ export function MarketResearchForm() {
             </CardContent>
           )}
         </Card>
+      )}
+      </>}
+
+      {/* ─── Página: Histórico de Preços ─── */}
+      {activePage === 'historico' && (
+        <div className="space-y-6">
+          {historyChartData.length === 0 ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <BarChart2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Nenhum histórico disponível
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Adicione pesquisas de mercado na outra página para visualizar o histórico de preços
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => setActivePage('pesquisa')}
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    Ir para Pesquisa de Mercado
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            historyChartData.map(({ research, points, competitors, suggestedPrice, avgPrice }) => (
+              <Card key={research.codigoAvulso} className="border-2">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <BarChart2 className="w-5 h-5 text-green-600" />
+                        {research.descricao}
+                      </CardTitle>
+                      <CardDescription>Código: {research.codigoAvulso}</CardDescription>
+                    </div>
+                    <div className="flex gap-2 flex-wrap justify-end">
+                      {avgPrice !== null && (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                          Média atual: R$ {avgPrice.toFixed(2)}
+                        </Badge>
+                      )}
+                      {suggestedPrice !== null && (
+                        <Badge className="bg-purple-600 text-white border-0">
+                          Sugerido: R$ {suggestedPrice.toFixed(2)}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {points.length < 2 ? (
+                    <div className="text-center py-8 text-sm text-gray-500">
+                      <History className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                      Apenas {points.length === 1 ? '1 registro' : 'nenhum registro'} disponível — é necessário pelo menos 2 datas distintas para exibir o gráfico.
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <LineChart data={points} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                        <YAxis
+                          tickFormatter={(v) => `R$${v}`}
+                          tick={{ fontSize: 11 }}
+                          width={70}
+                        />
+                        <Tooltip
+                          formatter={(value: number) => [`R$ ${value.toFixed(2)}`, '']}
+                          labelFormatter={(label) => `Data: ${label}`}
+                        />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
+                        {suggestedPrice !== null && (
+                          <ReferenceLine
+                            y={suggestedPrice}
+                            stroke="#8B5CF6"
+                            strokeDasharray="6 3"
+                            label={{ value: 'Preço Sugerido', position: 'insideTopRight', fontSize: 11, fill: '#8B5CF6' }}
+                          />
+                        )}
+                        {competitors.map((comp, idx) => (
+                          <Line
+                            key={comp}
+                            type="monotone"
+                            dataKey={comp}
+                            name={comp}
+                            stroke={CHART_COLORS[idx % CHART_COLORS.length]}
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
+                            connectNulls
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+
+                  {/* Price history table for this service */}
+                  {(() => {
+                    const serviceHistory = getPriceHistoryByCode(research.codigoAvulso);
+                    if (serviceHistory.length === 0) return null;
+                    return (
+                      <div className="mt-6 border rounded-lg overflow-hidden">
+                        <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
+                          <History className="w-4 h-4 text-amber-700" />
+                          <span className="text-sm font-medium text-amber-800">
+                            Histórico de Alterações ({serviceHistory.length} registro(s))
+                          </span>
+                        </div>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Ação</TableHead>
+                              <TableHead>Concorrente</TableHead>
+                              <TableHead className="text-right">Preço</TableHead>
+                              <TableHead className="text-center">Data</TableHead>
+                              <TableHead className="text-center">Registrado por</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {serviceHistory.map((entry) => {
+                              const { label, color } = getActionLabel(entry.acao);
+                              return (
+                                <TableRow key={entry.id}>
+                                  <TableCell>
+                                    <Badge variant="outline" className={`text-xs ${color}`}>
+                                      {label}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="font-medium">{entry.concorrente}</TableCell>
+                                  <TableCell className="text-right">
+                                    {entry.acao === 'updated' && entry.precoAnterior !== undefined ? (
+                                      <div>
+                                        <span className="text-gray-400 line-through text-xs">
+                                          R$ {entry.precoAnterior.toFixed(2)}
+                                        </span>
+                                        <span className="font-semibold text-blue-700 block">
+                                          R$ {entry.preco.toFixed(2)}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className={`font-semibold ${entry.acao === 'removed' ? 'text-red-600' : 'text-green-700'}`}>
+                                        R$ {entry.preco.toFixed(2)}
+                                      </span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-center text-xs text-gray-500">
+                                    <div className="flex items-center justify-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {formatDate(entry.timestamp)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center text-xs text-gray-500">
+                                    <div className="flex items-center justify-center gap-1">
+                                      <User className="w-3 h-3" />
+                                      {entry.registradoPor}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            ))
+          )}
+
+          {/* Export button on history page */}
+          {priceHistory.length > 0 && (
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportData}
+                className="gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+              >
+                <Download className="w-4 h-4" />
+                Exportar JSON
+              </Button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

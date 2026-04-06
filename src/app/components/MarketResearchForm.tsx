@@ -79,7 +79,7 @@ function buildChartData(history: PriceHistoryEntry[]) {
     const day = new Date(entry.timestamp).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
-      year: '2-digit',
+      year: 'numeric',
     });
     if (!dateMap[day]) dateMap[day] = {};
     dateMap[day][entry.concorrente] = entry.preco;
@@ -823,7 +823,9 @@ export function MarketResearchForm() {
                   {points.length < 2 ? (
                     <div className="text-center py-8 text-sm text-gray-500">
                       <History className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                      Apenas {points.length === 1 ? '1 registro' : 'nenhum registro'} disponível — é necessário pelo menos 2 datas distintas para exibir o gráfico.
+                      {points.length === 0
+                        ? 'Nenhum registro disponível para exibir o gráfico.'
+                        : '1 registro disponível — é necessário pelo menos 2 datas distintas para exibir o gráfico.'}
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height={280}>

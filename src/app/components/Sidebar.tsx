@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Upload, BarChart2, Calculator, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, CloudSun, MapPin, Crosshair, Shield, CheckCircle, FileText, Lightbulb, ListChecks, Search, TrendingUp } from 'lucide-react';
+import { Upload, BarChart2, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, CloudSun, MapPin, Crosshair, Shield, CheckCircle, FileText, Lightbulb, ListChecks, Search } from 'lucide-react';
 import { Logo } from './Logo';
 
 export type UserRole = 'Master' | 'Admin' | 'Usuário';
-export type NavItem = 'Upload' | 'Análise' | 'Simulador' | 'Dashboard' | 'Admin' | 'Clima' | 'Territorial' | 'Concorrência' | 'Governança' | 'Códigos' | 'PesquisaMercado' | 'AnaliseMercado';
+export type NavItem = 'Upload' | 'Análise' | 'Dashboard' | 'Admin' | 'Clima' | 'Territorial' | 'Concorrência' | 'Governança' | 'Códigos' | 'PesquisaMercado';
 
 interface NavItemConfig {
   id: NavItem;
@@ -52,8 +52,6 @@ const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemCon
           items: [
             { id: 'Admin', label: 'Precificar', icon: Settings },
             { id: 'PesquisaMercado', label: 'Pesquisa de Mercado', icon: Search },
-            { id: 'AnaliseMercado', label: 'Análise de Mercado', icon: TrendingUp },
-            { id: 'Simulador', label: 'Simulador', icon: Calculator },
           ],
         },
         {
@@ -62,7 +60,6 @@ const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemCon
             { id: 'Clima', label: 'Clima e Sazonalidade', icon: CloudSun },
             { id: 'Territorial', label: 'Inteligência Territorial', icon: MapPin },
             { id: 'Concorrência', label: 'Concorrência', icon: Crosshair },
-            { id: 'Análise', label: 'Análise Geral', icon: BarChart2 },
           ],
         },
       ];

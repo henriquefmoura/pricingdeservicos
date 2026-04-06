@@ -13,12 +13,9 @@ import CompetitorIntelligencePage from "./pages/CompetitorIntelligencePage";
 import GovernancePage from "./pages/GovernancePage";
 import PricingCodesPage from "./pages/PricingCodesPage";
 import MarketResearchPage from "./pages/MarketResearchPage";
-import MarketAnalysisPage from "./pages/MarketAnalysisPage";
-
 // Old pages that still have unique functionality
 import { Comparison } from "./pages/Comparison";
 import { DetailedMetrics } from "./pages/DetailedMetrics";
-import { PricingSimulator } from "./pages/PricingSimulator";
 
 export const router = createBrowserRouter([
   {
@@ -63,10 +60,6 @@ export const router = createBrowserRouter([
     Component: DetailedMetrics,
   },
   {
-    path: "/simulator",
-    Component: PricingSimulator,
-  },
-  {
     path: "/weather",
     Component: WeatherPage,
   },
@@ -81,10 +74,6 @@ export const router = createBrowserRouter([
   {
     path: "/market-research",
     Component: MarketResearchPage,
-  },
-  {
-    path: "/market-analysis",
-    Component: MarketAnalysisPage,
   },
   {
     path: "*",

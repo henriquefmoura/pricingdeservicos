@@ -27,9 +27,6 @@ export function AppLayout({ children, activeNav, title, subtitle }: AppLayoutPro
       case 'Análise':
         navigate('/analysis');
         break;
-      case 'Simulador':
-        navigate('/simulator');
-        break;
       case 'Dashboard':
         navigate('/dashboard');
         break;
@@ -47,9 +44,6 @@ export function AppLayout({ children, activeNav, title, subtitle }: AppLayoutPro
         break;
       case 'PesquisaMercado':
         navigate('/market-research');
-        break;
-      case 'AnaliseMercado':
-        navigate('/market-analysis');
         break;
       case 'Governança':
         navigate('/governance');

@@ -228,7 +228,7 @@ export function MarketResearchForm() {
         className="rounded-xl p-6 text-white shadow-lg"
         style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
       >
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3">
           <div className="bg-white/20 p-3 rounded-lg">
             <Search className="w-6 h-6 text-white" />
           </div>
@@ -241,34 +241,34 @@ export function MarketResearchForm() {
             </p>
           </div>
         </div>
-        {/* Page selector buttons */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setActivePage('pesquisa')}
-            className={
-              activePage === 'pesquisa'
-                ? 'bg-white text-gray-900 border-white hover:bg-gray-100 hover:text-gray-900'
-                : 'bg-transparent text-white border-white/60 hover:bg-white/10 hover:text-white'
-            }
-          >
-            <Search className="w-4 h-4 mr-2" />
-            Pesquisa de Mercado
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => setActivePage('historico')}
-            className={
-              activePage === 'historico'
-                ? 'bg-white text-green-700 border-white hover:bg-gray-100'
-                : 'bg-[#78BE20] text-white border-[#78BE20] hover:bg-[#6aaa1c]'
-            }
-          >
-            <BarChart2 className="w-4 h-4 mr-2" />
-            Histórico de Preços
-          </Button>
-        </div>
+      </div>
+
+      {/* Page selector buttons */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant={activePage === 'pesquisa' ? 'default' : 'outline'}
+          onClick={() => setActivePage('pesquisa')}
+          className={
+            activePage === 'pesquisa'
+              ? 'bg-[#001022] text-white hover:bg-[#001022]/90'
+              : ''
+          }
+        >
+          <Search className="w-4 h-4 mr-2" />
+          Pesquisa de Mercado
+        </Button>
+        <Button
+          variant={activePage === 'historico' ? 'default' : 'outline'}
+          onClick={() => setActivePage('historico')}
+          className={
+            activePage === 'historico'
+              ? 'bg-[#78BE20] text-white hover:bg-[#6aaa1c]'
+              : ''
+          }
+        >
+          <BarChart2 className="w-4 h-4 mr-2" />
+          Histórico de Preços
+        </Button>
       </div>
 
       {/* ─── Página: Pesquisa de Mercado ─── */}

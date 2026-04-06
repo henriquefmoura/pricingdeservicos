@@ -475,34 +475,31 @@ export function PricingSimulator() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/analysis')}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar
-              </Button>
-              <div>
-                <h1 className="text-2xl text-gray-900 flex items-center gap-2">
-                  <Calculator className="w-6 h-6" />
-                  Simulador de Precificação
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Use as praças parâmetro para sugerir preços automaticamente
-                </p>
-              </div>
+      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+        {/* Gradient header */}
+        <div
+          className="rounded-xl p-6 text-white shadow-lg"
+          style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
+        >
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/analysis')}
+              className="text-white hover:bg-white/10 border border-white/20"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+            <div className="bg-white/20 p-3 rounded-lg">
+              <Calculator className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Simulador de Precificação</h2>
+              <p className="text-white/80 text-sm mt-1">Use as praças parâmetro para sugerir preços automaticamente</p>
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-6">
         {/* Configuração */}
         <Card className="border-2 border-blue-200">
           <CardHeader>

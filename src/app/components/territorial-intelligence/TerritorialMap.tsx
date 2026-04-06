@@ -570,21 +570,27 @@ export function TerritorialMap({
               icon={getCnaeMarkerIcon(prof.cnae)}
             >
               <Popup>
-                <div className="text-sm">
-                  <p className="font-bold" style={{ color }}>
-                    {catMeta?.icon} {catMeta?.label ?? 'Profissional'}
-                  </p>
-                  <p className="text-gray-700 font-medium">{prof.cnaeDescription}</p>
-                  <p className="text-gray-500 text-xs">CNAE: {prof.cnae}</p>
-                  {rating !== null && (
-                    <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-gray-100">
-                      <span className="text-amber-400 text-sm">{'★'.repeat(Math.round(rating))}{'☆'.repeat(5 - Math.round(rating))}</span>
-                      <span className="text-gray-700 text-xs font-semibold">{rating.toFixed(1)}</span>
-                      {reviewCount !== null && (
-                        <span className="text-gray-400 text-xs">({reviewCount} avaliações)</span>
-                      )}
-                    </div>
-                  )}
+                <div className="text-sm min-w-[180px]">
+                  {/* Highlighted header — category label + rating */}
+                  <div
+                    className="rounded-md px-2 py-1.5 mb-2 -mx-1"
+                    style={{ backgroundColor: `${color}18` }}
+                  >
+                    <p className="font-bold leading-tight" style={{ color }}>
+                      {catMeta?.icon} {catMeta?.label ?? 'Profissional'}
+                    </p>
+                    {rating !== null && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-amber-400 text-xs leading-none">{'★'.repeat(Math.round(rating))}{'☆'.repeat(5 - Math.round(rating))}</span>
+                        <span className="text-xs font-semibold" style={{ color }}>{rating.toFixed(1)}</span>
+                        {reviewCount !== null && (
+                          <span className="text-gray-400 text-xs">({reviewCount} av.)</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-gray-700 font-medium leading-snug">{prof.cnaeDescription}</p>
+                  <p className="text-gray-400 text-xs mt-0.5">CNAE: {prof.cnae}</p>
                 </div>
               </Popup>
             </Marker>

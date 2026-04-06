@@ -153,13 +153,23 @@ export function PricingGovernanceDashboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
-      <div>
-        <h2 style={{ fontSize: '20px', fontWeight: 700, color: COLORS.dark, margin: 0 }}>
-          Acompanhamento Precificação
-        </h2>
-        <p style={{ fontSize: '14px', color: COLORS.gray, margin: '4px 0 0 0' }}>
-          Acompanhamento do processo de precificação — atividade dos usuários, volume e qualidade
-        </p>
+      <div
+        className="rounded-xl shadow-lg"
+        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: '24px' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '8px' }}>
+            <BarChart3 size={24} style={{ color: '#FFFFFF' }} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
+              Acompanhamento Precificação
+            </h2>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
+              Acompanhamento do processo de precificação — atividade dos usuários, volume e qualidade
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Summary stat cards - Row 1 */}

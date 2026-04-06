@@ -223,35 +223,37 @@ export function DetailedMetrics() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {/* Gradient header */}
+        <div
+          className="rounded-xl p-6 text-white shadow-lg mb-6"
+          style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/analysis')}
+                className="text-white hover:bg-white/10 border border-white/20"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar
               </Button>
+              <div className="bg-white/20 p-3 rounded-lg">
+                <FileSpreadsheet className="w-6 h-6 text-white" />
+              </div>
               <div>
-                <h1 className="text-2xl text-gray-900">Métricas Detalhadas</h1>
-                <p className="text-sm text-gray-600">
-                  Todas as métricas calculadas pela análise
-                </p>
+                <h2 className="text-2xl font-bold tracking-tight">Métricas Detalhadas</h2>
+                <p className="text-white/80 text-sm mt-1">Todas as métricas calculadas pela análise</p>
               </div>
             </div>
-            <Button onClick={exportAllMetrics} className="gap-2">
-              <Download className="w-4 h-4" />
+            <Button onClick={exportAllMetrics} className="bg-white/20 hover:bg-white/30 text-white border-white/30" variant="outline">
+              <Download className="w-4 h-4 mr-2" />
               Exportar Tudo (Excel)
             </Button>
           </div>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <Tabs defaultValue="plazas" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="plazas">Estatísticas</TabsTrigger>

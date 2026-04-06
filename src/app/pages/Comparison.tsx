@@ -109,33 +109,31 @@ export function Comparison() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/analysis')}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar
-              </Button>
-              <div>
-                <h1 className="text-2xl text-gray-900">
-                  Comparação Detalhada
-                </h1>
-                <p className="text-sm text-gray-600">
-                  {plaza1} vs {plaza2}
-                </p>
-              </div>
+      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+        {/* Gradient header */}
+        <div
+          className="rounded-xl p-6 text-white shadow-lg"
+          style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
+        >
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/analysis')}
+              className="text-white hover:bg-white/10 border border-white/20"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+            <div className="bg-white/20 p-3 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Comparação Detalhada</h2>
+              <p className="text-white/80 text-sm mt-1">{plaza1} vs {plaza2}</p>
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-6">
         {/* Cards de resumo */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>

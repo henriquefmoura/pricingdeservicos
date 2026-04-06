@@ -129,16 +129,30 @@ export default function MasterHomePage() {
   }
 
   return (
-    <AppLayout activeNav="Upload" title="Upload de Dados" subtitle="Faça upload de arquivos Excel com preços das praças">
+    <AppLayout activeNav="Upload" title="" subtitle="">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1440px' }}>
+        {/* Page header banner */}
+        <div
+          className="rounded-xl shadow-lg"
+          style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: '24px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '8px' }}>
+              <FileSpreadsheet size={24} style={{ color: '#FFFFFF' }} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
+                Upload de Dados
+              </h2>
+              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
+                Faça upload de arquivos Excel com preços das praças
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Upload Card */}
         <HighlightedCard>
-          <h2 style={{ font: 'var(--font-card-title)', color: 'var(--text-card-title)', marginBottom: '8px' }}>
-            Upload de Dados
-          </h2>
-          <p style={{ font: 'var(--font-body)', color: 'var(--text-body)', marginBottom: '24px' }}>
-            Arquivo Excel com preços das praças
-          </p>
 
           {/* Error Alert */}
           {error && (

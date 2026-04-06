@@ -114,13 +114,18 @@ export function TerritorialDashboard() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-[#78BE20]/10 flex items-center justify-center">
-          <MapPin className="w-5 h-5 text-[#78BE20]" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">Inteligência Territorial</h1>
-          <p className="text-sm text-gray-500">Análise socioeconômica e de oferta por praça</p>
+      <div
+        className="rounded-xl p-6 text-white shadow-lg"
+        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 p-3 rounded-lg">
+            <MapPin className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Inteligência Territorial</h2>
+            <p className="text-white/80 text-sm mt-1">Análise socioeconômica e de oferta por praça</p>
+          </div>
         </div>
       </div>
 

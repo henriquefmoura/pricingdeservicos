@@ -10,7 +10,7 @@ import { HistoricalTemperatureChart } from './HistoricalTemperatureChart';
 import { ClimateInsightBox } from './ClimateInsightBox';
 import { OperationalRiskBadge } from './OperationalRiskBadge';
 import { WeatherSkeleton } from './WeatherSkeleton';
-import { CloudOff, RefreshCw, AlertTriangle } from 'lucide-react';
+import { CloudOff, RefreshCw, AlertTriangle, Cloud } from 'lucide-react';
 
 interface WeatherModuleProps {
   /** Cidade inicial (opcional) */
@@ -57,67 +57,50 @@ export function WeatherModule({ initialCity, latitude, longitude }: WeatherModul
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px',
-        }}
+        className="rounded-xl shadow-lg"
+        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: '24px' }}
       >
-        <div>
-          <h2
-            style={{
-              fontSize: '22px',
-              fontWeight: 700,
-              color: '#0F172A',
-              margin: 0,
-            }}
-          >
-            🌤️ Clima da Praça
-          </h2>
-          <p
-            style={{
-              fontSize: '14px',
-              color: '#64748B',
-              margin: '4px 0 0',
-            }}
-          >
-            Condições climáticas e impacto operacional
-          </p>
-        </div>
-
-        {summary && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <OperationalRiskBadge risk={summary.operationalRisk} />
-            <button
-              onClick={refresh}
-              disabled={loading}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: '1px solid #E2E8F0',
-                backgroundColor: '#FFFFFF',
-                color: '#475569',
-                fontSize: '13px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#78BE20';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#E2E8F0';
-              }}
-            >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-              Atualizar
-            </button>
+            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '8px' }}>
+              <Cloud size={24} style={{ color: '#FFFFFF' }} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
+                🌤️ Clima da Praça
+              </h2>
+              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
+                Condições climáticas e impacto operacional
+              </p>
+            </div>
           </div>
-        )}
+
+          {summary && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <OperationalRiskBadge risk={summary.operationalRisk} />
+              <button
+                onClick={refresh}
+                disabled={loading}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 14px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.4)',
+                  backgroundColor: 'rgba(255,255,255,0.15)',
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                Atualizar
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* City Selector */}

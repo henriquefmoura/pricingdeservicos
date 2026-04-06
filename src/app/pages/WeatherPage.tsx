@@ -7,7 +7,7 @@ import { WeatherModule } from '../components/weather/WeatherModule';
 
 export default function WeatherPage() {
   return (
-    <AppLayout activeNav="Clima" title="Clima da Praça" subtitle="Condições climáticas e impacto operacional">
+    <AppLayout activeNav="Clima" title="" subtitle="">
       <WeatherModule />
     </AppLayout>
   );

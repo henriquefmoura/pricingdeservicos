@@ -7,7 +7,7 @@ import { TerritorialDashboard } from '../components/territorial-intelligence/Ter
 
 export default function TerritorialIntelligencePage() {
   return (
-    <AppLayout activeNav="Territorial" title="Inteligência Territorial" subtitle="Análise socioeconômica e de oferta por praça">
+    <AppLayout activeNav="Territorial" title="" subtitle="">
       <TerritorialDashboard />
     </AppLayout>
   );

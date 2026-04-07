@@ -246,7 +246,27 @@ export default function AnalysisPage() {
   ];
 
   return (
-    <AppLayout activeNav="Análise" title="Análise Geral" subtitle={hasRealData ? `${plazaStats.length} praças • ${data!.length} serviços` : 'Correlações entre praças e identificação de parâmetros'}>
+    <AppLayout activeNav="Análise" title="" subtitle="">
+      {/* Page header banner */}
+      <div
+        className="rounded-xl shadow-lg"
+        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: '24px', marginBottom: '24px' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '8px' }}>
+            <TrendingUp size={24} style={{ color: '#FFFFFF' }} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
+              Análise Geral
+            </h2>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
+              {hasRealData ? `${plazaStats.length} praças • ${data!.length} serviços` : 'Correlações entre praças e identificação de parâmetros'}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Actions */}
       {hasRealData && (
         <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>

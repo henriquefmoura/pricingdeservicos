@@ -198,8 +198,28 @@ export default function AdminPricingPage() {
   }
 
   return (
-    <AppLayout activeNav="Admin" title="Precificação" subtitle={`Defina preços de repasse e venda para praça ${user?.plaza || ''}`}>
+    <AppLayout activeNav="Admin" title="" subtitle="">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            {/* Page header banner */}
+            <div
+              className="rounded-xl shadow-lg"
+              style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: '24px' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '8px' }}>
+                  <Sparkles size={24} style={{ color: '#FFFFFF' }} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
+                    Precificação
+                  </h2>
+                  <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
+                    {`Defina preços de repasse e venda para praça ${user?.plaza || ''}`}
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {/* Top bar: Stats + Search */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>

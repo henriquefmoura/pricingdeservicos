@@ -7,7 +7,7 @@ import { CompetitorDashboard } from '../components/competitor-intelligence/Compe
 
 export default function CompetitorIntelligencePage() {
   return (
-    <AppLayout activeNav="Concorrência" title="Inteligência Competitiva" subtitle="Análise de preços de mercado por praça e serviço">
+    <AppLayout activeNav="Concorrência" title="" subtitle="">
       <CompetitorDashboard />
     </AppLayout>
   );

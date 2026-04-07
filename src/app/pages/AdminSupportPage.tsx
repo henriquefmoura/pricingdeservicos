@@ -32,7 +32,7 @@ export default function AdminSupportPage() {
         {/* Page header banner */}
         <div
           className="rounded-xl shadow-lg"
-          style={{ background: 'linear-gradient(to right, #001022, #0a2a4a, #3B82F6)', padding: '24px' }}
+          style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: '24px' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '8px' }}>

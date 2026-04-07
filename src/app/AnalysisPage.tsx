@@ -34,10 +34,14 @@ export default function AnalysisPage() {
     enabled: true,
   });
 
-  // Auth guard
+  // Auth guard — only Master has access to this page
   useEffect(() => {
     if (!isAuthenticated || !user) {
       navigate('/login');
+      return;
+    }
+    if (user.role === 'user') {
+      navigate('/dashboard');
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -329,18 +333,13 @@ export default function AnalysisPage() {
           <div>
             <p style={{ fontSize: '14px', fontWeight: 600, color: '#92400E' }}>Dados de demonstração</p>
             <p style={{ fontSize: '13px', color: '#92400E' }}>
-              {user?.role === 'master'
-                ? 'Faça upload de um arquivo Excel na página Upload para ver análises reais. '
-                : 'Exibindo dados de demonstração. Solicite ao usuário Master o upload de dados para análises reais.'
-              }
-              {user?.role === 'master' && (
-                <button
-                  onClick={() => navigate('/home')}
-                  style={{ background: 'none', border: 'none', color: '#78BE20', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
-                >
-                  Ir para Upload
-                </button>
-              )}
+              Faça upload de um arquivo Excel na página Upload para ver análises reais.{' '}
+              <button
+                onClick={() => navigate('/home')}
+                style={{ background: 'none', border: 'none', color: '#78BE20', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Ir para Upload
+              </button>
             </p>
           </div>
         </div>

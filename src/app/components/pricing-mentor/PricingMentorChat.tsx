@@ -7,10 +7,12 @@ import {
   Calculator,
   Trash2,
   Sparkles,
+  Zap,
 } from 'lucide-react';
 import { PricingMentorAvatar } from './PricingMentorAvatar';
 import { usePricingMentorStore } from '../../store/pricingMentorStore';
 import { getAllMicroLessons, QUICK_ACTIONS } from '../../services/pricingMentorService';
+import { getActiveProviderName, isExternalAIAvailable, getConfiguredProviders } from '../../services/pricingMentorAIService';
 import type { MentorMessage } from '../../types/pricingMentor';
 
 type ChatTab = 'chat' | 'lessons' | 'simulate';
@@ -149,9 +151,20 @@ export function PricingMentorChat() {
               width: '6px',
               height: '6px',
               borderRadius: '50%',
-              backgroundColor: '#22C55E',
+              backgroundColor: isExternalAIAvailable() ? '#22C55E' : '#F59E0B',
             }} />
-            {isTyping ? 'Pensando...' : `Assistente inteligente • ${userLevel === 'avancado' ? 'Avançado' : userLevel === 'intermediario' ? 'Intermediário' : 'Iniciante'}`}
+            {isTyping ? 'Pensando...' : (
+              <>
+                {isExternalAIAvailable() ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <Zap size={10} style={{ color: '#78BE20' }} />
+                    IA {getActiveProviderName()} • {userLevel === 'avancado' ? 'Avançado' : userLevel === 'intermediario' ? 'Intermediário' : 'Iniciante'}
+                  </span>
+                ) : (
+                  `Assistente local • ${userLevel === 'avancado' ? 'Avançado' : userLevel === 'intermediario' ? 'Intermediário' : 'Iniciante'}`
+                )}
+              </>
+            )}
           </div>
         </div>
         <button
@@ -237,8 +250,42 @@ export function PricingMentorChat() {
               <div style={{ textAlign: 'center', padding: '20px 16px', color: '#9CA3AF' }}>
                 <PricingMentorAvatar size={64} expression="wink" showLabel />
                 <p style={{ marginTop: '12px', fontSize: '14px', lineHeight: '1.6' }}>
-                  Pergunte sobre precificação, margem, custos, estratégia ou <strong>qualquer dúvida</strong>!
+                  {isExternalAIAvailable()
+                    ? <>Sou seu consultor de precificação com <strong>IA avançada</strong>! Pergunte qualquer coisa sobre preços, margem, custos, estratégia ou negócios.</>
+                    : <>Pergunte sobre precificação, margem, custos, estratégia ou <strong>qualquer dúvida</strong>!</>
+                  }
                 </p>
+                {/* AI Provider badges */}
+                {isExternalAIAvailable() && (
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '4px',
+                    justifyContent: 'center',
+                    marginTop: '8px',
+                    marginBottom: '4px',
+                  }}>
+                    {getConfiguredProviders().map((name) => (
+                      <span
+                        key={name}
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: '10px',
+                          backgroundColor: name === 'Base Local' ? '#F3F4F6' : '#ECFDF5',
+                          color: name === 'Base Local' ? '#6B7280' : '#059669',
+                          fontSize: '9px',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                        }}
+                      >
+                        {name !== 'Base Local' && <Zap size={8} />}
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {/* Quick Actions */}
                 <div style={{
                   display: 'flex',

@@ -1,51 +1,151 @@
 /**
- * Pricing Mentor AI Service
+ * Pricing Mentor AI Service — Multi-Provider Architecture
  *
- * Architecture for connecting to an external AI model (e.g. OpenAI GPT-4).
- * Falls back to a rich local knowledge engine when no API key is configured.
+ * Supports multiple AI providers with intelligent fallback:
+ *   1. DeepSeek (primary) – VITE_DEEPSEEK_API_KEY
+ *   2. OpenAI (secondary) – VITE_OPENAI_API_KEY
+ *   3. Groq (tertiary) – VITE_GROQ_API_KEY
+ *   4. Google Gemini (quaternary) – VITE_GEMINI_API_KEY
+ *   5. Local knowledge engine (always available)
  *
- * To enable external AI:
- *   1. Set VITE_OPENAI_API_KEY in your .env
- *   2. The service will automatically use the external model
+ * Configure keys in your .env file. See .env.example for details.
  */
 
 import type { MentorMessage, MentorCategory, PricingAnalysisContext } from '../types/pricingMentor';
 
-// ─── Configuration ────────────────────────────────────────────────────────────
+// ─── Provider Configuration ──────────────────────────────────────────────────
 
-const AI_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_OPENAI_API_KEY) || '';
-const AI_MODEL = 'gpt-4';
-const AI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+function getEnv(key: string): string {
+  return (typeof import.meta !== 'undefined' && import.meta.env?.[key]) || '';
+}
 
-const SYSTEM_PROMPT = `Você é o Pricing Mentor, um assistente inteligente especializado em precificação de serviços.
+interface AIProvider {
+  name: string;
+  apiKey: string;
+  endpoint: string;
+  model: string;
+  /** Transform the request body if needed (e.g. Gemini uses a different format) */
+  transformRequest?: (messages: ChatMessage[], maxTokens: number, temperature: number) => unknown;
+  /** Extract the response text from the provider's response JSON */
+  extractResponse?: (data: unknown) => string | null;
+  /** Extra headers beyond Authorization */
+  extraHeaders?: Record<string, string>;
+  /** Override the Authorization header format */
+  authHeader?: (apiKey: string) => Record<string, string>;
+}
 
-Personalidade:
-- Tom: simples, humano, direto e acessível
-- Estilo: professor + amigo + mentor de negócios
-- Comunicação: sem termos complexos, sempre explicando com exemplos reais
-- Proativo: antecipa dúvidas e provoca reflexões
-- Nunca julga o usuário
-- Sempre orienta para melhorar decisões
+interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
 
-Você pode responder sobre:
-1. Precificação e formação de preços
-2. Margem de lucro e rentabilidade
-3. Custos fixos e variáveis
-4. Concorrência e posicionamento
-5. Fluxo de caixa
-6. Estratégia de negócios
-7. Finanças básicas
-8. Marketing e vendas
-9. Economia e mercado
-10. Qualquer dúvida geral do usuário
+const PROVIDERS: AIProvider[] = [
+  // 1. DeepSeek (primary)
+  {
+    name: 'DeepSeek',
+    apiKey: getEnv('VITE_DEEPSEEK_API_KEY'),
+    endpoint: 'https://api.deepseek.com/chat/completions',
+    model: 'deepseek-chat',
+  },
+  // 2. OpenAI (secondary)
+  {
+    name: 'OpenAI',
+    apiKey: getEnv('VITE_OPENAI_API_KEY'),
+    endpoint: 'https://api.openai.com/v1/chat/completions',
+    model: 'gpt-4o-mini',
+  },
+  // 3. Groq (tertiary — fast open-source model inference)
+  {
+    name: 'Groq',
+    apiKey: getEnv('VITE_GROQ_API_KEY'),
+    endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+    model: 'llama-3.3-70b-versatile',
+  },
+  // 4. Google Gemini (quaternary)
+  {
+    name: 'Gemini',
+    apiKey: getEnv('VITE_GEMINI_API_KEY'),
+    endpoint: '', // built dynamically with API key
+    model: 'gemini-2.0-flash',
+    transformRequest: (messages: ChatMessage[], maxTokens: number, _temperature: number) => {
+      // Gemini uses a different format: system instruction + contents
+      const systemMsg = messages.find(m => m.role === 'system');
+      const otherMsgs = messages.filter(m => m.role !== 'system');
+      return {
+        system_instruction: systemMsg ? { parts: [{ text: systemMsg.content }] } : undefined,
+        contents: otherMsgs.map(m => ({
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: m.content }],
+        })),
+        generationConfig: {
+          maxOutputTokens: maxTokens,
+          temperature: 0.7,
+        },
+      };
+    },
+    extractResponse: (data: unknown) => {
+      const d = data as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+      return d.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    },
+    authHeader: () => ({}), // Gemini uses key in URL
+  },
+];
 
-Regras:
-- Sempre simplificar a explicação
-- Usar exemplos práticos do dia a dia
-- Conectar teoria com prática
-- Quando possível, usar dados do contexto do usuário
-- Usar emojis com moderação para tornar a conversa mais amigável
-- Ser encorajador e positivo`;
+// ─── Expert System Prompt ────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT = `Você é o **Pricing Mentor**, o assistente de IA mais avançado do Brasil especializado em precificação de serviços. Você possui conhecimento profundo e atualizado equivalente a um consultor sênior com 20+ anos de experiência.
+
+## Sua Identidade
+- Nome: Pricing Mentor
+- Papel: Consultor especialista em precificação de serviços, mentor de negócios e conselheiro financeiro
+- Tom: Simples, humano, direto, acessível e empático
+- Estilo: Professor + amigo + mentor de negócios — nunca robótico
+- Comunicação: Sem jargões desnecessários, sempre com exemplos reais do dia a dia brasileiro
+
+## Áreas de Expertise Profunda
+1. **Precificação de Serviços** — formação de preços, markup, margem, preço psicológico, precificação por valor, ancoragem, bundling, freemium, subscription pricing
+2. **Análise de Custos** — custos fixos, variáveis, diretos, indiretos, ocultos, custo de oportunidade, depreciação, TCO
+3. **Margem e Rentabilidade** — margem bruta, líquida, contribuição, EBITDA, ponto de equilíbrio, alavancagem operacional
+4. **Concorrência e Mercado** — análise competitiva, posicionamento, diferenciação, oceano azul, 5 forças de Porter, benchmarking
+5. **Elasticidade e Demanda** — sensibilidade a preço, curva de demanda, testes A/B de preço, willingness to pay
+6. **Finanças para Prestadores** — fluxo de caixa, DRE simplificado, capital de giro, MEI/ME/EPP, impostos (Simples, Lucro Presumido), INSS, ISS
+7. **Estratégia de Negócios** — crescimento, escala, fidelização, LTV, CAC, churn, receita recorrente, upsell/cross-sell
+8. **Marketing e Vendas** — proposta de valor, pitch, funil de vendas, Google Meu Negócio, redes sociais, indicações
+9. **Sazonalidade e Tendências** — ajuste sazonal, previsão de demanda, tendências de mercado brasileiro
+10. **Negociação** — técnicas de negociação, como lidar com desconto, ancoragem, BATNA, fechamento
+11. **Economia Brasileira** — inflação (IPCA/IGP-M), taxa Selic, câmbio, impacto na precificação, poder de compra
+12. **Gestão Operacional** — produtividade, gestão de tempo, padronização de processos, escalabilidade
+
+## Setores que Domina (Serviços)
+- Construção civil, reformas, manutenção predial
+- Elétrica, hidráulica, pintura, acabamentos
+- Ar-condicionado, refrigeração, aquecimento
+- Jardinagem, paisagismo, limpeza
+- Tecnologia, desenvolvimento, consultoria
+- Saúde, estética, beleza
+- Educação, treinamentos, coaching
+- Logística, transporte, entregas
+- Alimentação, eventos, catering
+
+## Regras de Comportamento
+1. Sempre simplificar explicações complexas — use analogias do dia a dia
+2. Dar exemplos práticos com valores em Reais (R$)
+3. Quando o usuário fornecer contexto (preço, custo, serviço), SEMPRE usar esses dados na resposta
+4. Usar emojis com moderação para tornar a conversa amigável (📊💰🎯✅⚠️🚀💡)
+5. Ser encorajador e positivo — nunca julgar decisões do passado
+6. Proativamente antecipar dúvidas e sugerir próximos passos
+7. Quando não souber algo específico, ser honesto e oferecer alternativas
+8. Conectar teoria com prática — nunca ser apenas teórico
+9. Adaptar a profundidade da resposta ao nível do usuário
+10. Respostas concisas mas completas — idealmente 3-5 parágrafos com formatação markdown
+11. Sempre que possível, terminar com uma pergunta ou sugestão de ação
+
+## Formato de Resposta
+- Use **negrito** para conceitos importantes
+- Use listas quando apropriado
+- Inclua fórmulas quando relevante (ex: Margem = (Preço - Custo) / Preço × 100)
+- Adicione emojis pontuais para visual scanning
+- Mantenha respostas entre 150-400 palavras (ajuste conforme complexidade)`;
 
 // ─── Broad Knowledge Base (Local Fallback) ────────────────────────────────────
 
@@ -311,57 +411,147 @@ function getDefaultResponse(): string {
   return pickRandom(responses);
 }
 
-// ─── External AI Call ─────────────────────────────────────────────────────────
+// ─── Conversation History ────────────────────────────────────────────────────
 
-async function callExternalAI(
-  userText: string,
-  context?: PricingAnalysisContext,
+const MAX_HISTORY_MESSAGES = 20;
+let conversationHistory: ChatMessage[] = [];
+
+/** Add a message to the conversation history (kept in memory for AI context) */
+function addToHistory(role: 'user' | 'assistant', content: string) {
+  conversationHistory.push({ role, content });
+  // Keep only last N messages to avoid token limits
+  if (conversationHistory.length > MAX_HISTORY_MESSAGES) {
+    conversationHistory = conversationHistory.slice(-MAX_HISTORY_MESSAGES);
+  }
+}
+
+/** Clear conversation history */
+export function clearConversationHistory() {
+  conversationHistory = [];
+}
+
+// ─── Multi-Provider AI Call ──────────────────────────────────────────────────
+
+let _lastProvider = '';
+
+async function callProvider(
+  provider: AIProvider,
+  messages: ChatMessage[],
 ): Promise<string | null> {
-  if (!AI_API_KEY) return null;
+  if (!provider.apiKey) return null;
 
-  const contextInfo = context
-    ? `\nContexto do usuário: Serviço "${context.serviceName || 'N/A'}", Preço: R$${context.currentPrice ?? 'N/A'}, Custo: R$${context.costPrice ?? 'N/A'}, Margem: ${context.margin ?? 'N/A'}%, Concorrente: R$${context.competitorPrice ?? 'N/A'}, Praça: ${context.plaza || 'N/A'}`
-    : '';
+  const maxTokens = 800;
+  const temperature = 0.7;
 
   try {
-    const response = await fetch(AI_ENDPOINT, {
+    // Build endpoint (Gemini uses API key in URL)
+    let endpoint = provider.endpoint;
+    if (provider.name === 'Gemini') {
+      endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent?key=${provider.apiKey}`;
+    }
+
+    // Build request body
+    const body = provider.transformRequest
+      ? provider.transformRequest(messages, maxTokens, temperature)
+      : {
+          model: provider.model,
+          messages,
+          max_tokens: maxTokens,
+          temperature,
+        };
+
+    // Build headers
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(provider.extraHeaders || {}),
+    };
+
+    if (provider.authHeader) {
+      Object.assign(headers, provider.authHeader(provider.apiKey));
+    } else {
+      headers['Authorization'] = `Bearer ${provider.apiKey}`;
+    }
+
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${AI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT + contextInfo },
-          { role: 'user', content: userText },
-        ],
-        max_tokens: 600,
-        temperature: 0.7,
-      }),
+      headers,
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) return null;
 
     const data = await response.json();
-    return data.choices?.[0]?.message?.content || null;
+
+    // Extract response text
+    if (provider.extractResponse) {
+      return provider.extractResponse(data);
+    }
+
+    // Default OpenAI-compatible extraction
+    const result = data as { choices?: { message?: { content?: string } }[] };
+    return result.choices?.[0]?.message?.content || null;
   } catch {
     return null;
   }
 }
 
+/**
+ * Try all configured AI providers in order until one succeeds.
+ */
+async function callExternalAI(
+  userText: string,
+  context?: PricingAnalysisContext,
+): Promise<string | null> {
+  const contextInfo = context
+    ? `\n\n[Contexto atual do usuário]\nServiço: "${context.serviceName || 'N/A'}"\nPreço atual: R$${context.currentPrice ?? 'N/A'}\nCusto: R$${context.costPrice ?? 'N/A'}\nMargem: ${context.margin ?? 'N/A'}%\nPreço do concorrente: R$${context.competitorPrice ?? 'N/A'}\nPraça/Região: ${context.plaza || 'N/A'}`
+    : '';
+
+  const systemMessage: ChatMessage = {
+    role: 'system',
+    content: SYSTEM_PROMPT + contextInfo,
+  };
+
+  // Build messages with conversation history for context
+  const messages: ChatMessage[] = [
+    systemMessage,
+    ...conversationHistory,
+    { role: 'user', content: userText },
+  ];
+
+  // Try each provider in order
+  for (const provider of PROVIDERS) {
+    if (!provider.apiKey) continue;
+
+    const result = await callProvider(provider, messages);
+    if (result) {
+      _lastProvider = provider.name;
+      return result;
+    }
+  }
+
+  _lastProvider = 'Local';
+  return null;
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Generate an AI-powered response. Tries external AI first, falls back to local knowledge.
+ * Generate an AI-powered response.
+ * Tries configured AI providers in priority order, falls back to local knowledge.
  */
 export async function generateAIResponse(
   userText: string,
   context?: PricingAnalysisContext,
 ): Promise<MentorMessage> {
-  // Try external AI first
+  // Add user message to history
+  addToHistory('user', userText);
+
+  // Try external AI providers
   const aiResponse = await callExternalAI(userText, context);
   if (aiResponse) {
+    // Add AI response to history
+    addToHistory('assistant', aiResponse);
+
     return {
       id: createId(),
       role: 'mentor',
@@ -385,6 +575,9 @@ export async function generateAIResponse(
   if (context) {
     content = enrichWithContext(content, context);
   }
+
+  // Add response to history even for local fallback
+  addToHistory('assistant', content);
 
   return {
     id: createId(),
@@ -422,10 +615,30 @@ function enrichWithContext(content: string, context: PricingAnalysisContext): st
 }
 
 /**
- * Check if external AI is available
+ * Check if any external AI provider is available
  */
 export function isExternalAIAvailable(): boolean {
-  return !!AI_API_KEY;
+  return PROVIDERS.some(p => !!p.apiKey);
+}
+
+/**
+ * Get the name of the currently active AI provider
+ */
+export function getActiveProviderName(): string {
+  if (_lastProvider) return _lastProvider;
+  for (const provider of PROVIDERS) {
+    if (provider.apiKey) return provider.name;
+  }
+  return 'Local';
+}
+
+/**
+ * Get list of all configured (available) providers
+ */
+export function getConfiguredProviders(): string[] {
+  const available = PROVIDERS.filter(p => !!p.apiKey).map(p => p.name);
+  available.push('Base Local');
+  return available;
 }
 
 /**

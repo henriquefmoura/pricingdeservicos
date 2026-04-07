@@ -76,12 +76,24 @@ export function PricingMentorWidget() {
           50% { box-shadow: 0 0 0 12px rgba(120, 190, 32, 0); }
         }
         @keyframes mentorFloat {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
+          0%, 100% { transform: translateY(0) translateX(0); }
+          25%      { transform: translateY(-3px) translateX(-2px); }
+          50%      { transform: translateY(-5px) translateX(0); }
+          75%      { transform: translateY(-3px) translateX(2px); }
         }
         @keyframes mentorGlow {
           0%, 100% { box-shadow: 0 4px 20px rgba(120, 190, 32, 0.3); }
           50% { box-shadow: 0 4px 30px rgba(120, 190, 32, 0.5); }
+        }
+        @keyframes mentorWalkIn {
+          0%   { transform: translateX(80px) translateY(0); opacity: 0; }
+          60%  { transform: translateX(-4px) translateY(-3px); opacity: 1; }
+          80%  { transform: translateX(2px) translateY(0); opacity: 1; }
+          100% { transform: translateX(0) translateY(0); opacity: 1; }
+        }
+        @keyframes mentorGrowPulse {
+          0%, 100% { transform: scale(1); }
+          50%      { transform: scale(1.12); }
         }
       `}</style>
 
@@ -115,15 +127,15 @@ export function PricingMentorWidget() {
       {/* Chat Panel */}
       <PricingMentorChat />
 
-      {/* Floating Action Button (FAB) with large avatar */}
+      {/* Floating Action Button (FAB) with 3D installer avatar */}
       <button
         onClick={toggleOpen}
         style={{
           position: 'fixed',
           bottom: 24,
           right: 24,
-          width: isOpen ? '56px' : '68px',
-          height: isOpen ? '56px' : '68px',
+          width: isOpen ? '56px' : '72px',
+          height: isOpen ? '56px' : '72px',
           borderRadius: '50%',
           border: 'none',
           backgroundColor: isOpen ? '#001022' : 'transparent',
@@ -134,7 +146,9 @@ export function PricingMentorWidget() {
           zIndex: 9999,
           boxShadow: isOpen ? '0 4px 20px rgba(0,0,0,0.2)' : 'none',
           transition: 'all 0.3s ease',
-          animation: isOpen ? undefined : 'mentorFloat 3s ease-in-out infinite',
+          animation: isOpen
+            ? undefined
+            : 'mentorFloat 3s ease-in-out infinite, mentorGrowPulse 6s ease-in-out infinite',
           padding: 0,
         }}
         aria-label={isOpen ? 'Fechar Pricing Mentor' : 'Abrir Pricing Mentor'}
@@ -142,7 +156,7 @@ export function PricingMentorWidget() {
         {isOpen ? (
           <X size={24} style={{ color: '#78BE20' }} />
         ) : (
-          <PricingMentorAvatar size={68} expression={expression} />
+          <PricingMentorAvatar size={72} expression={expression} />
         )}
       </button>
 

@@ -32,11 +32,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { messages, max_tokens = 800, temperature = 0.7 } = req.body;
+    const { messages, max_tokens, temperature } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Invalid request: messages array required' });
     }
+
+    // Validate and clamp parameters
+    const safeMaxTokens = typeof max_tokens === 'number' && max_tokens > 0 && max_tokens <= 4096
+      ? max_tokens : 800;
+    const safeTemperature = typeof temperature === 'number' && temperature >= 0 && temperature <= 2
+      ? temperature : 0.7;
 
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -47,8 +53,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages,
-        max_tokens,
-        temperature,
+        max_tokens: safeMaxTokens,
+        temperature: safeTemperature,
       }),
     });
 

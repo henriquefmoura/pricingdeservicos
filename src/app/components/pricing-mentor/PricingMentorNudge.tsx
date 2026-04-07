@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, AlertTriangle, Lightbulb, HelpCircle, AlertCircle } from 'lucide-react';
+import { X, AlertTriangle, Lightbulb, HelpCircle, AlertCircle, Zap } from 'lucide-react';
 import type { MentorNudge } from '../../types/pricingMentor';
 
 interface PricingMentorNudgeProps {
@@ -13,6 +13,7 @@ const nudgeStyles: Record<MentorNudge['type'], { bg: string; border: string; ico
   tip: { bg: '#F0FDF4', border: '#4ADE80', icon: Lightbulb, iconColor: '#22C55E' },
   question: { bg: '#EFF6FF', border: '#60A5FA', icon: HelpCircle, iconColor: '#3B82F6' },
   alert: { bg: '#FEF2F2', border: '#F87171', icon: AlertCircle, iconColor: '#EF4444' },
+  provocation: { bg: '#FDF4FF', border: '#C084FC', icon: Zap, iconColor: '#A855F7' },
 };
 
 export function PricingMentorNudge({ nudge, onDismiss, onAction }: PricingMentorNudgeProps) {

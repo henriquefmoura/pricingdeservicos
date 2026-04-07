@@ -6,10 +6,11 @@ import {
   BookOpen,
   Calculator,
   Trash2,
+  Sparkles,
 } from 'lucide-react';
 import { PricingMentorAvatar } from './PricingMentorAvatar';
 import { usePricingMentorStore } from '../../store/pricingMentorStore';
-import { getAllMicroLessons } from '../../services/pricingMentorService';
+import { getAllMicroLessons, QUICK_ACTIONS } from '../../services/pricingMentorService';
 import type { MentorMessage } from '../../types/pricingMentor';
 
 type ChatTab = 'chat' | 'lessons' | 'simulate';
@@ -19,6 +20,9 @@ export function PricingMentorChat() {
     messages,
     isOpen,
     isMinimized,
+    isTyping,
+    expression,
+    userLevel,
     toggleOpen,
     minimize,
     expand,
@@ -40,7 +44,7 @@ export function PricingMentorChat() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isTyping]);
 
   if (!isOpen) return null;
 
@@ -56,6 +60,10 @@ export function PricingMentorChat() {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleQuickAction = (message: string) => {
+    sendMessage(message);
   };
 
   const handleSimulate = () => {
@@ -78,20 +86,25 @@ export function PricingMentorChat() {
           zIndex: 9998,
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: '10px',
           background: 'white',
           borderRadius: '24px',
-          padding: '8px 16px 8px 8px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          padding: '10px 18px 10px 10px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
           cursor: 'pointer',
           animation: 'mentorSlideIn 0.3s ease-out',
         }}
         onClick={expand}
       >
-        <PricingMentorAvatar size={32} />
-        <span style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937' }}>
-          Pricing Mentor
-        </span>
+        <PricingMentorAvatar size={36} expression={expression} />
+        <div>
+          <span style={{ fontSize: '14px', fontWeight: 700, color: '#1F2937', display: 'block' }}>
+            Pricing Mentor
+          </span>
+          <span style={{ fontSize: '11px', color: '#78BE20' }}>
+            Clique para expandir
+          </span>
+        </div>
       </div>
     );
   }
@@ -102,11 +115,11 @@ export function PricingMentorChat() {
         position: 'fixed',
         bottom: 90,
         right: 24,
-        width: '380px',
-        maxHeight: '560px',
-        borderRadius: '16px',
+        width: '400px',
+        maxHeight: '600px',
+        borderRadius: '20px',
         backgroundColor: '#FFFFFF',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
+        boxShadow: '0 8px 48px rgba(0,0,0,0.2)',
         display: 'flex',
         flexDirection: 'column',
         zIndex: 9998,
@@ -118,19 +131,27 @@ export function PricingMentorChat() {
       <div
         style={{
           background: 'linear-gradient(135deg, #001022 0%, #0A2540 100%)',
-          padding: '14px 16px',
+          padding: '16px 18px',
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
         }}
       >
-        <PricingMentorAvatar size={40} expression="happy" />
+        <PricingMentorAvatar size={44} expression={expression} />
         <div style={{ flex: 1 }}>
-          <div style={{ color: '#FFFFFF', fontSize: '15px', fontWeight: 700 }}>
+          <div style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
             Pricing Mentor
+            <Sparkles size={14} style={{ color: '#78BE20' }} />
           </div>
-          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>
-            Seu assistente de precificação 🎯
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{
+              display: 'inline-block',
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: '#22C55E',
+            }} />
+            {isTyping ? 'Pensando...' : `Assistente inteligente • ${userLevel === 'avancado' ? 'Avançado' : userLevel === 'intermediario' ? 'Intermediário' : 'Iniciante'}`}
           </div>
         </div>
         <button
@@ -139,8 +160,10 @@ export function PricingMentorChat() {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: 'rgba(255,255,255,0.6)',
+            color: 'rgba(255,255,255,0.5)',
             padding: '4px',
+            borderRadius: '4px',
+            transition: 'color 0.2s',
           }}
           aria-label="Minimizar"
         >
@@ -152,8 +175,10 @@ export function PricingMentorChat() {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: 'rgba(255,255,255,0.6)',
+            color: 'rgba(255,255,255,0.5)',
             padding: '4px',
+            borderRadius: '4px',
+            transition: 'color 0.2s',
           }}
           aria-label="Fechar"
         >
@@ -209,16 +234,94 @@ export function PricingMentorChat() {
         {activeTab === 'chat' && (
           <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {messages.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '24px 16px', color: '#9CA3AF' }}>
-                <PricingMentorAvatar size={56} expression="wink" />
-                <p style={{ marginTop: '12px', fontSize: '14px' }}>
-                  Olá! Sou o <strong>Pricing Mentor</strong>. Pergunte sobre precificação, margem, custos e muito mais!
+              <div style={{ textAlign: 'center', padding: '20px 16px', color: '#9CA3AF' }}>
+                <PricingMentorAvatar size={64} expression="wink" showLabel />
+                <p style={{ marginTop: '12px', fontSize: '14px', lineHeight: '1.6' }}>
+                  Pergunte sobre precificação, margem, custos, estratégia ou <strong>qualquer dúvida</strong>!
                 </p>
+                {/* Quick Actions */}
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '6px',
+                  justifyContent: 'center',
+                  marginTop: '12px',
+                }}>
+                  {QUICK_ACTIONS.slice(0, 4).map((action) => (
+                    <button
+                      key={action.id}
+                      onClick={() => handleQuickAction(action.message)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '16px',
+                        border: '1px solid #E5E7EB',
+                        backgroundColor: '#FAFAFA',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        color: '#4B5563',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      {action.emoji} {action.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             {messages.map((msg) => (
               <MessageBubble key={msg.id} message={msg} />
             ))}
+            {/* Typing Indicator */}
+            {isTyping && (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                <PricingMentorAvatar size={28} expression="thinking" />
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '4px 16px 16px 16px',
+                    backgroundColor: '#F0FDF4',
+                    display: 'flex',
+                    gap: '4px',
+                    alignItems: 'center',
+                  }}
+                >
+                  <TypingDots />
+                </div>
+              </div>
+            )}
+            {/* Quick action chips after messages */}
+            {messages.length > 0 && !isTyping && (
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '4px',
+                marginTop: '4px',
+              }}>
+                {QUICK_ACTIONS.slice(0, 3).map((action) => (
+                  <button
+                    key={action.id}
+                    onClick={() => handleQuickAction(action.message)}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      border: '1px solid #E5E7EB',
+                      backgroundColor: '#FAFAFA',
+                      fontSize: '10px',
+                      fontWeight: 500,
+                      color: '#6B7280',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {action.emoji} {action.label}
+                  </button>
+                ))}
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
         )}
@@ -322,7 +425,8 @@ export function PricingMentorChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Pergunte algo sobre precificação..."
+            placeholder="Faça sua pergunta..."
+            disabled={isTyping}
             style={{
               flex: 1,
               padding: '10px 14px',
@@ -330,24 +434,25 @@ export function PricingMentorChat() {
               border: '1px solid #E5E7EB',
               fontSize: '13px',
               outline: 'none',
-              backgroundColor: '#F9FAFB',
+              backgroundColor: isTyping ? '#F3F4F6' : '#F9FAFB',
               transition: 'border-color 0.2s',
+              opacity: isTyping ? 0.7 : 1,
             }}
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isTyping}
             style={{
               width: '36px',
               height: '36px',
               borderRadius: '50%',
               border: 'none',
-              backgroundColor: input.trim() ? '#78BE20' : '#E5E7EB',
+              backgroundColor: input.trim() && !isTyping ? '#78BE20' : '#E5E7EB',
               color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: input.trim() ? 'pointer' : 'not-allowed',
+              cursor: input.trim() && !isTyping ? 'pointer' : 'not-allowed',
               transition: 'all 0.2s',
               flexShrink: 0,
             }}
@@ -363,6 +468,31 @@ export function PricingMentorChat() {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
+function TypingDots() {
+  return (
+    <div style={{ display: 'flex', gap: '3px', alignItems: 'center', height: '18px' }}>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          style={{
+            width: '7px',
+            height: '7px',
+            borderRadius: '50%',
+            backgroundColor: '#78BE20',
+            animation: `mentorTypingDot 1.4s ease-in-out ${i * 0.2}s infinite`,
+          }}
+        />
+      ))}
+      <style>{`
+        @keyframes mentorTypingDot {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-5px); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 function MessageBubble({ message }: { message: MentorMessage }) {
   const isMentor = message.role === 'mentor';
 
@@ -372,18 +502,19 @@ function MessageBubble({ message }: { message: MentorMessage }) {
         display: 'flex',
         justifyContent: isMentor ? 'flex-start' : 'flex-end',
         gap: '8px',
+        animation: 'mentorSlideIn 0.3s ease-out',
       }}
     >
       {isMentor && <PricingMentorAvatar size={28} expression="happy" />}
       <div
         style={{
-          maxWidth: '80%',
+          maxWidth: '82%',
           padding: '10px 14px',
           borderRadius: isMentor ? '4px 16px 16px 16px' : '16px 4px 16px 16px',
           backgroundColor: isMentor ? '#F0FDF4' : '#001022',
           color: isMentor ? '#1F2937' : '#FFFFFF',
           fontSize: '13px',
-          lineHeight: '1.55',
+          lineHeight: '1.6',
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
         }}

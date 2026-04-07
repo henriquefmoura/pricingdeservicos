@@ -4,6 +4,7 @@ export interface MentorMessage {
   content: string;
   timestamp: number;
   category?: MentorCategory;
+  isLoading?: boolean;
 }
 
 export type MentorCategory =
@@ -16,11 +17,17 @@ export type MentorCategory =
   | 'elasticidade'
   | 'fluxo_caixa'
   | 'simulacao'
+  | 'estrategia'
+  | 'financas'
+  | 'mercado'
+  | 'negocios'
   | 'geral';
+
+export type MentorExpression = 'happy' | 'thinking' | 'alert' | 'wink' | 'surprised' | 'pointing';
 
 export interface MentorNudge {
   id: string;
-  type: 'warning' | 'tip' | 'question' | 'alert';
+  type: 'warning' | 'tip' | 'question' | 'alert' | 'provocation';
   message: string;
   timestamp: number;
   dismissed: boolean;
@@ -58,4 +65,20 @@ export interface PricingAnalysisContext {
   plaza?: string;
 }
 
-export type UserLevel = 'iniciante' | 'avancado';
+export type UserLevel = 'iniciante' | 'intermediario' | 'avancado';
+
+export interface UserBehavior {
+  topicFrequency: Partial<Record<MentorCategory, number>>;
+  totalQuestions: number;
+  lastActiveTimestamp: number;
+  preferredTopics: MentorCategory[];
+  sessionCount: number;
+}
+
+export interface QuickAction {
+  id: string;
+  label: string;
+  emoji: string;
+  message: string;
+  category: MentorCategory;
+}

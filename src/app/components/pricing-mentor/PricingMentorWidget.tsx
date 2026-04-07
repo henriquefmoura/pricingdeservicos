@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useCallback } from 'react';
-import { MessageCircle } from 'lucide-react';
+import { useEffect, useRef, useCallback } from 'react';
+import { X } from 'lucide-react';
 import { PricingMentorAvatar } from './PricingMentorAvatar';
 import { PricingMentorChat } from './PricingMentorChat';
 import { PricingMentorNudge } from './PricingMentorNudge';
@@ -11,12 +11,13 @@ const INITIAL_NUDGE_DELAY_MS = 30_000;
 
 /**
  * PricingMentorWidget — the global floating widget rendered in App.tsx.
- * Includes the FAB button, chat panel, and nudge toasts.
+ * Features a large animated avatar, chat panel, and smart nudge toasts.
  */
 export function PricingMentorWidget() {
   const { isAuthenticated } = useAuthStore();
   const {
     isOpen,
+    expression,
     toggleOpen,
     nudges,
     dismissNudge,
@@ -72,7 +73,15 @@ export function PricingMentorWidget() {
         }
         @keyframes mentorPulse {
           0%, 100% { box-shadow: 0 0 0 0 rgba(120, 190, 32, 0.4); }
-          50% { box-shadow: 0 0 0 10px rgba(120, 190, 32, 0); }
+          50% { box-shadow: 0 0 0 12px rgba(120, 190, 32, 0); }
+        }
+        @keyframes mentorFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+        @keyframes mentorGlow {
+          0%, 100% { box-shadow: 0 4px 20px rgba(120, 190, 32, 0.3); }
+          50% { box-shadow: 0 4px 30px rgba(120, 190, 32, 0.5); }
         }
       `}</style>
 
@@ -81,7 +90,7 @@ export function PricingMentorWidget() {
         <div
           style={{
             position: 'fixed',
-            bottom: 90,
+            bottom: 110,
             right: 24,
             zIndex: 9997,
             display: 'flex',
@@ -106,33 +115,34 @@ export function PricingMentorWidget() {
       {/* Chat Panel */}
       <PricingMentorChat />
 
-      {/* FAB */}
+      {/* Floating Action Button (FAB) with large avatar */}
       <button
         onClick={toggleOpen}
         style={{
           position: 'fixed',
           bottom: 24,
           right: 24,
-          width: '56px',
-          height: '56px',
+          width: isOpen ? '56px' : '68px',
+          height: isOpen ? '56px' : '68px',
           borderRadius: '50%',
           border: 'none',
-          backgroundColor: isOpen ? '#001022' : '#78BE20',
+          backgroundColor: isOpen ? '#001022' : 'transparent',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 9999,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+          boxShadow: isOpen ? '0 4px 20px rgba(0,0,0,0.2)' : 'none',
           transition: 'all 0.3s ease',
-          animation: isOpen ? undefined : 'mentorPulse 2s ease-in-out infinite',
+          animation: isOpen ? undefined : 'mentorFloat 3s ease-in-out infinite',
+          padding: 0,
         }}
         aria-label={isOpen ? 'Fechar Pricing Mentor' : 'Abrir Pricing Mentor'}
       >
         {isOpen ? (
-          <MessageCircle size={24} style={{ color: '#78BE20' }} />
+          <X size={24} style={{ color: '#78BE20' }} />
         ) : (
-          <PricingMentorAvatar size={40} />
+          <PricingMentorAvatar size={68} expression={expression} />
         )}
       </button>
 
@@ -141,23 +151,24 @@ export function PricingMentorWidget() {
         <div
           style={{
             position: 'fixed',
-            bottom: 12,
-            right: 6,
+            bottom: 8,
+            right: 10,
             zIndex: 9999,
             pointerEvents: 'none',
             textAlign: 'center',
-            width: '92px',
+            width: '96px',
           }}
         >
           <span
             style={{
-              fontSize: '9px',
+              fontSize: '10px',
               fontWeight: 700,
               color: '#78BE20',
               backgroundColor: 'white',
-              padding: '2px 6px',
-              borderRadius: '4px',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+              padding: '3px 8px',
+              borderRadius: '6px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              letterSpacing: '0.3px',
             }}
           >
             Pricing Mentor

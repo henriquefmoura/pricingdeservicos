@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { usePricingMentorStore } from '../store/pricingMentorStore';
-import type { PricingAnalysisContext } from '../types/pricingMentor';
+import type { PricingAnalysisContext, MentorExpression } from '../types/pricingMentor';
 
 /**
  * Hook for integrating Pricing Mentor into any page.
@@ -12,11 +12,15 @@ import type { PricingAnalysisContext } from '../types/pricingMentor';
 export function usePricingMentor() {
   const {
     isOpen,
+    isTyping,
+    expression,
+    userLevel,
     toggleOpen,
     sendMessage,
     analyzeContext,
     requestSimulation,
     addNudge,
+    setExpression,
     nudges,
   } = usePricingMentorStore();
 
@@ -51,13 +55,25 @@ export function usePricingMentor() {
     [isOpen, toggleOpen, requestSimulation],
   );
 
+  /** Change the mentor's expression */
+  const setMentorExpression = useCallback(
+    (expr: MentorExpression) => {
+      setExpression(expr);
+    },
+    [setExpression],
+  );
+
   return {
     isOpen,
+    isTyping,
+    expression,
+    userLevel,
     openChat,
     sendQuestion,
     notifyPriceChange,
     simulate,
     addNudge,
+    setMentorExpression,
     activeNudges: nudges.filter((n) => !n.dismissed),
   };
 }

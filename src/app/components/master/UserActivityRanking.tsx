@@ -1,5 +1,5 @@
 import React from 'react';
-import { useGovernanceStore } from '../../store/governanceStore';
+import { useGovernanceStore, UserGovernanceMetrics } from '../../store/governanceStore';
 import { Crown, User } from 'lucide-react';
 
 const cardStyle: React.CSSProperties = {
@@ -20,34 +20,59 @@ function formatDate(date: Date): string {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
-export function UserActivityRanking() {
-  const getTopUsers = useGovernanceStore((s) => s.getTopUsers);
-  const users = getTopUsers(15);
+const headerStyle: React.CSSProperties = {
+  fontSize: '13px',
+  fontWeight: 600,
+  color: '#6B7280',
+  textAlign: 'left',
+  padding: '10px 12px',
+  borderBottom: '2px solid #E5E7EB',
+  whiteSpace: 'nowrap',
+};
 
-  const headerStyle: React.CSSProperties = {
-    fontSize: '13px',
-    fontWeight: 600,
-    color: '#6B7280',
-    textAlign: 'left',
-    padding: '10px 12px',
-    borderBottom: '2px solid #E5E7EB',
-    whiteSpace: 'nowrap',
-  };
+const cellStyle: React.CSSProperties = {
+  fontSize: '14px',
+  fontWeight: 400,
+  color: '#001022',
+  padding: '10px 12px',
+  borderBottom: '1px solid #F3F4F6',
+  whiteSpace: 'nowrap',
+};
 
-  const cellStyle: React.CSSProperties = {
-    fontSize: '14px',
-    fontWeight: 400,
-    color: '#001022',
-    padding: '10px 12px',
-    borderBottom: '1px solid #F3F4F6',
-    whiteSpace: 'nowrap',
-  };
+interface RankingTableProps {
+  title: string;
+  users: UserGovernanceMetrics[];
+  roleIcon: React.ReactNode;
+  roleBadgeBg: string;
+  roleBadgeColor: string;
+  roleLabel: string;
+  accentColor: string;
+}
 
+function RankingTable({ title, users, roleIcon, roleBadgeBg, roleBadgeColor, roleLabel, accentColor }: RankingTableProps) {
   return (
     <div style={cardStyle}>
-      <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#001022', margin: '0 0 16px 0' }}>
-        Ranking de Atividade por Usuário
-      </h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '4px 12px',
+            borderRadius: '9999px',
+            backgroundColor: roleBadgeBg,
+            color: roleBadgeColor,
+            fontSize: '12px',
+            fontWeight: 600,
+          }}
+        >
+          {roleIcon}
+          {roleLabel}
+        </div>
+        <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#001022', margin: 0 }}>
+          {title}
+        </h3>
+      </div>
 
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -74,31 +99,11 @@ export function UserActivityRanking() {
                   transition: 'background-color 0.15s ease',
                 }}
               >
-                <td style={{ ...cellStyle, fontWeight: 700, color: '#6B7280', width: '40px' }}>
+                <td style={{ ...cellStyle, fontWeight: 700, color: accentColor, width: '40px' }}>
                   {idx + 1}
                 </td>
                 <td style={cellStyle}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>{user.userName}</span>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        padding: '2px 8px',
-                        borderRadius: '9999px',
-                        backgroundColor: user.role === 'admin' ? 'rgba(120, 190, 32, 0.15)' : 'rgba(59, 130, 246, 0.12)',
-                        color: user.role === 'admin' ? '#78BE20' : '#3B82F6',
-                      }}
-                    >
-                      {user.role === 'admin' ? <Crown size={10} aria-hidden="true" /> : <User size={10} aria-hidden="true" />}
-                      <span aria-label={user.role === 'admin' ? 'Admin' : 'Usuário'}>
-                        {user.role === 'admin' ? 'Admin' : 'Usuário'}
-                      </span>
-                    </span>
-                  </div>
+                  <span style={{ fontWeight: 600 }}>{user.userName}</span>
                 </td>
                 <td style={cellStyle}>{user.plaza}</td>
                 <td style={{ ...cellStyle, textAlign: 'center', fontWeight: 600, color: '#6366F1' }}>
@@ -140,6 +145,37 @@ export function UserActivityRanking() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+export function UserActivityRanking() {
+  const getTopUsers = useGovernanceStore((s) => s.getTopUsers);
+  const allUsers = getTopUsers(100);
+
+  const adminUsers = allUsers.filter((u) => u.role === 'admin');
+  const regularUsers = allUsers.filter((u) => u.role === 'user');
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <RankingTable
+        title="Ranking de Atividade — Administradores"
+        users={adminUsers}
+        roleIcon={<Crown size={12} aria-hidden="true" />}
+        roleBadgeBg="rgba(120, 190, 32, 0.15)"
+        roleBadgeColor="#78BE20"
+        roleLabel="Admins"
+        accentColor="#78BE20"
+      />
+      <RankingTable
+        title="Ranking de Atividade — Usuários"
+        users={regularUsers}
+        roleIcon={<User size={12} aria-hidden="true" />}
+        roleBadgeBg="rgba(59, 130, 246, 0.12)"
+        roleBadgeColor="#3B82F6"
+        roleLabel="Usuários"
+        accentColor="#3B82F6"
+      />
     </div>
   );
 }

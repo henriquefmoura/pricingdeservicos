@@ -90,7 +90,6 @@ const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemCon
             { id: 'Clima', label: 'Clima e Sazonalidade', icon: CloudSun },
             { id: 'Territorial', label: 'Inteligência Territorial', icon: MapPin },
             { id: 'Concorrência', label: 'Concorrência', icon: Crosshair },
-            { id: 'Análise', label: 'Análise Geral', icon: BarChart2 },
           ],
         },
         {

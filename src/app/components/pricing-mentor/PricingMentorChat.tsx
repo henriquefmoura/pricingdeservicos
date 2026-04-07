@@ -425,7 +425,7 @@ export function PricingMentorChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Pergunte qualquer coisa..."
+            placeholder="Faça sua pergunta..."
             disabled={isTyping}
             style={{
               flex: 1,

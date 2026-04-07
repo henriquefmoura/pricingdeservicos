@@ -9,7 +9,7 @@
  *   2. The service will automatically use the external model
  */
 
-import type { MentorMessage, MentorCategory, PricingAnalysisContext, UserLevel } from '../types/pricingMentor';
+import type { MentorMessage, MentorCategory, PricingAnalysisContext } from '../types/pricingMentor';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 
@@ -274,8 +274,12 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function normalizeText(text: string): string {
+  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 function findBestMatch(text: string): KnowledgeEntry | undefined {
-  const lower = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const lower = normalizeText(text);
   const allKnowledge = [...KNOWLEDGE_BASE, ...GENERAL_KNOWLEDGE];
 
   let bestMatch: KnowledgeEntry | undefined;
@@ -284,7 +288,7 @@ function findBestMatch(text: string): KnowledgeEntry | undefined {
   for (const entry of allKnowledge) {
     let score = 0;
     for (const pattern of entry.patterns) {
-      const normalizedPattern = pattern.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const normalizedPattern = normalizeText(pattern);
       if (lower.includes(normalizedPattern)) {
         score += normalizedPattern.length; // longer match = better
       }
@@ -298,7 +302,7 @@ function findBestMatch(text: string): KnowledgeEntry | undefined {
   return bestScore > 0 ? bestMatch : undefined;
 }
 
-function getDefaultResponse(_userLevel: UserLevel): string {
+function getDefaultResponse(): string {
   const responses = [
     '🤔 Boa pergunta! Deixa eu te explicar de um jeito simples...\n\nPosso te ajudar com precificação, margem, custos, estratégia ou qualquer dúvida de negócio.\n\n💡 Tenta me perguntar algo como:\n- "Como calcular meu preço?"\n- "O que é margem de lucro?"\n- "Como negociar com cliente?"',
     'Interessante! 🎯 Me conta mais detalhes pra eu poder te ajudar melhor.\n\nPosso responder sobre:\n📊 Preços e margem\n💰 Custos e finanças\n🔍 Concorrência\n🚀 Estratégia de negócio\n📚 Conceitos gerais',
@@ -312,7 +316,6 @@ function getDefaultResponse(_userLevel: UserLevel): string {
 async function callExternalAI(
   userText: string,
   context?: PricingAnalysisContext,
-  _userLevel?: UserLevel,
 ): Promise<string | null> {
   if (!AI_API_KEY) return null;
 
@@ -355,10 +358,9 @@ async function callExternalAI(
 export async function generateAIResponse(
   userText: string,
   context?: PricingAnalysisContext,
-  userLevel: UserLevel = 'iniciante',
 ): Promise<MentorMessage> {
   // Try external AI first
-  const aiResponse = await callExternalAI(userText, context, userLevel);
+  const aiResponse = await callExternalAI(userText, context);
   if (aiResponse) {
     return {
       id: createId(),
@@ -376,7 +378,7 @@ export async function generateAIResponse(
   if (match) {
     content = pickRandom(match.responses);
   } else {
-    content = getDefaultResponse(userLevel);
+    content = getDefaultResponse();
   }
 
   // Enrich with platform context

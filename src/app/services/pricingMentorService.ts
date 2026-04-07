@@ -309,28 +309,6 @@ export async function generateResponseAsync(
   return generateAIResponse(userText, context);
 }
 
-/**
- * Synchronous response generator (for backward compatibility).
- * Uses keyword matching with enriched responses.
- */
-export function generateResponse(
-  userText: string,
-  context?: PricingAnalysisContext,
-): MentorMessage {
-  const category = detectCategory(userText);
-
-  // Use the AI service's local knowledge base
-  // For sync path, return a placeholder and let the store handle async
-  return {
-    id: createMentorId(),
-    role: 'mentor',
-    content: '', // Will be replaced by async response
-    timestamp: Date.now(),
-    category,
-    isLoading: true,
-  };
-}
-
 export function getMicroLesson(category: MentorCategory): MicroLesson | undefined {
   const lessons = MICRO_LESSONS.filter((l) => l.category === category);
   return lessons.length > 0 ? pickRandom(lessons) : undefined;

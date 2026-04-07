@@ -187,8 +187,13 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
           category: 'simulacao',
         };
 
-        // Alert expression for negative margins
-        const alertExpr = result.newMargin < 0 ? 'alert' : result.newMargin > 30 ? 'happy' : 'thinking';
+        // Expression based on margin result
+        let alertExpr: PricingMentorState['expression'] = 'thinking';
+        if (result.newMargin < 0) {
+          alertExpr = 'alert';
+        } else if (result.newMargin > 30) {
+          alertExpr = 'happy';
+        }
         set({
           messages: [...state.messages, msg],
           expression: alertExpr,

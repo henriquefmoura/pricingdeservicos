@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Bell, ListChecks, MessageSquare, CheckCheck, Trash2 } from 'lucide-react';
 import { useNotificationStore } from '../../store/notificationStore';
+import { getPriorityBorderStyle } from '../../utils/notificationStyles';
 import type { Notification } from '../../types/notification';
 
 function timeAgo(date: Date): string {
@@ -193,7 +194,7 @@ function NotificationCard({
         borderRadius: '8px',
         backgroundColor: notification.read ? '#FFFFFF' : '#F0FDF4',
         border: '1px solid ' + (notification.read ? '#E5E7EB' : '#BBF7D0'),
-        borderLeft: notification.priority === 'high' ? '4px solid #DC2626' : notification.priority === 'medium' ? '4px solid #F59E0B' : '4px solid #E5E7EB',
+        borderLeft: getPriorityBorderStyle(notification.priority),
         cursor: 'pointer',
         transition: 'all 0.2s ease',
       }}

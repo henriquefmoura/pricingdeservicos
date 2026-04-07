@@ -19,6 +19,7 @@ import { useMarketResearchStore } from '../store/marketResearchStore';
 import { useApprovalStore } from '../store/approvalStore';
 import { useCorrelationStore } from '../store/correlationStore';
 import { useReplicationConfigStore } from '../store/replicationConfigStore';
+import { updateCalculatorSnapshot } from '../services/pricingMentorAIService';
 import { toast } from 'sonner';
 
 interface PriceInput {
@@ -187,6 +188,28 @@ export function AdminPricingInterface() {
 
     return ((venda - repasse) / venda) * 100;
   };
+
+  // RPA: Update calculator snapshot when user edits a pricing code
+  useEffect(() => {
+    if (!editingCode) return;
+    const code = codes.find((c) => c.id === editingCode);
+    if (!code) return;
+
+    const input = priceInputs[editingCode];
+    const repasse = input ? parseFloat(input.repasse) : undefined;
+    const venda = input ? parseFloat(input.venda) : undefined;
+    const margem = repasse && venda && venda > 0 ? ((venda - repasse) / venda) * 100 : undefined;
+
+    updateCalculatorSnapshot({
+      serviceCode: code.codigoAvulso,
+      serviceName: code.descricao,
+      serviceGroup: code.tipo,
+      plaza: user?.plaza,
+      repasse: isNaN(repasse as number) ? undefined : repasse,
+      venda: isNaN(venda as number) ? undefined : venda,
+      margem: isNaN(margem as number) ? undefined : margem,
+    });
+  }, [editingCode, priceInputs, codes, user?.plaza]);
 
   // Calcular estatísticas
   const totalCodes = relevantCodes.length;

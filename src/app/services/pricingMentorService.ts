@@ -141,6 +141,8 @@ const MICRO_LESSONS: MicroLesson[] = [
 const KEYWORD_MAP: { keywords: string[]; category: MentorCategory }[] = [
   { keywords: ['margem', 'lucro', 'rentabilidade', 'lucratividade'], category: 'margem' },
   { keywords: ['preço', 'preco', 'precificar', 'formar preço', 'formação', 'calcular'], category: 'formacao_preco' },
+  { keywords: ['calculadora', 'repasse', 'venda', 'ferramenta', 'plataforma'], category: 'formacao_preco' },
+  { keywords: ['praça', 'praca', 'região', 'replicar', 'replicação', 'correlação'], category: 'concorrencia' },
   { keywords: ['custo', 'gasto', 'despesa', 'fixo', 'variavel', 'variável'], category: 'custos' },
   { keywords: ['concorrente', 'concorrência', 'mercado', 'competidor'], category: 'concorrencia' },
   { keywords: ['psicológico', 'psicologico', '99', '9,90', 'percepção'], category: 'psicologico' },
@@ -174,6 +176,8 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { id: 'qa-4', label: 'Concorrência', emoji: '🔍', message: 'Como me posicionar frente à concorrência?', category: 'concorrencia' },
   { id: 'qa-5', label: 'Negociação', emoji: '🤝', message: 'Como negociar sem perder margem?', category: 'negocios' },
   { id: 'qa-6', label: 'Crescer', emoji: '🚀', message: 'Qual a melhor estratégia para crescer?', category: 'estrategia' },
+  { id: 'qa-7', label: 'Usar calculadora', emoji: '🧮', message: 'Como funciona a calculadora de pricing?', category: 'formacao_preco' },
+  { id: 'qa-8', label: 'Comparar praças', emoji: '🗺️', message: 'Como comparar preços entre praças?', category: 'concorrencia' },
 ];
 
 // ─── Response Generator ───────────────────────────────────────────────────────

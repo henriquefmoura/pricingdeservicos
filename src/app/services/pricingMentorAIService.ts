@@ -105,6 +105,45 @@ const SYSTEM_PROMPT = `Você é o **Pricing Mentor**, o assistente de IA mais av
 - Estilo: Professor + amigo + mentor de negócios — nunca robótico
 - Comunicação: Sem jargões desnecessários, sempre com exemplos reais do dia a dia brasileiro
 
+## Modelo da Calculadora de Pricing (você TEM acesso a esta ferramenta)
+
+Você opera dentro de uma plataforma de precificação de serviços. A calculadora funciona assim:
+
+### Estrutura de Dados
+- Cada serviço tem: **código** (ex: "001"), **grupo** (ex: "Elétrica"), e preços por praça
+- Cada praça tem 3 valores: **Repasse** (custo), **Venda** (preço de venda), **Margem** (%)
+- Formato das colunas: {NomePraça}_Repasse, {NomePraça}_Venda, {NomePraça}_Margem
+- Exemplo: SP_Repasse=100, SP_Venda=150, SP_Margem=33.3
+
+### Fórmulas da Calculadora
+1. **Margem (%)** = ((Venda - Repasse) / Venda) × 100
+2. **Markup** = Venda / Repasse (multiplicador sobre o custo)
+3. **Preço com margem desejada** = Repasse ÷ (1 - Margem/100)
+4. **Ponto de Equilíbrio** = Custos Fixos ÷ (Preço - Custo Variável)
+5. **Variação de preço (%)** = ((Preço Novo - Preço Atual) / Preço Atual) × 100
+6. **Lucro por serviço** = (Venda - Repasse) × Quantidade
+
+### Regras de Validação
+- Repasse (custo) DEVE ser menor que Venda (preço)
+- Margem negativa = prejuízo (alerta crítico)
+- Margem < 20% = margem baixa (alerta)
+- Margem entre 25-40% = saudável
+- Margem > 40% = excelente (verificar competitividade)
+
+### Análise Multi-Praça
+- A plataforma compara preços entre praças (regiões)
+- Correlação de Pearson mede similaridade de preços entre praças
+- Praças-parâmetro servem de referência para praças dependentes
+- Replicação de preços: uma praça-fonte pode propagar preços para praças-destino
+
+### Fatores de Decisão Integrados
+- **Clima/Sazonalidade**: temperatura e previsão afetam demanda de serviços
+- **Inteligência Territorial**: dados de empresas, MEIs, renda per capita da região
+- **Oferta/Demanda**: pressão competitiva baseada em CNAEs ativos na região
+- **Histórico**: tendência de preços nos últimos meses
+
+Quando o usuário perguntar sobre cálculos, USE estas fórmulas e dados do contexto para dar respostas precisas e numéricas.
+
 ## Áreas de Expertise Profunda
 1. **Precificação de Serviços** — formação de preços, markup, margem, preço psicológico, precificação por valor, ancoragem, bundling, freemium, subscription pricing
 2. **Análise de Custos** — custos fixos, variáveis, diretos, indiretos, ocultos, custo de oportunidade, depreciação, TCO
@@ -134,14 +173,16 @@ const SYSTEM_PROMPT = `Você é o **Pricing Mentor**, o assistente de IA mais av
 1. Sempre simplificar explicações complexas — use analogias do dia a dia
 2. Dar exemplos práticos com valores em Reais (R$)
 3. Quando o usuário fornecer contexto (preço, custo, serviço), SEMPRE usar esses dados na resposta
-4. Usar emojis com moderação para tornar a conversa amigável (📊💰🎯✅⚠️🚀💡)
-5. Ser encorajador e positivo — nunca julgar decisões do passado
-6. Proativamente antecipar dúvidas e sugerir próximos passos
-7. Quando não souber algo específico, ser honesto e oferecer alternativas
-8. Conectar teoria com prática — nunca ser apenas teórico
-9. Adaptar a profundidade da resposta ao nível do usuário
-10. Respostas concisas mas completas — idealmente 3-5 parágrafos com formatação markdown
-11. Sempre que possível, terminar com uma pergunta ou sugestão de ação
+4. Quando dados da calculadora estiverem disponíveis no contexto, USAR para cálculos concretos
+5. Usar emojis com moderação para tornar a conversa amigável (📊💰🎯✅⚠️🚀💡)
+6. Ser encorajador e positivo — nunca julgar decisões do passado
+7. Proativamente antecipar dúvidas e sugerir próximos passos
+8. Quando não souber algo específico, ser honesto e oferecer alternativas
+9. Conectar teoria com prática — nunca ser apenas teórico
+10. Adaptar a profundidade da resposta ao nível do usuário
+11. Respostas concisas mas completas — idealmente 3-5 parágrafos com formatação markdown
+12. Sempre que possível, terminar com uma pergunta ou sugestão de ação
+13. Referenciar cálculos e insights aprendidos de interações anteriores quando relevante
 
 ## Formato de Resposta
 - Use **negrito** para conceitos importantes
@@ -299,6 +340,28 @@ const KNOWLEDGE_BASE: KnowledgeEntry[] = [
     ],
     category: 'simulacao',
   },
+  // ─── Calculator Model ──────────────────────────────────────────────────
+  {
+    patterns: ['calculadora', 'como funciona a calculadora', 'como usar a calculadora', 'ferramenta de preço'],
+    responses: [
+      '🧮 **A Calculadora de Pricing funciona assim:**\n\n**Dados de entrada:**\n- **Repasse** = custo do serviço (quanto você gasta)\n- **Venda** = preço cobrado do cliente\n- **Margem** = calculada automaticamente\n\n**Fórmula principal:**\nMargem (%) = ((Venda - Repasse) / Venda) × 100\n\n**Exemplo:**\nRepasse: R$100 | Venda: R$150\nMargem = (150-100)/150 × 100 = **33,3%** ✅\n\n**Dicas:**\n- Cada praça (região) tem seus próprios preços\n- A plataforma compara praças automaticamente\n- Use a simulação para testar antes de alterar\n\n💡 Posso te ajudar a calcular qualquer cenário!',
+    ],
+    category: 'formacao_preco',
+  },
+  {
+    patterns: ['repasse', 'o que é repasse', 'repasse e venda', 'diferença repasse venda'],
+    responses: [
+      '📋 **Repasse vs Venda na Calculadora:**\n\n**Repasse** = é o seu CUSTO — quanto você paga para realizar o serviço (material, mão de obra, etc.)\n\n**Venda** = é o PREÇO que o cliente paga\n\n**Margem** = a diferença entre eles, em percentual\n\n**Exemplo prático:**\n- Repasse (custo): R$80\n- Venda (preço): R$120\n- Margem: ((120-80)/120) × 100 = **33,3%**\n\n⚠️ Se o Repasse for maior que a Venda, você está no prejuízo!\n\n💡 A regra: Repasse SEMPRE menor que Venda. Se não for, precisa reajustar urgente.',
+    ],
+    category: 'custos',
+  },
+  {
+    patterns: ['praça', 'praca', 'praças', 'região', 'regiões', 'comparar praças', 'praça parâmetro'],
+    responses: [
+      '🗺️ **Praças (Regiões) na Calculadora:**\n\nCada praça representa uma região/filial com preços independentes.\n\n**Como funciona:**\n- Cada serviço tem Repasse, Venda e Margem por praça\n- Praças podem ser comparadas entre si\n- A **praça-parâmetro** é a referência para as demais\n\n**Correlação entre praças:**\nA plataforma calcula a correlação de Pearson entre praças:\n- Correlação alta (+0.8 a +1.0) = preços muito similares\n- Correlação baixa = preços independentes\n\n**Replicação:**\nAo alterar preço na praça-fonte, pode replicar automaticamente para praças-destino.\n\n💡 Compare sempre pelo menos 3 praças antes de decidir!',
+    ],
+    category: 'concorrencia',
+  },
   // ─── General ───────────────────────────────────────────────────────────
   {
     patterns: ['olá', 'oi', 'bom dia', 'boa tarde', 'boa noite', 'hey', 'eai', 'e aí'],
@@ -414,23 +477,252 @@ function getDefaultResponse(): string {
   return pickRandom(responses);
 }
 
-// ─── Conversation History ────────────────────────────────────────────────────
+// ─── Conversation History (Persistent) ───────────────────────────────────────
 
 const MAX_HISTORY_MESSAGES = 20;
-let conversationHistory: ChatMessage[] = [];
+const HISTORY_STORAGE_KEY = 'pricing-mentor-conversation-history';
+const LEARNING_STORAGE_KEY = 'pricing-mentor-learning-memory';
 
-/** Add a message to the conversation history (kept in memory for AI context) */
+/** Learning insight derived from user interactions */
+export interface LearningInsight {
+  id: string;
+  topic: string;
+  insight: string;
+  source: 'user_question' | 'calculator_usage' | 'rpa_observation';
+  timestamp: number;
+  usageCount: number;
+}
+
+/** Load conversation history from localStorage */
+function loadHistory(): ChatMessage[] {
+  try {
+    const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as ChatMessage[];
+      return parsed.slice(-MAX_HISTORY_MESSAGES);
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return [];
+}
+
+/** Save conversation history to localStorage */
+function saveHistory(history: ChatMessage[]) {
+  try {
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history.slice(-MAX_HISTORY_MESSAGES)));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+let conversationHistory: ChatMessage[] = loadHistory();
+
+/** Add a message to the conversation history (persisted to localStorage) */
 function addToHistory(role: 'user' | 'assistant', content: string) {
   conversationHistory.push({ role, content });
   // Keep only last N messages to avoid token limits
   if (conversationHistory.length > MAX_HISTORY_MESSAGES) {
     conversationHistory = conversationHistory.slice(-MAX_HISTORY_MESSAGES);
   }
+  saveHistory(conversationHistory);
 }
 
 /** Clear conversation history */
 export function clearConversationHistory() {
   conversationHistory = [];
+  saveHistory(conversationHistory);
+}
+
+// ─── Learning Memory System ──────────────────────────────────────────────────
+
+const MAX_LEARNING_INSIGHTS = 50;
+
+/** Load learning insights from localStorage */
+function loadLearningMemory(): LearningInsight[] {
+  try {
+    const stored = localStorage.getItem(LEARNING_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored) as LearningInsight[];
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return [];
+}
+
+/** Save learning insights to localStorage */
+function saveLearningMemory(insights: LearningInsight[]) {
+  try {
+    localStorage.setItem(LEARNING_STORAGE_KEY, JSON.stringify(insights));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+let learningMemory: LearningInsight[] = loadLearningMemory();
+
+/** Add a learning insight from user interactions */
+export function addLearningInsight(
+  topic: string,
+  insight: string,
+  source: LearningInsight['source'] = 'user_question',
+) {
+  // Check for duplicate topics — update instead of adding
+  const existing = learningMemory.find(
+    (l) => l.topic.toLowerCase() === topic.toLowerCase(),
+  );
+  if (existing) {
+    existing.insight = insight;
+    existing.timestamp = Date.now();
+    existing.usageCount += 1;
+  } else {
+    learningMemory.push({
+      id: `learn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      topic,
+      insight,
+      source,
+      timestamp: Date.now(),
+      usageCount: 1,
+    });
+  }
+
+  // Keep only most recent/used insights
+  if (learningMemory.length > MAX_LEARNING_INSIGHTS) {
+    learningMemory.sort((a, b) => b.usageCount - a.usageCount || b.timestamp - a.timestamp);
+    learningMemory = learningMemory.slice(0, MAX_LEARNING_INSIGHTS);
+  }
+
+  saveLearningMemory(learningMemory);
+}
+
+/** Get learning insights formatted for the AI prompt */
+function getLearningContext(): string {
+  if (learningMemory.length === 0) return '';
+
+  // Pick top insights by usage + recency
+  const top = [...learningMemory]
+    .sort((a, b) => b.usageCount - a.usageCount || b.timestamp - a.timestamp)
+    .slice(0, 10);
+
+  const lines = top.map(
+    (l) => `- [${l.topic}]: ${l.insight}`,
+  );
+
+  return `\n\n[Memória de Aprendizado — insights de interações anteriores]\n${lines.join('\n')}`;
+}
+
+/** Get all learning insights (for UI display) */
+export function getLearningInsights(): LearningInsight[] {
+  return [...learningMemory];
+}
+
+/** Clear learning memory */
+export function clearLearningMemory() {
+  learningMemory = [];
+  saveLearningMemory(learningMemory);
+}
+
+// ─── RPA: Calculator Context Collector ───────────────────────────────────────
+
+/**
+ * Collects and structures the current calculator state for the chatbot.
+ * Acts as a "virtual RPA" that reads the app screen state and feeds it
+ * into the AI prompt so the chatbot can give context-aware answers.
+ */
+export interface CalculatorSnapshot {
+  /** Current service being viewed */
+  serviceCode?: string;
+  serviceName?: string;
+  serviceGroup?: string;
+  /** Current plaza/region */
+  plaza?: string;
+  /** Pricing data */
+  repasse?: number;
+  venda?: number;
+  margem?: number;
+  /** Proposed changes */
+  proposedPrice?: number;
+  /** Comparison data */
+  competitorPrice?: number;
+  /** Multi-plaza summary */
+  plazaSummary?: Array<{ plaza: string; repasse: number; venda: number; margem: number }>;
+  /** Analysis signals */
+  recommendation?: string;
+  alerts?: string[];
+}
+
+let _currentCalculatorSnapshot: CalculatorSnapshot = {};
+
+/**
+ * RPA: Update the calculator snapshot with current screen state.
+ * Call this from UI components whenever the calculator state changes.
+ */
+export function updateCalculatorSnapshot(snapshot: Partial<CalculatorSnapshot>) {
+  _currentCalculatorSnapshot = { ..._currentCalculatorSnapshot, ...snapshot };
+
+  // Auto-learn from calculator usage
+  if (snapshot.serviceCode && snapshot.venda && snapshot.repasse) {
+    const margem = ((snapshot.venda - snapshot.repasse) / snapshot.venda) * 100;
+    addLearningInsight(
+      `Serviço ${snapshot.serviceCode}`,
+      `Último preço: R$${snapshot.venda.toFixed(2)}, Custo: R$${snapshot.repasse.toFixed(2)}, Margem: ${margem.toFixed(1)}%${snapshot.plaza ? ` na praça ${snapshot.plaza}` : ''}`,
+      'rpa_observation',
+    );
+  }
+}
+
+/** Clear the calculator snapshot */
+export function clearCalculatorSnapshot() {
+  _currentCalculatorSnapshot = {};
+}
+
+/** Build the RPA context string for the AI prompt */
+function buildCalculatorContext(): string {
+  const s = _currentCalculatorSnapshot;
+  if (!s.serviceCode && !s.venda && !s.plaza) return '';
+
+  const parts: string[] = [];
+
+  if (s.serviceCode || s.serviceName) {
+    parts.push(`Serviço: ${s.serviceName || s.serviceCode}${s.serviceGroup ? ` (Grupo: ${s.serviceGroup})` : ''}`);
+  }
+  if (s.plaza) {
+    parts.push(`Praça: ${s.plaza}`);
+  }
+  if (s.repasse != null) {
+    parts.push(`Repasse (custo): R$${s.repasse.toFixed(2)}`);
+  }
+  if (s.venda != null) {
+    parts.push(`Venda (preço): R$${s.venda.toFixed(2)}`);
+  }
+  if (s.margem != null) {
+    parts.push(`Margem: ${s.margem.toFixed(1)}%`);
+  }
+  if (s.proposedPrice != null) {
+    parts.push(`Preço proposto: R$${s.proposedPrice.toFixed(2)}`);
+    if (s.venda != null) {
+      const variation = ((s.proposedPrice - s.venda) / s.venda) * 100;
+      parts.push(`Variação proposta: ${variation > 0 ? '+' : ''}${variation.toFixed(1)}%`);
+    }
+  }
+  if (s.competitorPrice != null) {
+    parts.push(`Preço do concorrente: R$${s.competitorPrice.toFixed(2)}`);
+  }
+  if (s.recommendation) {
+    parts.push(`Recomendação da análise: ${s.recommendation}`);
+  }
+  if (s.alerts && s.alerts.length > 0) {
+    parts.push(`Alertas: ${s.alerts.join('; ')}`);
+  }
+  if (s.plazaSummary && s.plazaSummary.length > 0) {
+    const summary = s.plazaSummary.slice(0, 5).map(
+      (p) => `${p.plaza}: Venda R$${p.venda.toFixed(2)}, Margem ${p.margem.toFixed(1)}%`,
+    ).join(' | ');
+    parts.push(`Outras praças: ${summary}`);
+  }
+
+  return `\n\n[Estado Atual da Calculadora (capturado pelo RPA)]\n${parts.join('\n')}`;
 }
 
 // ─── Multi-Provider AI Call ──────────────────────────────────────────────────
@@ -546,18 +838,26 @@ async function callProvider(
 
 /**
  * Try all configured AI providers in order until one succeeds.
+ * Injects calculator context (RPA), learning memory, and user context.
  */
 async function callExternalAI(
   userText: string,
   context?: PricingAnalysisContext,
 ): Promise<string | null> {
+  // Explicit user context from API call
   const contextInfo = context
     ? `\n\n[Contexto atual do usuário]\nServiço: "${context.serviceName || 'N/A'}"\nPreço atual: R$${context.currentPrice ?? 'N/A'}\nCusto: R$${context.costPrice ?? 'N/A'}\nMargem: ${context.margin ?? 'N/A'}%\nPreço do concorrente: R$${context.competitorPrice ?? 'N/A'}\nPraça/Região: ${context.plaza || 'N/A'}`
     : '';
 
+  // RPA: Inject current calculator state
+  const calculatorContext = buildCalculatorContext();
+
+  // Learning memory: Inject insights from past interactions
+  const learningContext = getLearningContext();
+
   const systemMessage: ChatMessage = {
     role: 'system',
-    content: SYSTEM_PROMPT + contextInfo,
+    content: SYSTEM_PROMPT + contextInfo + calculatorContext + learningContext,
   };
 
   // Build messages with conversation history for context
@@ -594,6 +894,7 @@ async function callExternalAI(
 /**
  * Generate an AI-powered response.
  * Tries configured AI providers in priority order, falls back to local knowledge.
+ * Automatically learns from user interactions to improve future responses.
  */
 export async function generateAIResponse(
   userText: string,
@@ -601,6 +902,16 @@ export async function generateAIResponse(
 ): Promise<MentorMessage> {
   // Add user message to history
   addToHistory('user', userText);
+
+  // RPA: Auto-learn from user questions with context
+  const detectedCategory = findBestMatch(userText)?.category || 'geral';
+  if (context && context.serviceName) {
+    addLearningInsight(
+      `Dúvida: ${detectedCategory}`,
+      `Usuário perguntou sobre "${userText.slice(0, 80)}" no contexto do serviço "${context.serviceName}"${context.plaza ? ` na praça ${context.plaza}` : ''}`,
+      'user_question',
+    );
+  }
 
   // Try external AI providers
   const aiResponse = await callExternalAI(userText, context);
@@ -613,7 +924,7 @@ export async function generateAIResponse(
       role: 'mentor',
       content: aiResponse,
       timestamp: Date.now(),
-      category: findBestMatch(userText)?.category || 'geral',
+      category: detectedCategory,
     };
   }
 
@@ -632,6 +943,22 @@ export async function generateAIResponse(
     content = enrichWithContext(content, context);
   }
 
+  // Enrich with calculator snapshot when no explicit context provided
+  if (!context) {
+    const calcCtx = _currentCalculatorSnapshot;
+    if (calcCtx.venda && calcCtx.repasse) {
+      content = enrichWithContext(content, {
+        serviceCode: calcCtx.serviceCode,
+        serviceName: calcCtx.serviceName,
+        currentPrice: calcCtx.venda,
+        costPrice: calcCtx.repasse,
+        margin: calcCtx.margem,
+        competitorPrice: calcCtx.competitorPrice,
+        plaza: calcCtx.plaza,
+      });
+    }
+  }
+
   // Add response to history even for local fallback
   addToHistory('assistant', content);
 
@@ -640,7 +967,7 @@ export async function generateAIResponse(
     role: 'mentor',
     content,
     timestamp: Date.now(),
-    category: match?.category || 'geral',
+    category: match?.category || detectedCategory,
   };
 }
 

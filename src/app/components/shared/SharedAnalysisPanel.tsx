@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnalysisPanel } from '../analysis/AnalysisPanel';
 import { usePricingAnalysis } from '../../hooks/usePricingAnalysis';
 import { ANALYSIS_SERVICES, ANALYSIS_PLAZAS, getDefaultAnalysisPlaza } from '../../utils/analysisConstants';
+import { updateCalculatorSnapshot } from '../../services/pricingMentorAIService';
 
 interface SharedAnalysisPanelProps {
   userPlaza?: string;
@@ -21,6 +22,20 @@ export function SharedAnalysisPanel({ userPlaza, userRole }: SharedAnalysisPanel
     currentPrice: analysisPrice,
     enabled: true,
   });
+
+  // RPA: Feed analysis context to chatbot
+  useEffect(() => {
+    const ctx = analysisData.context;
+    updateCalculatorSnapshot({
+      serviceCode: analysisService.id,
+      serviceName: analysisService.name,
+      plaza: analysisPlaza,
+      venda: analysisPrice,
+      proposedPrice: analysisData.proposedPrice,
+      recommendation: ctx?.recommendation?.summary,
+      alerts: ctx?.alerts?.map((a) => a.description),
+    });
+  }, [analysisService, analysisPlaza, analysisPrice, analysisData.context, analysisData.proposedPrice]);
 
   const title =
     userRole === 'admin'

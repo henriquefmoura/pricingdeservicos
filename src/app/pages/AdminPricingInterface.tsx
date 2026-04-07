@@ -196,18 +196,25 @@ export function AdminPricingInterface() {
     if (!code) return;
 
     const input = priceInputs[editingCode];
-    const repasse = input ? parseFloat(input.repasse) : undefined;
-    const venda = input ? parseFloat(input.venda) : undefined;
-    const margem = repasse && venda && venda > 0 ? ((venda - repasse) / venda) * 100 : undefined;
+    const toNum = (v: string | undefined) => {
+      if (v == null) return undefined;
+      const n = parseFloat(v);
+      return isNaN(n) ? undefined : n;
+    };
+    const repasse = toNum(input?.repasse);
+    const venda = toNum(input?.venda);
+    const margem = repasse != null && venda != null && venda > 0
+      ? ((venda - repasse) / venda) * 100
+      : undefined;
 
     updateCalculatorSnapshot({
       serviceCode: code.codigoAvulso,
       serviceName: code.descricao,
       serviceGroup: code.tipo,
       plaza: user?.plaza,
-      repasse: isNaN(repasse as number) ? undefined : repasse,
-      venda: isNaN(venda as number) ? undefined : venda,
-      margem: isNaN(margem as number) ? undefined : margem,
+      repasse,
+      venda,
+      margem,
     });
   }, [editingCode, priceInputs, codes, user?.plaza]);
 

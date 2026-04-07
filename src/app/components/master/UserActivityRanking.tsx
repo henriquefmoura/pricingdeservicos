@@ -151,7 +151,7 @@ function RankingTable({ title, users, roleIcon, roleBadgeBg, roleBadgeColor, rol
 
 export function UserActivityRanking() {
   const getTopUsers = useGovernanceStore((s) => s.getTopUsers);
-  const allUsers = getTopUsers(50);
+  const allUsers = getTopUsers(100);
 
   const adminUsers = allUsers.filter((u) => u.role === 'admin');
   const regularUsers = allUsers.filter((u) => u.role === 'user');

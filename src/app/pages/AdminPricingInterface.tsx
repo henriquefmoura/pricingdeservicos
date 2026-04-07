@@ -218,26 +218,18 @@ export function AdminPricingInterface() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setActiveFilter('pendentes')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 font-semibold text-sm transition-colors ${
-              activeFilter === 'pendentes'
-                ? 'bg-orange-50 border-orange-400 text-orange-700'
-                : 'bg-white border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-600'
-            }`}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 font-semibold text-sm transition-colors bg-orange-50 border-orange-400 text-orange-700"
           >
-            <span className={`text-xl font-bold ${activeFilter === 'pendentes' ? 'text-orange-600' : 'text-orange-400'}`}>
+            <span className="text-xl font-bold text-orange-600">
               {totalCodes}
             </span>
             Pendentes
           </button>
           <button
             onClick={() => setActiveFilter('precificados')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 font-semibold text-sm transition-colors ${
-              activeFilter === 'precificados'
-                ? 'bg-green-50 border-green-400 text-green-700'
-                : 'bg-white border-gray-200 text-gray-600 hover:border-green-300 hover:text-green-600'
-            }`}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 font-semibold text-sm transition-colors bg-white border-gray-200 text-gray-600 hover:border-green-300 hover:text-green-600"
           >
-            <span className={`text-xl font-bold ${activeFilter === 'precificados' ? 'text-green-600' : 'text-green-400'}`}>
+            <span className="text-xl font-bold text-green-400">
               {completedByMe}
             </span>
             Precificados

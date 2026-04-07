@@ -152,13 +152,14 @@ export function PricingMentorChat() {
               height: '6px',
               borderRadius: '50%',
               backgroundColor: isExternalAIAvailable() ? '#22C55E' : '#F59E0B',
+              animation: isExternalAIAvailable() ? 'mentorPulse 2s ease-in-out infinite' : undefined,
             }} />
             {isTyping ? 'Pensando...' : (
               <>
                 {isExternalAIAvailable() ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                     <Zap size={10} style={{ color: '#78BE20' }} />
-                    IA {getActiveProviderName()} • {userLevel === 'avancado' ? 'Avançado' : userLevel === 'intermediario' ? 'Intermediário' : 'Iniciante'}
+                    Conectado — IA {getActiveProviderName()} • {userLevel === 'avancado' ? 'Avançado' : userLevel === 'intermediario' ? 'Intermediário' : 'Iniciante'}
                   </span>
                 ) : (
                   `Assistente local • ${userLevel === 'avancado' ? 'Avançado' : userLevel === 'intermediario' ? 'Intermediário' : 'Iniciante'}`

@@ -2,13 +2,16 @@
  * Pricing Mentor AI Service — Multi-Provider Architecture
  *
  * Supports multiple AI providers with intelligent fallback:
- *   1. DeepSeek (primary) – VITE_DEEPSEEK_API_KEY
+ *   0. Vercel Proxy (primary in production) – uses server-side DEEPSEEK_KEY
+ *   1. DeepSeek (direct) – VITE_DEEPSEEK_API_KEY
  *   2. OpenAI (secondary) – VITE_OPENAI_API_KEY
  *   3. Groq (tertiary) – VITE_GROQ_API_KEY
  *   4. Google Gemini (quaternary) – VITE_GEMINI_API_KEY
  *   5. Local knowledge engine (always available)
  *
- * Configure keys in your .env file. See .env.example for details.
+ * In production (Vercel), the DEEPSEEK_KEY env var is used server-side
+ * through the /api/chat proxy to keep the API key secure.
+ * For local development, configure VITE_* keys in your .env file.
  */
 
 import type { MentorMessage, MentorCategory, PricingAnalysisContext } from '../types/pricingMentor';
@@ -434,6 +437,52 @@ export function clearConversationHistory() {
 
 let _lastProvider = '';
 
+/** Whether the server-side proxy is available (confirmed by a successful call) */
+let _proxyAvailable: boolean | null = null;
+
+/**
+ * Call the Vercel server-side proxy (/api/chat) which uses DEEPSEEK_KEY.
+ * This keeps the API key secure on the server.
+ */
+async function callProxy(messages: ChatMessage[]): Promise<string | null> {
+  // Skip proxy if we know it's not available (e.g. local dev without Vercel)
+  if (_proxyAvailable === false) return null;
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages,
+        max_tokens: 800,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      // Mark proxy as unavailable on 404/405 (route doesn't exist in dev)
+      if (response.status === 404 || response.status === 405) {
+        _proxyAvailable = false;
+      }
+      return null;
+    }
+
+    const data = await response.json();
+    const result = data as { choices?: { message?: { content?: string } }[] };
+    const text = result.choices?.[0]?.message?.content || null;
+
+    if (text) {
+      _proxyAvailable = true;
+    }
+
+    return text;
+  } catch {
+    // Network error — proxy not available (local dev)
+    _proxyAvailable = false;
+    return null;
+  }
+}
+
 async function callProvider(
   provider: AIProvider,
   messages: ChatMessage[],
@@ -518,7 +567,14 @@ async function callExternalAI(
     { role: 'user', content: userText },
   ];
 
-  // Try each provider in order
+  // 1. Try server-side proxy first (uses DEEPSEEK_KEY on Vercel)
+  const proxyResult = await callProxy(messages);
+  if (proxyResult) {
+    _lastProvider = 'DeepSeek';
+    return proxyResult;
+  }
+
+  // 2. Try each direct provider in order (for local dev with VITE_* keys)
   for (const provider of PROVIDERS) {
     if (!provider.apiKey) continue;
 
@@ -615,9 +671,11 @@ function enrichWithContext(content: string, context: PricingAnalysisContext): st
 }
 
 /**
- * Check if any external AI provider is available
+ * Check if any external AI provider is available (including server-side proxy)
  */
 export function isExternalAIAvailable(): boolean {
+  // Proxy is available (confirmed) or hasn't been tried yet (assume available in production)
+  if (_proxyAvailable === true || _proxyAvailable === null) return true;
   return PROVIDERS.some(p => !!p.apiKey);
 }
 
@@ -626,6 +684,8 @@ export function isExternalAIAvailable(): boolean {
  */
 export function getActiveProviderName(): string {
   if (_lastProvider) return _lastProvider;
+  // If proxy hasn't been tried yet or is available, show DeepSeek
+  if (_proxyAvailable !== false) return 'DeepSeek';
   for (const provider of PROVIDERS) {
     if (provider.apiKey) return provider.name;
   }
@@ -636,7 +696,17 @@ export function getActiveProviderName(): string {
  * Get list of all configured (available) providers
  */
 export function getConfiguredProviders(): string[] {
-  const available = PROVIDERS.filter(p => !!p.apiKey).map(p => p.name);
+  const available: string[] = [];
+  // Include DeepSeek via proxy if available
+  if (_proxyAvailable !== false) {
+    available.push('DeepSeek');
+  }
+  // Include direct providers with API keys (avoid duplicate DeepSeek)
+  for (const p of PROVIDERS) {
+    if (p.apiKey && !available.includes(p.name)) {
+      available.push(p.name);
+    }
+  }
   available.push('Base Local');
   return available;
 }

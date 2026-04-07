@@ -23,6 +23,22 @@ export function CompetitorDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Page header banner */}
+      <div
+        className="rounded-xl p-6 text-white shadow-lg"
+        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 p-3 rounded-lg">
+            <Crosshair className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Inteligência Competitiva</h2>
+            <p className="text-white/80 text-sm mt-1">Análise de preços de mercado por praça e serviço</p>
+          </div>
+        </div>
+      </div>
+
       {/* Search Form */}
       <CompetitorSearchForm onSearch={handleSearch} loading={loading} />
 

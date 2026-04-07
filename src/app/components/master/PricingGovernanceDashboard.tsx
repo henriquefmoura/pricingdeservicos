@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGovernanceStore } from '../../store/governanceStore';
 import { useApprovalStore } from '../../store/approvalStore';
 import { UserActivityRanking } from './UserActivityRanking';
 import { PricingVolumeChart } from './PricingVolumeChart';
 import { ApprovalVsRejectionChart } from './ApprovalVsRejectionChart';
 import { PricingConsistencyView } from './PricingConsistencyView';
+import { KpiDetailPanel, KpiKey } from './KpiDetailPanel';
 import {
   BarChart3,
   MapPin,
@@ -47,11 +48,27 @@ interface StatCardProps {
   value: string | number;
   label: string;
   trend?: { value: string; positive: boolean };
+  onClick?: () => void;
 }
 
-function StatCard({ icon, iconBg, iconColor, value, label, trend }: StatCardProps) {
+function StatCard({ icon, iconBg, iconColor, value, label, trend, onClick }: StatCardProps) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div style={statCardStyle}>
+    <div
+      style={{
+        ...statCardStyle,
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'all 0.2s ease',
+        transform: hovered && onClick ? 'translateY(-2px)' : 'none',
+        boxShadow: hovered && onClick
+          ? '0 4px 12px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.08)'
+          : '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04)',
+        border: hovered && onClick ? '1px solid #78BE20' : '1px solid transparent',
+      }}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <div
         style={{
           width: '44px',
@@ -121,7 +138,10 @@ export function PricingGovernanceDashboard() {
   const initializeMockData = useGovernanceStore((s) => s.initializeMockData);
   const getUserMetrics = useGovernanceStore((s) => s.getUserMetrics);
   const getPlazaMetrics = useGovernanceStore((s) => s.getPlazaMetrics);
+  const activityLogs = useGovernanceStore((s) => s.activityLogs);
   const getAdjustmentLog = useApprovalStore((s) => s.getAdjustmentLog);
+
+  const [activeKpi, setActiveKpi] = useState<KpiKey | null>(null);
 
   useEffect(() => {
     initializeMockData();
@@ -181,6 +201,7 @@ export function PricingGovernanceDashboard() {
           value={totalPricings}
           label="Códigos Precificados"
           trend={{ value: '+12% mês', positive: true }}
+          onClick={() => setActiveKpi('codigosPrecificados')}
         />
         <StatCard
           icon={<MapPin size={20} />}
@@ -188,6 +209,7 @@ export function PricingGovernanceDashboard() {
           iconColor="#3B82F6"
           value={activePlazas}
           label="Praças Ativas"
+          onClick={() => setActiveKpi('pracasAtivas')}
         />
         <StatCard
           icon={<CheckCircle size={20} />}
@@ -196,6 +218,7 @@ export function PricingGovernanceDashboard() {
           value={`${approvalRate}%`}
           label="Taxa de Aprovação"
           trend={approvalRate >= 70 ? { value: 'Saudável', positive: true } : { value: 'Atenção', positive: false }}
+          onClick={() => setActiveKpi('taxaAprovacao')}
         />
         <StatCard
           icon={<Clock size={20} />}
@@ -204,6 +227,7 @@ export function PricingGovernanceDashboard() {
           value={`${avgDecisionTime} min`}
           label="Tempo Médio de Decisão"
           trend={avgDecisionTime <= 30 ? { value: 'Dentro da meta', positive: true } : { value: 'Acima da meta', positive: false }}
+          onClick={() => setActiveKpi('tempoDecisao')}
         />
       </div>
 
@@ -215,6 +239,7 @@ export function PricingGovernanceDashboard() {
           iconColor="#6366F1"
           value={totalLogins}
           label="Total de Acessos"
+          onClick={() => setActiveKpi('totalAcessos')}
         />
         <StatCard
           icon={<Users size={20} />}
@@ -222,6 +247,7 @@ export function PricingGovernanceDashboard() {
           iconColor={COLORS.primary}
           value={totalUsers}
           label="Usuários Ativos"
+          onClick={() => setActiveKpi('usuariosAtivos')}
         />
         <StatCard
           icon={<Search size={20} />}
@@ -229,6 +255,7 @@ export function PricingGovernanceDashboard() {
           iconColor="#0EA5E9"
           value={totalResearch}
           label="Pesquisas de Mercado"
+          onClick={() => setActiveKpi('pesquisasMercado')}
         />
         <StatCard
           icon={<FileText size={20} />}
@@ -236,8 +263,20 @@ export function PricingGovernanceDashboard() {
           iconColor="#A855F7"
           value={totalDecided}
           label="Decisões Tomadas"
+          onClick={() => setActiveKpi('decisoesTomadas')}
         />
       </div>
+
+      {/* KPI Detail Drill-down */}
+      {activeKpi && (
+        <KpiDetailPanel
+          kpiKey={activeKpi}
+          onClose={() => setActiveKpi(null)}
+          userMetrics={userMetrics}
+          plazaMetrics={plazaMetrics}
+          activityLogs={activityLogs}
+        />
+      )}
 
       {/* Row 1: User ranking + Volume chart */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

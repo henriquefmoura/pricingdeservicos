@@ -111,7 +111,27 @@ export default function UserDashboardPage() {
   }
 
   return (
-    <AppLayout activeNav="Dashboard" title="Validação de Preços" subtitle={`Aprove, rejeite ou sugira novos preços para a praça ${user?.plaza || ''}`}>
+    <AppLayout activeNav="Dashboard" title="" subtitle="">
+      {/* Page header banner */}
+      <div
+        className="rounded-xl shadow-lg"
+        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: '24px', marginBottom: '24px' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '8px' }}>
+            <CheckCircle size={24} style={{ color: '#FFFFFF' }} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
+              Validação de Preços
+            </h2>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
+              {`Aprove, rejeite ou sugira novos preços para a praça ${user?.plaza || ''}`}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Tab Bar */}
       <Tabs
         tabs={[

@@ -289,7 +289,6 @@ export default function AnalysisPage() {
             <FileSpreadsheet size={16} />
             Métricas Detalhadas
           </button>
-
         </div>
       )}
 

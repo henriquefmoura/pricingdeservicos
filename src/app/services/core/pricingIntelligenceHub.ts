@@ -327,6 +327,7 @@ export function invalidateHubCache(pracaId: string, serviceId: string): void {
   const weatherKey = buildCacheKey(pracaId, serviceId, 'weather');
   analysisCache.invalidate(weatherKey);
   hubCache.delete(`hub_cnae_${serviceId}`);
+  // pracaId is used as pracaName in loadTerritorialData callers
   hubCache.delete(`hub_territorial_${pracaId}_${serviceId}`);
   hubCache.delete(`hub_territorial_${pracaId}_`);
 }

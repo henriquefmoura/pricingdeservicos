@@ -107,6 +107,8 @@ export function PricingMentorAvatar({
           viewBox="0 0 100 120"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
+          role="img"
+          aria-label="Pricing Mentor - instalador virtual"
           style={{
             animation: expression === 'pointing'
               ? 'installerWalk 1.2s ease-in-out infinite'
@@ -254,7 +256,7 @@ export function PricingMentorAvatar({
           />
           {/* Hat front emblem */}
           <circle cx="50" cy="23" r="3.5" fill="#E6B800" stroke="#D4A017" strokeWidth="0.5" />
-          <text x="50" y="25" textAnchor="middle" fontSize="4.5" fill="#78350F" fontWeight="bold">⚡</text>
+          <text x="50" y="25" textAnchor="middle" fontSize="4.5" fill="#78350F" fontWeight="bold" aria-hidden="true">⚡</text>
 
           {/* ═══════ EYEBROWS ═══════ */}
           <path d={getLeftBrow()} stroke="#5B3A1A" strokeWidth="1.3" fill="none" strokeLinecap="round" />
@@ -332,7 +334,7 @@ export function PricingMentorAvatar({
           {expression === 'alert' && (
             <g transform="translate(72, 8)" style={{ animation: 'installerAlertPulse 1s ease-in-out infinite' }}>
               <circle cx="0" cy="0" r="6" fill="#FFD700" opacity="0.9" />
-              <text x="0" y="2.5" textAnchor="middle" fontSize="8" fill="#78350F" fontWeight="bold">!</text>
+              <text x="0" y="2.5" textAnchor="middle" fontSize="8" fill="#78350F" fontWeight="bold" aria-hidden="true">!</text>
             </g>
           )}
 

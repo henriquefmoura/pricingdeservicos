@@ -10,6 +10,7 @@ import {
   formatLessonAsMessage,
   simulatePrice,
 } from '../services/pricingMentorService';
+import { clearConversationHistory } from '../services/pricingMentorAIService';
 
 interface PricingMentorState {
   isOpen: boolean;
@@ -222,7 +223,10 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
         }
       },
 
-      clearMessages: () => set({ messages: [], hasGreeted: false }),
+      clearMessages: () => {
+        clearConversationHistory();
+        set({ messages: [], hasGreeted: false });
+      },
 
       initGreeting: () => {
         const state = get();

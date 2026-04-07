@@ -98,7 +98,7 @@ export function PricingMentorChat() {
         }}
         onClick={expand}
       >
-        <PricingMentorAvatar size={36} expression={expression} />
+        <PricingMentorAvatar size={36} expression={expression} avatarState={isTyping ? 'thinking' : 'idle'} />
         <div>
           <span style={{ fontSize: '14px', fontWeight: 700, color: '#1F2937', display: 'block' }}>
             Pricing Mentor
@@ -139,7 +139,7 @@ export function PricingMentorChat() {
           gap: '12px',
         }}
       >
-        <PricingMentorAvatar size={44} expression={expression} />
+        <PricingMentorAvatar size={44} expression={expression} avatarState={isTyping ? 'thinking' : 'idle'} />
         <div style={{ flex: 1 }}>
           <div style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
             Pricing Mentor
@@ -326,7 +326,7 @@ export function PricingMentorChat() {
             {/* Typing Indicator */}
             {isTyping && (
               <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-                <PricingMentorAvatar size={28} expression="thinking" />
+                <PricingMentorAvatar size={28} expression="thinking" avatarState="thinking" />
                 <div
                   style={{
                     padding: '12px 16px',

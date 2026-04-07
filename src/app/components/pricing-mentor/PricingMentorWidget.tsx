@@ -1,6 +1,7 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { X } from 'lucide-react';
 import { PricingMentorAvatar } from './PricingMentorAvatar';
+import type { AvatarState } from './PricingMentorAvatar';
 import { PricingMentorChat } from './PricingMentorChat';
 import { PricingMentorNudge } from './PricingMentorNudge';
 import { usePricingMentorStore } from '../../store/pricingMentorStore';
@@ -17,12 +18,22 @@ export function PricingMentorWidget() {
   const { isAuthenticated } = useAuthStore();
   const {
     isOpen,
+    isTyping,
     expression,
     toggleOpen,
     nudges,
     dismissNudge,
     triggerRandomNudge,
   } = usePricingMentorStore();
+
+  const [isHovered, setIsHovered] = useState(false);
+
+  /* Derive avatar animation state from AI / UI state */
+  const avatarState: AvatarState = isTyping
+    ? (expression === 'thinking' ? 'thinking' : 'speaking')
+    : isHovered
+      ? 'hover'
+      : 'idle';
 
   const nudgeTimer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
@@ -102,7 +113,7 @@ export function PricingMentorWidget() {
         <div
           style={{
             position: 'fixed',
-            bottom: 110,
+            bottom: 126,
             right: 24,
             zIndex: 9997,
             display: 'flex',
@@ -127,15 +138,17 @@ export function PricingMentorWidget() {
       {/* Chat Panel */}
       <PricingMentorChat />
 
-      {/* Floating Action Button (FAB) with 3D installer avatar */}
+      {/* Floating Action Button (FAB) with semi-realistic avatar */}
       <button
         onClick={toggleOpen}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
           position: 'fixed',
           bottom: 24,
           right: 24,
-          width: isOpen ? '56px' : '72px',
-          height: isOpen ? '56px' : '72px',
+          width: isOpen ? '56px' : '88px',
+          height: isOpen ? '56px' : '88px',
           borderRadius: '50%',
           border: 'none',
           backgroundColor: isOpen ? '#001022' : 'transparent',
@@ -156,7 +169,7 @@ export function PricingMentorWidget() {
         {isOpen ? (
           <X size={24} style={{ color: '#78BE20' }} />
         ) : (
-          <PricingMentorAvatar size={72} expression={expression} />
+          <PricingMentorAvatar size={88} expression={expression} avatarState={avatarState} />
         )}
       </button>
 
@@ -165,12 +178,12 @@ export function PricingMentorWidget() {
         <div
           style={{
             position: 'fixed',
-            bottom: 8,
-            right: 10,
+            bottom: 6,
+            right: 6,
             zIndex: 9999,
             pointerEvents: 'none',
             textAlign: 'center',
-            width: '96px',
+            width: '112px',
           }}
         >
           <span

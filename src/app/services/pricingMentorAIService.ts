@@ -67,7 +67,7 @@ const PROVIDERS: AIProvider[] = [
     apiKey: getEnv('VITE_GEMINI_API_KEY'),
     endpoint: '', // built dynamically with API key
     model: 'gemini-2.0-flash',
-    transformRequest: (messages: ChatMessage[], maxTokens: number, _temperature: number) => {
+    transformRequest: (messages: ChatMessage[], maxTokens: number, temperature: number) => {
       // Gemini uses a different format: system instruction + contents
       const systemMsg = messages.find(m => m.role === 'system');
       const otherMsgs = messages.filter(m => m.role !== 'system');
@@ -79,7 +79,7 @@ const PROVIDERS: AIProvider[] = [
         })),
         generationConfig: {
           maxOutputTokens: maxTokens,
-          temperature: 0.7,
+          temperature,
         },
       };
     },
@@ -444,7 +444,7 @@ async function callProvider(
   const temperature = 0.7;
 
   try {
-    // Build endpoint (Gemini uses API key in URL)
+    // Build endpoint — Gemini uses API key in URL (required by Google's API design)
     let endpoint = provider.endpoint;
     if (provider.name === 'Gemini') {
       endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent?key=${provider.apiKey}`;

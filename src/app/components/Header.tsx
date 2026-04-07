@@ -7,6 +7,7 @@ interface HeaderProps {
   userName: string;
   userRole: 'Master' | 'Admin' | 'Usuário';
   notificationCount?: number;
+  onNotificationClick?: () => void;
   className?: string;
 }
 
@@ -16,6 +17,7 @@ export function Header({
   userName,
   userRole,
   notificationCount = 0,
+  onNotificationClick,
   className = '',
 }: HeaderProps) {
   return (
@@ -53,6 +55,7 @@ export function Header({
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
         {/* Notifications */}
         <button
+          onClick={onNotificationClick}
           style={{
             position: 'relative',
             width: '40px',
@@ -78,14 +81,22 @@ export function Header({
             <div
               style={{
                 position: 'absolute',
-                top: '8px',
-                right: '8px',
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
+                top: '4px',
+                right: '4px',
+                minWidth: '18px',
+                height: '18px',
+                borderRadius: '9px',
                 backgroundColor: '#DA291C',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 4px',
               }}
-            />
+            >
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#FFFFFF', lineHeight: 1 }}>
+                {notificationCount > 99 ? '99+' : notificationCount}
+              </span>
+            </div>
           )}
         </button>
 

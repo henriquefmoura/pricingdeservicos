@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Upload, BarChart2, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, CloudSun, MapPin, Crosshair, Shield, CheckCircle, FileText, Lightbulb, ListChecks, Search } from 'lucide-react';
+import { Upload, BarChart2, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, CloudSun, MapPin, Crosshair, Shield, CheckCircle, FileText, Lightbulb, ListChecks, Search, Bell, MessageSquare } from 'lucide-react';
 import { Logo } from './Logo';
 
 export type UserRole = 'Master' | 'Admin' | 'Usuário';
-export type NavItem = 'Upload' | 'Análise' | 'Dashboard' | 'Admin' | 'Clima' | 'Territorial' | 'Concorrência' | 'Governança' | 'Códigos' | 'PesquisaMercado';
+export type NavItem = 'Upload' | 'Análise' | 'Dashboard' | 'Admin' | 'Clima' | 'Territorial' | 'Concorrência' | 'Governança' | 'Códigos' | 'PesquisaMercado' | 'Notificações' | 'Suporte';
 
 interface NavItemConfig {
   id: NavItem;
@@ -44,6 +44,12 @@ const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemCon
             { id: 'Concorrência', label: 'Concorrência', icon: Crosshair },
           ],
         },
+        {
+          group: 'Suporte',
+          items: [
+            { id: 'Notificações', label: 'Notificações', icon: Bell },
+          ],
+        },
       ];
     case 'Admin':
       return [
@@ -62,6 +68,13 @@ const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemCon
             { id: 'Concorrência', label: 'Concorrência', icon: Crosshair },
           ],
         },
+        {
+          group: 'Suporte',
+          items: [
+            { id: 'Notificações', label: 'Notificações', icon: Bell },
+            { id: 'Suporte', label: 'Suporte', icon: MessageSquare },
+          ],
+        },
       ];
     case 'Usuário':
       return [
@@ -78,6 +91,13 @@ const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemCon
             { id: 'Territorial', label: 'Inteligência Territorial', icon: MapPin },
             { id: 'Concorrência', label: 'Concorrência', icon: Crosshair },
             { id: 'Análise', label: 'Análise Geral', icon: BarChart2 },
+          ],
+        },
+        {
+          group: 'Suporte',
+          items: [
+            { id: 'Notificações', label: 'Notificações', icon: Bell },
+            { id: 'Suporte', label: 'Suporte', icon: MessageSquare },
           ],
         },
       ];

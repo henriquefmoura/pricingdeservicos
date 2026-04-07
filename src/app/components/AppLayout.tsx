@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router';
 import { Sidebar, NavItem, UserRole } from './Sidebar';
 import { Header } from './Header';
 import { useAuthStore } from '../store/authStore';
+import { useNotificationStore } from '../store/notificationStore';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -14,10 +15,19 @@ interface AppLayoutProps {
 export function AppLayout({ children, activeNav, title, subtitle }: AppLayoutProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const { getUnreadCount, initializeMockNotifications } = useNotificationStore();
+
+  // Initialize notifications
+  React.useEffect(() => {
+    initializeMockNotifications();
+  }, [initializeMockNotifications]);
 
   const userName = user?.name || 'Usuário';
   const userRole: UserRole = user?.role === 'master' ? 'Master' : user?.role === 'admin' ? 'Admin' : 'Usuário';
-  const notificationCount = 3;
+
+  // Dynamic notification count based on role
+  const notificationRole = user?.role || 'user';
+  const notificationCount = getUnreadCount(notificationRole as 'master' | 'admin' | 'user', user?.plaza);
 
   const handleNavClick = (item: NavItem) => {
     switch (item) {
@@ -51,12 +61,27 @@ export function AppLayout({ children, activeNav, title, subtitle }: AppLayoutPro
       case 'Códigos':
         navigate('/pricing-codes');
         break;
+      case 'Notificações':
+        if (user?.role === 'master') navigate('/master-notifications');
+        else if (user?.role === 'admin') navigate('/admin-notifications');
+        else navigate('/user-notifications');
+        break;
+      case 'Suporte':
+        if (user?.role === 'admin') navigate('/admin-support');
+        else navigate('/user-support');
+        break;
     }
   };
 
   const handleLogout = () => {
     logout();
     navigate('/login', { replace: true });
+  };
+
+  const handleNotificationClick = () => {
+    if (user?.role === 'master') navigate('/master-notifications');
+    else if (user?.role === 'admin') navigate('/admin-notifications');
+    else navigate('/user-notifications');
   };
 
   return (
@@ -75,6 +100,7 @@ export function AppLayout({ children, activeNav, title, subtitle }: AppLayoutPro
           userName={userName}
           userRole={userRole}
           notificationCount={notificationCount}
+          onNotificationClick={handleNotificationClick}
         />
         <main style={{ flex: 1, overflow: 'auto', padding: '24px 40px' }}>
           {children}

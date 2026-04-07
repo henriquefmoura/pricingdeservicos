@@ -13,6 +13,11 @@ import CompetitorIntelligencePage from "./pages/CompetitorIntelligencePage";
 import GovernancePage from "./pages/GovernancePage";
 import PricingCodesPage from "./pages/PricingCodesPage";
 import MarketResearchPage from "./pages/MarketResearchPage";
+import MasterNotificationsPage from "./pages/MasterNotificationsPage";
+import AdminNotificationsPage from "./pages/AdminNotificationsPage";
+import AdminSupportPage from "./pages/AdminSupportPage";
+import UserNotificationsPage from "./pages/UserNotificationsPage";
+import UserSupportPage from "./pages/UserSupportPage";
 // Old pages that still have unique functionality
 import { Comparison } from "./pages/Comparison";
 import { DetailedMetrics } from "./pages/DetailedMetrics";
@@ -74,6 +79,26 @@ export const router = createBrowserRouter([
   {
     path: "/market-research",
     Component: MarketResearchPage,
+  },
+  {
+    path: "/master-notifications",
+    Component: MasterNotificationsPage,
+  },
+  {
+    path: "/admin-notifications",
+    Component: AdminNotificationsPage,
+  },
+  {
+    path: "/admin-support",
+    Component: AdminSupportPage,
+  },
+  {
+    path: "/user-notifications",
+    Component: UserNotificationsPage,
+  },
+  {
+    path: "/user-support",
+    Component: UserSupportPage,
   },
   {
     path: "*",

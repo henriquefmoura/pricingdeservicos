@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { MentorMessage, MentorNudge, UserLevel, MentorCategory, PricingAnalysisContext } from '../types/pricingMentor';
+import type { MentorMessage, MentorNudge, UserLevel, MentorCategory, PricingAnalysisContext, UserBehavior } from '../types/pricingMentor';
 import {
   getGreetingMessage,
-  generateResponse,
+  generateResponseAsync,
   getRandomNudge,
   analyzePricingContext,
   getMicroLesson,
@@ -14,11 +14,14 @@ import {
 interface PricingMentorState {
   isOpen: boolean;
   isMinimized: boolean;
+  isTyping: boolean;
   messages: MentorMessage[];
   nudges: MentorNudge[];
   userLevel: UserLevel;
   questionCount: number;
   hasGreeted: boolean;
+  behavior: UserBehavior;
+  expression: 'happy' | 'thinking' | 'alert' | 'wink' | 'surprised' | 'pointing';
 }
 
 interface PricingMentorActions {
@@ -34,20 +37,57 @@ interface PricingMentorActions {
   clearMessages: () => void;
   initGreeting: () => void;
   triggerRandomNudge: () => void;
+  setExpression: (expr: PricingMentorState['expression']) => void;
 }
 
 type PricingMentorStore = PricingMentorState & PricingMentorActions;
+
+const DEFAULT_BEHAVIOR: UserBehavior = {
+  topicFrequency: {},
+  totalQuestions: 0,
+  lastActiveTimestamp: 0,
+  preferredTopics: [],
+  sessionCount: 0,
+};
+
+function computeUserLevel(behavior: UserBehavior): UserLevel {
+  if (behavior.totalQuestions > 30) return 'avancado';
+  if (behavior.totalQuestions > 10) return 'intermediario';
+  return 'iniciante';
+}
+
+function updateBehavior(behavior: UserBehavior, category: MentorCategory): UserBehavior {
+  const freq = { ...behavior.topicFrequency };
+  freq[category] = (freq[category] || 0) + 1;
+
+  // Compute top 3 preferred topics
+  const sorted = (Object.entries(freq) as [MentorCategory, number][])
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([cat]) => cat);
+
+  return {
+    ...behavior,
+    topicFrequency: freq,
+    totalQuestions: behavior.totalQuestions + 1,
+    lastActiveTimestamp: Date.now(),
+    preferredTopics: sorted,
+  };
+}
 
 export const usePricingMentorStore = create<PricingMentorStore>()(
   persist(
     (set, get) => ({
       isOpen: false,
       isMinimized: false,
+      isTyping: false,
       messages: [] as MentorMessage[],
       nudges: [] as MentorNudge[],
       userLevel: 'iniciante' as UserLevel,
       questionCount: 0,
       hasGreeted: false,
+      behavior: DEFAULT_BEHAVIOR,
+      expression: 'happy' as PricingMentorState['expression'],
 
       toggleOpen: () => {
         const state = get();
@@ -58,7 +98,16 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
             isMinimized: false,
             hasGreeted: true,
             messages: [...state.messages, greeting],
+            expression: 'wink',
+            behavior: {
+              ...state.behavior,
+              sessionCount: state.behavior.sessionCount + 1,
+            },
           });
+          // Reset expression after animation
+          setTimeout(() => {
+            set({ expression: 'happy' });
+          }, 2000);
         } else {
           set({ isOpen: !state.isOpen, isMinimized: false });
         }
@@ -76,14 +125,29 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
           content: text,
           timestamp: Date.now(),
         };
-        const response = generateResponse(text, context);
-        const newCount = state.questionCount + 1;
-        const level: UserLevel = newCount > 15 ? 'avancado' : 'iniciante';
 
+        // Show typing indicator
         set({
-          messages: [...state.messages, userMsg, response],
-          questionCount: newCount,
-          userLevel: level,
+          messages: [...state.messages, userMsg],
+          isTyping: true,
+          expression: 'thinking',
+        });
+
+        // Generate async AI response
+        generateResponseAsync(text, context).then((response) => {
+          const currentState = get();
+          const category = response.category || 'geral';
+          const newBehavior = updateBehavior(currentState.behavior, category);
+          const newLevel = computeUserLevel(newBehavior);
+
+          set({
+            messages: [...currentState.messages, response],
+            isTyping: false,
+            questionCount: currentState.questionCount + 1,
+            userLevel: newLevel,
+            behavior: newBehavior,
+            expression: 'happy',
+          });
         });
       },
 
@@ -98,7 +162,11 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
             timestamp: Date.now(),
             category: lesson.category,
           };
-          set({ messages: [...state.messages, msg] });
+          set({
+            messages: [...state.messages, msg],
+            expression: 'pointing',
+          });
+          setTimeout(() => set({ expression: 'happy' }), 2000);
         }
       },
 
@@ -118,7 +186,14 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
           timestamp: Date.now(),
           category: 'simulacao',
         };
-        set({ messages: [...state.messages, msg] });
+
+        // Alert expression for negative margins
+        const alertExpr = result.newMargin < 0 ? 'alert' : result.newMargin > 30 ? 'happy' : 'thinking';
+        set({
+          messages: [...state.messages, msg],
+          expression: alertExpr,
+        });
+        setTimeout(() => set({ expression: 'happy' }), 3000);
       },
 
       addNudge: (nudge: MentorNudge) => {
@@ -134,7 +209,11 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
       analyzeContext: (context: PricingAnalysisContext) => {
         const newNudges = analyzePricingContext(context);
         if (newNudges.length > 0) {
-          set((state) => ({ nudges: [...state.nudges, ...newNudges] }));
+          set((state) => ({
+            nudges: [...state.nudges, ...newNudges],
+            expression: newNudges.some(n => n.type === 'alert') ? 'alert' : 'pointing',
+          }));
+          setTimeout(() => set({ expression: 'happy' }), 4000);
         }
       },
 
@@ -152,6 +231,8 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
         const nudge = getRandomNudge();
         set((state) => ({ nudges: [...state.nudges, nudge] }));
       },
+
+      setExpression: (expr) => set({ expression: expr }),
     }),
     {
       name: 'pricing-mentor-storage',
@@ -160,6 +241,7 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
         userLevel: state.userLevel,
         questionCount: state.questionCount,
         hasGreeted: state.hasGreeted,
+        behavior: state.behavior,
       }),
     },
   ),

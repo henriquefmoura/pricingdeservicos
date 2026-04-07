@@ -5,7 +5,9 @@ import type {
   MicroLesson,
   SimulationResult,
   PricingAnalysisContext,
+  QuickAction,
 } from '../types/pricingMentor';
+import { generateAIResponse } from './pricingMentorAIService';
 
 // ─── Knowledge Base ───────────────────────────────────────────────────────────
 
@@ -98,6 +100,40 @@ const MICRO_LESSONS: MicroLesson[] = [
       'Controle prazos de recebimento. Cobre adiantamento quando possível.',
     category: 'fluxo_caixa',
   },
+  // ─── New Lessons ─────────────────────────────────────────────────────────
+  {
+    id: 'estrategia-1',
+    title: 'Precificação por valor vs por custo',
+    explanation:
+      'Precificar por custo é somar seus gastos + margem. Precificar por valor é cobrar pelo resultado que você entrega ao cliente.',
+    example:
+      'Um eletricista que instala iluminação pode cobrar pelo serviço (R$200) ou pelo projeto de iluminação que valoriza o imóvel (R$500+).',
+    application:
+      'Pense: quanto o cliente GANHA com seu serviço? Se ele ganha muito, você pode cobrar mais.',
+    category: 'estrategia',
+  },
+  {
+    id: 'negocios-1',
+    title: 'Como fidelizar clientes',
+    explanation:
+      'Clientes fiéis são mais baratos de manter do que conquistar novos. Um bom pós-serviço gera indicações e receita recorrente.',
+    example:
+      'Após um serviço, mande uma mensagem: "Tudo certo com o serviço? Se precisar, pode contar comigo!" Isso cria vínculo.',
+    application:
+      'Crie um plano de manutenção mensal ou trimestral. Clientes fiéis pagam sem negociar.',
+    category: 'negocios',
+  },
+  {
+    id: 'financas-1',
+    title: 'Separando conta pessoal e empresarial',
+    explanation:
+      'Misturar dinheiro pessoal com o do negócio é o erro número 1 de prestadores de serviço. Separe as contas!',
+    example:
+      'Abra uma conta PJ (MEI é grátis em vários bancos). Pague-se um "salário" fixo todo mês.',
+    application:
+      'Defina quanto é seu salário mensal e só retire esse valor. O resto fica no negócio.',
+    category: 'financas',
+  },
 ];
 
 // ─── Keyword → Category Mapping ──────────────────────────────────────────────
@@ -112,6 +148,11 @@ const KEYWORD_MAP: { keywords: string[]; category: MentorCategory }[] = [
   { keywords: ['elasticidade', 'demanda', 'sensibilidade', 'inelástico'], category: 'elasticidade' },
   { keywords: ['fluxo', 'caixa', 'recebimento', 'pagamento'], category: 'fluxo_caixa' },
   { keywords: ['simular', 'simulação', 'simulacao', 'se eu', 'e se', 'aumentar', 'diminuir'], category: 'simulacao' },
+  { keywords: ['estratégia', 'estrategia', 'crescer', 'escalar', 'expandir', 'plano'], category: 'estrategia' },
+  { keywords: ['imposto', 'mei', 'nota fiscal', 'cnpj', 'tributação', 'inss'], category: 'financas' },
+  { keywords: ['investimento', 'investir', 'reserva', 'poupar', 'roi', 'retorno'], category: 'financas' },
+  { keywords: ['cliente', 'marketing', 'vender', 'divulgar', 'negociar', 'desconto'], category: 'negocios' },
+  { keywords: ['inflação', 'economia', 'recessão', 'crise', 'pib'], category: 'mercado' },
 ];
 
 function detectCategory(text: string): MentorCategory {
@@ -124,68 +165,27 @@ function detectCategory(text: string): MentorCategory {
   return 'geral';
 }
 
+// ─── Quick Actions ────────────────────────────────────────────────────────────
+
+export const QUICK_ACTIONS: QuickAction[] = [
+  { id: 'qa-1', label: 'Calcular margem', emoji: '📊', message: 'Como calcular minha margem de lucro?', category: 'margem' },
+  { id: 'qa-2', label: 'Formar preço', emoji: '🎯', message: 'Como formar o preço do meu serviço?', category: 'formacao_preco' },
+  { id: 'qa-3', label: 'Custos ocultos', emoji: '👻', message: 'Quais custos eu posso estar esquecendo?', category: 'custos' },
+  { id: 'qa-4', label: 'Concorrência', emoji: '🔍', message: 'Como me posicionar frente à concorrência?', category: 'concorrencia' },
+  { id: 'qa-5', label: 'Negociação', emoji: '🤝', message: 'Como negociar sem perder margem?', category: 'negocios' },
+  { id: 'qa-6', label: 'Crescer', emoji: '🚀', message: 'Qual a melhor estratégia para crescer?', category: 'estrategia' },
+];
+
 // ─── Response Generator ───────────────────────────────────────────────────────
 
 const GREETING_RESPONSES = [
-  'Olá! 👋 Sou o Pricing Mentor, seu assistente de precificação. Como posso te ajudar hoje?',
-  'E aí! 😊 Tô aqui pra te ajudar a precificar melhor. O que precisa?',
-  'Opa! 🎯 Pronto pra te ajudar com preços. Me conta o que tá precisando!',
+  'Olá! 👋 Sou o **Pricing Mentor**, seu assistente inteligente de precificação.\n\nPosso te ajudar com:\n🎯 Preços e margem\n💰 Custos e finanças\n🔍 Concorrência e mercado\n🚀 Estratégia de negócio\n🧠 Qualquer dúvida geral!\n\nComo posso te ajudar hoje?',
+  'E aí! 😊 Sou o **Pricing Mentor**, seu parceiro de precificação.\n\nPergunte sobre preços, margem, custos, estratégia ou qualquer dúvida — estou aqui pra te ajudar a ganhar mais!\n\nO que precisa?',
+  'Opa! 🎯 Sou o **Pricing Mentor** e estou pronto pra te ajudar.\n\nPosso responder sobre precificação, negócios, finanças, mercado e muito mais.\n\n💡 Dica: use os botões rápidos abaixo ou me pergunte qualquer coisa!',
 ];
 
-const CATEGORY_RESPONSES: Record<MentorCategory, string[]> = {
-  margem: [
-    'Margem de lucro é o coração do seu negócio! 💚 Quer que eu explique como calcular a sua?',
-    'Boa pergunta sobre margem! A regra de ouro: nunca trabalhe com margem abaixo de 25-30%. Quer saber por quê?',
-    'Margem baixa é cilada! Vamos olhar seus números e ver onde dá pra melhorar. Me conta mais detalhes.',
-  ],
-  formacao_preco: [
-    'Pra formar um bom preço, a fórmula é simples: Custo Total ÷ (1 - Margem desejada). Quer que eu calcule pra você?',
-    'Nunca chute preço! 🎯 Vamos montar juntos: some seus custos e defina a margem. Me conta seus custos.',
-    'Formação de preço é a base de tudo. Primeiro: você sabe exatamente quanto custa cada serviço que oferece?',
-  ],
-  custos: [
-    'Custos são a fundação do preço! 🏗️ Não esqueça: material + mão de obra + deslocamento + custos fixos proporcionais.',
-    'Dica de ouro: muita gente esquece de incluir deslocamento, desgaste de ferramenta e tempo de deslocamento. Esses custos invisíveis comem sua margem!',
-    'Vamos separar seus custos em fixos e variáveis? Assim fica mais fácil precificar corretamente.',
-  ],
-  concorrencia: [
-    'Olhar a concorrência é importante, mas não se prenda a isso! 🔍 Preço baixo demais pode queimar seu negócio.',
-    'A concorrência cobra X? Ótimo. Mas a pergunta é: o que VOCÊ oferece de diferente? Valor > Preço.',
-    'Use a concorrência como referência, não como meta. Se seu serviço é melhor, seu preço pode (e deve) ser maior.',
-  ],
-  psicologico: [
-    'Preço psicológico é poderoso! 🧠 R$197 parece MUITO mais barato que R$200. Teste isso nos seus serviços.',
-    'Sabia que preços terminados em 7 passam sensação de desconto? Experimente: R$147, R$197, R$297...',
-    'O cérebro processa preços da esquerda pra direita. R$99,90 é lido como "noventa e pouco". Use isso!',
-  ],
-  sazonalidade: [
-    'Sazonalidade é sua aliada! 📅 Na alta demanda, aumente preços. Na baixa, crie promoções estratégicas.',
-    'Cada época do ano tem suas oportunidades. Verão = manutenção, Fim de ano = reformas. Já ajustou seus preços?',
-    'Não tenha medo de cobrar mais na alta temporada. É assim que negócios saudáveis funcionam!',
-  ],
-  elasticidade: [
-    'Elasticidade é simples: se você sobe o preço e não perde clientes, pode subir mais! 📈 Teste gradualmente.',
-    'Serviços urgentes e especializados são inelásticos — o cliente paga o que for. Valorize sua expertise!',
-    'Dica: suba 5-10% e veja o que acontece. Se a demanda se mantém, você estava cobrando pouco!',
-  ],
-  fluxo_caixa: [
-    'Fluxo de caixa > Lucro no papel! 💰 De nada adianta faturar muito se o dinheiro não entra a tempo.',
-    'Dica prática: peça 50% de entrada em serviços grandes. Isso protege seu fluxo de caixa.',
-    'Cuidado com prazos longos de recebimento. Negocie sempre condições que favoreçam seu caixa.',
-  ],
-  simulacao: [
-    'Vamos simular! 🔬 Me diz o preço atual, o custo e a quantidade que vende. Eu calculo cenários pra você.',
-    'Simulação é a melhor forma de tomar decisão. Quer testar um aumento de preço? Me conta os números!',
-    'Boa ideia simular antes de decidir! Me passa os dados e eu monto os cenários.',
-  ],
-  geral: [
-    'Boa pergunta! 🤔 Me conta mais detalhes pra eu poder te ajudar melhor.',
-    'Tô aqui pra isso! Me explica mais sobre sua dúvida que eu te oriento.',
-    'Posso te ajudar com margem, formação de preço, custos, concorrência e muito mais. O que precisa?',
-  ],
-};
-
 const NUDGE_MESSAGES: MentorNudge[] = [
+  // ─── Warnings ─────────────────────────────────────────────────────────
   {
     id: 'nudge-low-margin',
     type: 'warning',
@@ -194,34 +194,85 @@ const NUDGE_MESSAGES: MentorNudge[] = [
     dismissed: false,
     actionLabel: 'Ajustar margem',
   },
+  // ─── Tips ─────────────────────────────────────────────────────────────
   {
     id: 'nudge-psychological',
     type: 'tip',
-    message: 'Dica: use preço psicológico! Em vez de R$200, tente R$197 ou R$199,90. A percepção muda muito.',
-    timestamp: Date.now(),
-    dismissed: false,
-  },
-  {
-    id: 'nudge-question-1',
-    type: 'question',
-    message: 'Você está ganhando dinheiro ou só vendendo? 🤔 Clique pra analisar sua margem real.',
-    timestamp: Date.now(),
-    dismissed: false,
-    actionLabel: 'Analisar margem',
-  },
-  {
-    id: 'nudge-question-2',
-    type: 'question',
-    message: 'Se vender mais com esse preço, você lucra ou perde? Nem sempre mais vendas = mais lucro.',
+    message: 'Dica: use preço psicológico! Em vez de R$200, tente R$197 ou R$199,90. A percepção muda muito. 🧠',
     timestamp: Date.now(),
     dismissed: false,
   },
   {
     id: 'nudge-cost-reminder',
     type: 'tip',
-    message: 'Lembrete: custos de deslocamento, ferramentas e tempo são frequentemente esquecidos na precificação.',
+    message: 'Lembrete: custos de deslocamento, ferramentas e tempo são frequentemente esquecidos na precificação. 👻',
     timestamp: Date.now(),
     dismissed: false,
+  },
+  {
+    id: 'nudge-valor-agregado',
+    type: 'tip',
+    message: 'Dica: adicionar garantia e pós-serviço pode justificar preços 20-30% maiores! 💎',
+    timestamp: Date.now(),
+    dismissed: false,
+  },
+  // ─── Provocations (Behavioral Nudges) ──────────────────────────────────
+  {
+    id: 'nudge-provocation-1',
+    type: 'provocation',
+    message: 'Você está ganhando dinheiro ou só vendendo? 🤔',
+    timestamp: Date.now(),
+    dismissed: false,
+    actionLabel: 'Analisar margem',
+  },
+  {
+    id: 'nudge-provocation-2',
+    type: 'provocation',
+    message: 'Se aumentar 10%, seu cliente realmente deixaria de comprar? 📈',
+    timestamp: Date.now(),
+    dismissed: false,
+    actionLabel: 'Simular aumento',
+  },
+  {
+    id: 'nudge-provocation-3',
+    type: 'provocation',
+    message: 'Você conhece sua margem ideal? A maioria dos prestadores não conhece... 🎯',
+    timestamp: Date.now(),
+    dismissed: false,
+    actionLabel: 'Descobrir agora',
+  },
+  {
+    id: 'nudge-provocation-4',
+    type: 'provocation',
+    message: 'Se vender mais com esse preço, você lucra ou perde? Nem sempre mais vendas = mais lucro. 💡',
+    timestamp: Date.now(),
+    dismissed: false,
+    actionLabel: 'Entender por quê',
+  },
+  {
+    id: 'nudge-provocation-5',
+    type: 'provocation',
+    message: 'Quanto vale sua hora de trabalho? Se não sabe, pode estar cobrando pouco... ⏰',
+    timestamp: Date.now(),
+    dismissed: false,
+    actionLabel: 'Calcular agora',
+  },
+  // ─── Questions ────────────────────────────────────────────────────────
+  {
+    id: 'nudge-question-1',
+    type: 'question',
+    message: 'Já revisou seus preços este mês? A inflação pode estar comendo sua margem sem você perceber. 📊',
+    timestamp: Date.now(),
+    dismissed: false,
+    actionLabel: 'Revisar preços',
+  },
+  {
+    id: 'nudge-question-2',
+    type: 'question',
+    message: 'Sabia que uma micro aula de 2 minutos pode mudar sua forma de precificar? 📚',
+    timestamp: Date.now(),
+    dismissed: false,
+    actionLabel: 'Aprender agora',
   },
 ];
 
@@ -248,37 +299,35 @@ export function getGreetingMessage(): MentorMessage {
   };
 }
 
+/**
+ * Generate a response using the AI service (async, with fallback).
+ */
+export async function generateResponseAsync(
+  userText: string,
+  context?: PricingAnalysisContext,
+): Promise<MentorMessage> {
+  return generateAIResponse(userText, context);
+}
+
+/**
+ * Synchronous response generator (for backward compatibility).
+ * Uses keyword matching with enriched responses.
+ */
 export function generateResponse(
   userText: string,
   context?: PricingAnalysisContext,
 ): MentorMessage {
   const category = detectCategory(userText);
-  let content = pickRandom(CATEGORY_RESPONSES[category]);
 
-  // Enrich with context if available
-  if (context) {
-    if (context.currentPrice && context.costPrice) {
-      const margin = ((context.currentPrice - context.costPrice) / context.currentPrice) * 100;
-      if (margin < 20) {
-        content += `\n\n⚠️ Olha, analisando seus dados: o serviço ${context.serviceName || ''} está com margem de apenas ${margin.toFixed(1)}%. O ideal é pelo menos 30%.`;
-      } else if (margin >= 30) {
-        content += `\n\n✅ Boa notícia! A margem de ${margin.toFixed(1)}% está saudável. Continue assim!`;
-      }
-    }
-    if (context.competitorPrice && context.currentPrice) {
-      const diff = ((context.competitorPrice - context.currentPrice) / context.currentPrice) * 100;
-      if (diff > 10) {
-        content += `\n\n💡 Seu concorrente está cobrando ${diff.toFixed(0)}% a mais. Pode ser uma oportunidade de aumentar seu preço.`;
-      }
-    }
-  }
-
+  // Use the AI service's local knowledge base
+  // For sync path, return a placeholder and let the store handle async
   return {
     id: createMentorId(),
     role: 'mentor',
-    content,
+    content: '', // Will be replaced by async response
     timestamp: Date.now(),
     category,
+    isLoading: true,
   };
 }
 
@@ -308,7 +357,9 @@ export function simulatePrice(
   const percentChange = ((newPrice - currentPrice) / currentPrice) * 100;
 
   let recommendation: string;
-  if (newMargin < 15) {
+  if (newMargin < 0) {
+    recommendation = '🚨 PERIGO! Margem negativa! Você está pagando pra trabalhar. Revise urgentemente.';
+  } else if (newMargin < 15) {
     recommendation = '⚠️ Cuidado! Essa margem é muito baixa. Pode não cobrir seus custos fixos.';
   } else if (newMargin < 25) {
     recommendation = '🟡 Margem razoável, mas tente buscar pelo menos 30% para ter mais segurança.';

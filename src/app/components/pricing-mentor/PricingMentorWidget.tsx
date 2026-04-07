@@ -6,6 +6,9 @@ import { PricingMentorNudge } from './PricingMentorNudge';
 import { usePricingMentorStore } from '../../store/pricingMentorStore';
 import { useAuthStore } from '../../store/authStore';
 
+const NUDGE_INTERVAL_MS = 120_000;
+const INITIAL_NUDGE_DELAY_MS = 30_000;
+
 /**
  * PricingMentorWidget — the global floating widget rendered in App.tsx.
  * Includes the FAB button, chat panel, and nudge toasts.
@@ -29,7 +32,7 @@ export function PricingMentorWidget() {
       if (!open) {
         triggerRandomNudge();
       }
-    }, 120_000);
+    }, NUDGE_INTERVAL_MS);
   }, [triggerRandomNudge]);
 
   useEffect(() => {
@@ -38,7 +41,7 @@ export function PricingMentorWidget() {
       const initialTimer = setTimeout(() => {
         const { isOpen: open } = usePricingMentorStore.getState();
         if (!open) triggerRandomNudge();
-      }, 30_000);
+      }, INITIAL_NUDGE_DELAY_MS);
       startNudgeTimer();
       return () => {
         clearTimeout(initialTimer);

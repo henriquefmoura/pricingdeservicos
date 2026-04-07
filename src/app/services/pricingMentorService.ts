@@ -69,7 +69,7 @@ const MICRO_LESSONS: MicroLesson[] = [
     id: 'sazonalidade-1',
     title: 'O que é sazonalidade?',
     explanation:
-      'São épocas do ano em que a demanda sobe ou desce. No verão chove mais → mais manutenção. No fim do ano → mais reformas.',
+      'São épocas do ano em que a demanda sobe ou desce. No verão há mais demanda por manutenção. No fim do ano, mais reformas.',
     example:
       'Serviços de ar-condicionado: preço sobe 20-30% no verão porque a demanda explode.',
     application:

@@ -11,7 +11,6 @@ export function PricingMentorAvatar({
   isAnimating = false,
   expression = 'happy',
 }: PricingMentorAvatarProps) {
-  const eyeOpenY = expression === 'wink' ? 0 : 1;
   const mouthCurve = expression === 'alert' ? 'M14,22 Q18,20 22,22' : 'M14,21 Q18,25 22,21';
 
   return (
@@ -41,7 +40,7 @@ export function PricingMentorAvatar({
         <circle cx="18" cy="18" r="16" fill="#FFFFFF" opacity="0.15" />
 
         {/* Eyes */}
-        <ellipse cx="13" cy="15" rx="2" ry={2 * eyeOpenY || 0.5} fill="#FFFFFF">
+        <ellipse cx="13" cy="15" rx="2" ry={expression === 'wink' ? 0.5 : 2} fill="#FFFFFF">
           {isAnimating && (
             <animate
               attributeName="ry"

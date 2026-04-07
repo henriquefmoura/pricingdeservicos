@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useGovernanceStore } from '../../store/governanceStore';
 import { useApprovalStore } from '../../store/approvalStore';
 import { UserActivityRanking } from './UserActivityRanking';
-import { PricingVolumeChart } from './PricingVolumeChart';
 import { ApprovalVsRejectionChart } from './ApprovalVsRejectionChart';
 import { PricingConsistencyView } from './PricingConsistencyView';
 import { KpiDetailPanel, KpiKey } from './KpiDetailPanel';
@@ -278,119 +277,15 @@ export function PricingGovernanceDashboard() {
         />
       )}
 
-      {/* Row 1: User ranking + Volume chart */}
+      {/* User ranking */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <UserActivityRanking />
-        <PricingVolumeChart />
       </div>
 
-      {/* Row 2: Approval vs Rejection + Consistency */}
+      {/* Row 2: Approval vs Rejection + Market Research */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <ApprovalVsRejectionChart />
         <PricingConsistencyView />
-      </div>
-
-      {/* Row 3: Detailed per-user pricing process table */}
-      <div
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          padding: '24px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04)',
-        }}
-      >
-        <h3 style={{ fontSize: '16px', fontWeight: 700, color: COLORS.dark, margin: '0 0 4px 0' }}>
-          Detalhamento por Usuário — Processo de Precificação
-        </h3>
-        <p style={{ fontSize: '13px', color: COLORS.gray, margin: '0 0 16px 0' }}>
-          Função, praça, acessos, códigos precificados, pesquisas de mercado, aprovações, rejeições e consistência
-        </p>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={detailTableHeaderStyle}>Usuário</th>
-                <th style={detailTableHeaderStyle}>Função</th>
-                <th style={detailTableHeaderStyle}>Praça</th>
-                <th style={{ ...detailTableHeaderStyle, textAlign: 'center' }}>Acessos</th>
-                <th style={{ ...detailTableHeaderStyle, textAlign: 'center' }}>Códigos Precificados</th>
-                <th style={{ ...detailTableHeaderStyle, textAlign: 'center' }}>Pesquisas de Mercado</th>
-                <th style={{ ...detailTableHeaderStyle, textAlign: 'center' }}>Aprovações</th>
-                <th style={{ ...detailTableHeaderStyle, textAlign: 'center' }}>Rejeições</th>
-                <th style={{ ...detailTableHeaderStyle, textAlign: 'center' }}>Consistência</th>
-              </tr>
-            </thead>
-            <tbody>
-              {userMetrics
-                .sort((a, b) => b.totalPricesSet - a.totalPricesSet)
-                .map((user, idx) => (
-                  <tr
-                    key={user.userId}
-                    style={{
-                      backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#F9FAFB',
-                    }}
-                  >
-                    <td style={detailTableCellStyle}>
-                      <span style={{ fontWeight: 600 }}>{user.userName}</span>
-                    </td>
-                    <td style={detailTableCellStyle}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          padding: '2px 8px',
-                          borderRadius: '9999px',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          backgroundColor: user.role === 'admin' ? 'rgba(120, 190, 32, 0.15)' : 'rgba(59, 130, 246, 0.12)',
-                          color: user.role === 'admin' ? '#78BE20' : '#3B82F6',
-                        }}
-                      >
-                        {user.role === 'admin' ? 'Admin' : 'Usuário'}
-                      </span>
-                    </td>
-                    <td style={detailTableCellStyle}>{user.plaza}</td>
-                    <td style={{ ...detailTableCellStyle, textAlign: 'center', fontWeight: 600 }}>
-                      {user.totalLogins}
-                    </td>
-                    <td style={{ ...detailTableCellStyle, textAlign: 'center', fontWeight: 600, color: COLORS.primary }}>
-                      {user.totalPricesSet}
-                    </td>
-                    <td style={{ ...detailTableCellStyle, textAlign: 'center', fontWeight: 600, color: '#0EA5E9' }}>
-                      {user.marketResearchUsage}
-                    </td>
-                    <td style={{ ...detailTableCellStyle, textAlign: 'center', fontWeight: 600, color: COLORS.success }}>
-                      {user.totalApprovals}
-                    </td>
-                    <td style={{ ...detailTableCellStyle, textAlign: 'center', fontWeight: 600, color: COLORS.error }}>
-                      {user.totalRejections}
-                    </td>
-                    <td style={{ ...detailTableCellStyle, textAlign: 'center' }}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          padding: '2px 10px',
-                          borderRadius: '9999px',
-                          fontSize: '13px',
-                          fontWeight: 700,
-                          color: '#FFFFFF',
-                          backgroundColor:
-                            user.consistencyScore >= 80
-                              ? COLORS.success
-                              : user.consistencyScore >= 60
-                              ? COLORS.warning
-                              : COLORS.error,
-                          minWidth: '40px',
-                        }}
-                      >
-                        {user.consistencyScore}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
       </div>
 
       {/* ML Training Data: Suggested vs Adjusted Prices */}

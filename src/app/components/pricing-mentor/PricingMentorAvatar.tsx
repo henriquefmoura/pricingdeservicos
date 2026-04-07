@@ -13,8 +13,8 @@ interface PricingMentorAvatarProps {
   avatarState?: AvatarState;
 }
 
-/* Unique-id counter so multiple avatar instances don't collide gradient ids */
-let _idCounter = 0;
+/* Counter so multiple avatar instances don't collide gradient ids */
+let avatarInstanceCounter = 0;
 
 /**
  * Semi-realistic human digital avatar (bust style).
@@ -32,30 +32,28 @@ export function PricingMentorAvatar({
   avatarState = 'idle',
 }: PricingMentorAvatarProps) {
   /* ── unique SVG gradient ids ── */
-  const idRef = useRef(`ma${++_idCounter}`);
+  const idRef = useRef(`mentor-avatar-${++avatarInstanceCounter}`);
   const uid = idRef.current;
 
   /* ── natural blink with variable intervals ── */
   const [blinkPhase, setBlinkPhase] = useState(false);
+  const blinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scheduleBlink = useCallback(() => {
     const delay = 2500 + Math.random() * 3500; // 2.5-6s
-    const timer = setTimeout(() => {
+    blinkTimerRef.current = setTimeout(() => {
       setBlinkPhase(true);
-      setTimeout(() => setBlinkPhase(false), 150);
+      setTimeout(() => {
+        setBlinkPhase(false);
+        scheduleBlink(); // recursively schedule next blink
+      }, 150);
     }, delay);
-    return timer;
   }, []);
 
   useEffect(() => {
-    let timer = scheduleBlink();
-    const interval = setInterval(() => {
-      clearTimeout(timer);
-      timer = scheduleBlink();
-    }, 5000);
+    scheduleBlink();
     return () => {
-      clearTimeout(timer);
-      clearInterval(interval);
+      if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
     };
   }, [scheduleBlink]);
 

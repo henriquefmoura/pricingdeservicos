@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Search, Plus, Trash2, TrendingUp, History, Clock, Download, ChevronDown, ChevronUp, ArrowUpDown, User, BarChart2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -123,6 +123,68 @@ export function MarketResearchForm() {
   // Search state for the price history tab
   const [historySearchLM, setHistorySearchLM] = useState('');
   const [historySearchPrestador, setHistorySearchPrestador] = useState('');
+
+  // Dropdown state for autocomplete
+  const [showLMDropdown, setShowLMDropdown] = useState(false);
+  const [showPrestadorDropdown, setShowPrestadorDropdown] = useState(false);
+  const lmDropdownRef = useRef<HTMLDivElement>(null);
+  const prestadorDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (lmDropdownRef.current && !lmDropdownRef.current.contains(event.target as Node)) {
+        setShowLMDropdown(false);
+      }
+      if (prestadorDropdownRef.current && !prestadorDropdownRef.current.contains(event.target as Node)) {
+        setShowPrestadorDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Build unique service options (name + code) from researches, sorted alphabetically by name, max 10
+  const lmSuggestions = useMemo(() => {
+    const allServices = researches.map(r => ({ code: r.codigoAvulso, name: r.descricao }));
+    // Also add codes from store that may not have researches yet
+    codes.forEach(c => {
+      if (!allServices.some(s => s.code === c.codigoAvulso)) {
+        allServices.push({ code: c.codigoAvulso, name: c.descricao });
+      }
+    });
+    // Sort alphabetically by name
+    allServices.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    // Filter by current input (match code or name)
+    const term = historySearchLM.trim().toLowerCase();
+    if (!term) return allServices.slice(0, 10);
+    return allServices
+      .filter(s => s.name.toLowerCase().includes(term) || s.code.toLowerCase().includes(term))
+      .slice(0, 10);
+  }, [researches, codes, historySearchLM]);
+
+  // Build unique provider/company names from all researches, sorted alphabetically, max 10
+  const prestadorSuggestions = useMemo(() => {
+    const namesSet = new Set<string>();
+    researches.forEach(r => {
+      r.precosConcorrentes.forEach(c => namesSet.add(c.concorrente));
+    });
+    const names = Array.from(namesSet).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const term = historySearchPrestador.trim().toLowerCase();
+    if (!term) return names.slice(0, 10);
+    return names.filter(n => n.toLowerCase().includes(term)).slice(0, 10);
+  }, [researches, historySearchPrestador]);
+
+  // Handlers for selecting from dropdown
+  const handleSelectLM = useCallback((name: string) => {
+    setHistorySearchLM(name);
+    setShowLMDropdown(false);
+  }, []);
+
+  const handleSelectPrestador = useCallback((name: string) => {
+    setHistorySearchPrestador(name);
+    setShowPrestadorDropdown(false);
+  }, []);
 
   // Pre-compute chart data for all services in the history tab
   const historyChartData = useMemo(() => {
@@ -789,34 +851,69 @@ export function MarketResearchForm() {
           <Card className="border-2 border-[#78BE20]/30">
             <CardContent className="py-4">
               <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1">
+                <div className="flex-1" ref={lmDropdownRef}>
                   <Label htmlFor="history-search-lm" className="text-xs text-gray-600 mb-1 block">
                     Buscar por LM (código ou descrição)
                   </Label>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                     <Input
                       id="history-search-lm"
                       placeholder="Ex: 50041154 ou Renovação"
                       value={historySearchLM}
-                      onChange={(e) => setHistorySearchLM(e.target.value)}
+                      onChange={(e) => { setHistorySearchLM(e.target.value); setShowLMDropdown(true); }}
+                      onFocus={() => setShowLMDropdown(true)}
+                      autoComplete="off"
                       className="pl-9"
                     />
+                    {showLMDropdown && lmSuggestions.length > 0 && (
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-[280px] overflow-y-auto">
+                        {lmSuggestions.map((s) => (
+                          <button
+                            key={s.code}
+                            type="button"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-[#78BE20]/10 cursor-pointer flex items-center gap-2 border-b border-gray-50 last:border-0"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleSelectLM(s.name)}
+                          >
+                            <span className="font-medium text-gray-900 truncate">{s.name}</span>
+                            <span className="text-xs text-gray-400 whitespace-nowrap ml-auto">{s.code}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="flex-1">
+                <div className="flex-1" ref={prestadorDropdownRef}>
                   <Label htmlFor="history-search-prestador" className="text-xs text-gray-600 mb-1 block">
                     Buscar por Prestador / Empresa
                   </Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                     <Input
                       id="history-search-prestador"
                       placeholder="Ex: Construtora ABC"
                       value={historySearchPrestador}
-                      onChange={(e) => setHistorySearchPrestador(e.target.value)}
+                      onChange={(e) => { setHistorySearchPrestador(e.target.value); setShowPrestadorDropdown(true); }}
+                      onFocus={() => setShowPrestadorDropdown(true)}
+                      autoComplete="off"
                       className="pl-9"
                     />
+                    {showPrestadorDropdown && prestadorSuggestions.length > 0 && (
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-[280px] overflow-y-auto">
+                        {prestadorSuggestions.map((name) => (
+                          <button
+                            key={name}
+                            type="button"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-[#78BE20]/10 cursor-pointer border-b border-gray-50 last:border-0"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleSelectPrestador(name)}
+                          >
+                            <span className="text-gray-900">{name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
                 {hasHistorySearch && (
@@ -824,7 +921,7 @@ export function MarketResearchForm() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => { setHistorySearchLM(''); setHistorySearchPrestador(''); }}
+                      onClick={() => { setHistorySearchLM(''); setHistorySearchPrestador(''); setShowLMDropdown(false); setShowPrestadorDropdown(false); }}
                       className="text-xs"
                     >
                       Limpar busca

@@ -1137,20 +1137,7 @@ export function MarketResearchForm() {
             ))
           )}
 
-          {/* Export button on history page */}
-          {priceHistory.length > 0 && (
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportData}
-                className="gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-              >
-                <Download className="w-4 h-4" />
-                Exportar JSON
-              </Button>
-            </div>
-          )}
+
         </div>
       )}
     </div>

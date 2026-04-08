@@ -82,7 +82,6 @@ export function useResponsive(): ResponsiveState {
   const gridCols = useCallback(
     (max: number = 4): number => {
       if (width < BREAKPOINTS.sm) return 1;
-      if (width < BREAKPOINTS.md) return Math.min(max, 2);
       if (width < BREAKPOINTS.lg) return Math.min(max, 2);
       if (width < BREAKPOINTS.xl) return Math.min(max, 3);
       return max;

@@ -64,21 +64,19 @@ export function Header({
           </button>
         )}
         <div style={{ minWidth: 0 }}>
-          {title && (
-            <h1
-              style={{
-                font: 'var(--font-display)',
-                color: 'var(--text-display)',
-                marginBottom: subtitle ? '4px' : 0,
-                fontSize: compact ? '16px' : undefined,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {title}
-            </h1>
-          )}
+          <h1
+            style={{
+              font: 'var(--font-display)',
+              color: 'var(--text-display)',
+              marginBottom: subtitle ? '4px' : 0,
+              fontSize: compact ? '16px' : undefined,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {title}
+          </h1>
           {subtitle && !isMobile && (
             <p style={{
               font: 'var(--font-body)',

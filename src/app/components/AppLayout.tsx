@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { Sidebar, NavItem, UserRole } from './Sidebar';
 import { Header } from './Header';
@@ -24,6 +24,18 @@ export function AppLayout({ children, activeNav, title, subtitle }: AppLayoutPro
   React.useEffect(() => {
     initializeMockNotifications();
   }, [initializeMockNotifications]);
+
+  // Close sidebar on Escape key
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && sidebarOpen) {
+      setSidebarOpen(false);
+    }
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   const userName = user?.name || 'Usuário';
   const userRole: UserRole = user?.role === 'master' ? 'Master' : user?.role === 'admin' ? 'Admin' : 'Usuário';

@@ -31,6 +31,7 @@ export default function AdminPricingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [priceInputs, setPriceInputs] = useState<Record<string, PriceInput>>({});
   const [editingCode, setEditingCode] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<'pendentes' | 'precificados'>('pendentes');
 
   // Auth guard
   useEffect(() => {
@@ -69,9 +70,20 @@ export default function AdminPricingPage() {
     );
   }, [relevantCodes, searchTerm]);
 
-  const completedByMe = codes.filter(
-    (code) => user?.plaza && code.prices?.[user.plaza]
-  ).length;
+  const pricedCodes = useMemo(() => {
+    return codes.filter((code) => user?.plaza && !!code.prices?.[user.plaza]);
+  }, [codes, user?.plaza]);
+
+  const filteredPricedCodes = useMemo(() => {
+    if (!searchTerm) return pricedCodes;
+    return pricedCodes.filter(
+      (code) =>
+        code.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        code.codigoAvulso.includes(searchTerm)
+    );
+  }, [pricedCodes, searchTerm]);
+
+  const completedByMe = pricedCodes.length;
 
   const targetPlazas = useMemo(() => {
     if (!user?.plaza) return [];
@@ -223,14 +235,44 @@ export default function AdminPricingPage() {
 
             {/* Top bar: Stats + Search */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <div style={{ padding: '12px 20px', borderRadius: '8px', backgroundColor: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <p style={{ fontSize: '22px', fontWeight: 700, color: '#F59E0B', lineHeight: 1 }}>{filteredCodes.length}</p>
-                <p style={{ fontSize: '12px', color: '#6B7280' }}>Pendentes</p>
-              </div>
-              <div style={{ padding: '12px 20px', borderRadius: '8px', backgroundColor: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <p style={{ fontSize: '22px', fontWeight: 700, color: '#78BE20', lineHeight: 1 }}>{completedByMe}</p>
-                <p style={{ fontSize: '12px', color: '#6B7280' }}>Precificados</p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setActiveView('pendentes')}
+                style={{
+                  padding: '12px 20px',
+                  borderRadius: '8px',
+                  backgroundColor: '#FFFFFF',
+                  boxShadow: activeView === 'pendentes' ? '0 0 0 2px #F59E0B' : '0 1px 3px rgba(0,0,0,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'box-shadow 0.2s, transform 0.1s',
+                }}
+              >
+                <p style={{ fontSize: '22px', fontWeight: 700, color: '#F59E0B', lineHeight: 1, margin: 0 }}>{filteredCodes.length}</p>
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>Pendentes</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('precificados')}
+                style={{
+                  padding: '12px 20px',
+                  borderRadius: '8px',
+                  backgroundColor: '#FFFFFF',
+                  boxShadow: activeView === 'precificados' ? '0 0 0 2px #78BE20' : '0 1px 3px rgba(0,0,0,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'box-shadow 0.2s, transform 0.1s',
+                }}
+              >
+                <p style={{ fontSize: '22px', fontWeight: 700, color: '#78BE20', lineHeight: 1, margin: 0 }}>{completedByMe}</p>
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>Precificados</p>
+              </button>
               <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
                 <Search
                   size={16}
@@ -245,19 +287,21 @@ export default function AdminPricingPage() {
               </div>
             </div>
 
-            {/* Service cards — always expanded */}
-            {filteredCodes.length === 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
-                <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(120,190,32,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-                  <TrendingUp size={36} style={{ color: '#78BE20' }} />
-                </div>
-                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#001022', marginBottom: '8px' }}>Nenhum código pendente</h3>
-                <p style={{ fontSize: '14px', color: '#6B7280', textAlign: 'center', maxWidth: '400px' }}>
-                  Todos os códigos já foram precificados para a praça {user?.plaza}
-                </p>
-              </div>
-            ) : (
-              filteredCodes.map((code) => {
+            {/* Service cards — Pendentes view */}
+            {activeView === 'pendentes' && (
+              <>
+                {filteredCodes.length === 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(120,190,32,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                      <TrendingUp size={36} style={{ color: '#78BE20' }} />
+                    </div>
+                    <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#001022', marginBottom: '8px' }}>Nenhum código pendente</h3>
+                    <p style={{ fontSize: '14px', color: '#6B7280', textAlign: 'center', maxWidth: '400px' }}>
+                      Todos os códigos já foram precificados para a praça {user?.plaza}
+                    </p>
+                  </div>
+                ) : (
+                  filteredCodes.map((code) => {
                 const margem = calculateMargem(code.id);
                 const research = getResearchByCode(code.codigoAvulso);
                 const prestadorPrices = code.prices ? Object.values(code.prices).map((p) => p.venda) : [];
@@ -447,6 +491,93 @@ export default function AdminPricingPage() {
                   </div>
                 );
               })
+            )}
+              </>
+            )}
+
+            {/* Service cards — Precificados view */}
+            {activeView === 'precificados' && (
+              <>
+                {filteredPricedCodes.length === 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(120,190,32,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                      <CheckCircle2 size={36} style={{ color: '#78BE20' }} />
+                    </div>
+                    <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#001022', marginBottom: '8px' }}>Nenhum código precificado</h3>
+                    <p style={{ fontSize: '14px', color: '#6B7280', textAlign: 'center', maxWidth: '400px' }}>
+                      Nenhum código foi precificado para a praça {user?.plaza} ainda
+                    </p>
+                  </div>
+                ) : (
+                  filteredPricedCodes.map((code) => {
+                    const priceData = user?.plaza ? code.prices?.[user.plaza] : null;
+                    const tipoStyles = getServiceTypeStyles(code.tipo);
+                    const margem = priceData ? ((priceData.venda - priceData.repasse) / priceData.venda) * 100 : 0;
+                    const getMarginStyle = (m: number) => m > 30 ? { bg: '#D1FAE5', text: '#065F46' } : m >= 15 ? { bg: '#FEF3C7', text: '#92400E' } : { bg: '#FEE2E2', text: '#991B1B' };
+                    const marginStyle = getMarginStyle(margem);
+
+                    return (
+                      <div
+                        key={code.id}
+                        style={{
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '12px',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                          padding: '20px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                          {/* LEFT: service identity */}
+                          <div style={{ flex: '1 1 220px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                                <span style={{ padding: '3px 8px', borderRadius: '5px', backgroundColor: tipoStyles.bg, fontSize: '11px', fontWeight: 600, color: tipoStyles.color }}>
+                                  {code.tipo}
+                                </span>
+                                <span style={{ fontFamily: 'monospace', fontSize: '11px', padding: '3px 7px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563' }}>
+                                  {code.codigoAvulso}
+                                </span>
+                                <span style={{ fontSize: '11px', padding: '3px 7px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563', fontWeight: 600 }}>
+                                  {code.unidade}
+                                </span>
+                              </div>
+                              <p style={{ fontSize: '15px', fontWeight: 600, color: '#001022', margin: 0 }}>{code.descricao}</p>
+                            </div>
+                          </div>
+
+                          {/* RIGHT: saved price details */}
+                          {priceData && (
+                            <div style={{ flex: '2 1 340px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', padding: '16px', backgroundColor: '#F9FAFB', borderRadius: '10px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                  <span style={{ fontSize: '11px', color: '#6B7280', fontWeight: 600 }}>Repasse</span>
+                                  <span style={{ fontSize: '18px', fontWeight: 700, color: '#001022' }}>R$ {priceData.repasse.toFixed(2)}</span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                  <span style={{ fontSize: '11px', color: '#6B7280', fontWeight: 600 }}>Venda</span>
+                                  <span style={{ fontSize: '18px', fontWeight: 700, color: '#001022' }}>R$ {priceData.venda.toFixed(2)}</span>
+                                </div>
+                                <div style={{ padding: '7px 12px', borderRadius: '100px', backgroundColor: marginStyle.bg }}>
+                                  <span style={{ fontSize: '12px', fontWeight: 700, color: marginStyle.text }}>Margem: {margem.toFixed(1)}%</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
+                                  <CheckCircle2 size={16} style={{ color: '#16A34A' }} />
+                                  <span style={{ fontSize: '12px', color: '#065F46', fontWeight: 600 }}>Precificado</span>
+                                </div>
+                              </div>
+                              {priceData.preenchidoPor && (
+                                <p style={{ fontSize: '11px', color: '#9CA3AF', margin: 0 }}>
+                                  Definido por: {priceData.preenchidoPor}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </>
             )}
           </div>
     </AppLayout>

@@ -1,18 +1,49 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { X } from 'lucide-react';
-import { PricingMentorAvatar } from './PricingMentorAvatar';
-import type { AvatarState } from './PricingMentorAvatar';
+import { Avatar3D } from './Avatar3D';
+import type { Avatar3DState } from './Avatar3D';
+import { AvatarContextMenu } from './AvatarContextMenu';
 import { PricingMentorChat } from './PricingMentorChat';
 import { PricingMentorNudge } from './PricingMentorNudge';
+import { useDraggableAvatar } from '../../hooks/useDraggableAvatar';
 import { usePricingMentorStore } from '../../store/pricingMentorStore';
 import { useAuthStore } from '../../store/authStore';
 
 const NUDGE_INTERVAL_MS = 120_000;
 const INITIAL_NUDGE_DELAY_MS = 30_000;
 
+/** Key for persisting minimized + animations preferences */
+const AVATAR_PREFS_KEY = 'pedroii-avatar-prefs';
+
+interface AvatarPrefs {
+  isMinimized: boolean;
+  animationsEnabled: boolean;
+}
+
+function loadPrefs(): AvatarPrefs {
+  try {
+    const stored = localStorage.getItem(AVATAR_PREFS_KEY);
+    if (stored) return JSON.parse(stored) as AvatarPrefs;
+  } catch { /* ignore */ }
+  return { isMinimized: false, animationsEnabled: true };
+}
+
+function savePrefs(prefs: AvatarPrefs): void {
+  try {
+    localStorage.setItem(AVATAR_PREFS_KEY, JSON.stringify(prefs));
+  } catch { /* ignore */ }
+}
+
 /**
  * PricingMentorWidget — the global floating widget rendered in App.tsx.
- * Features a large animated avatar, chat panel, and smart nudge toasts.
+ *
+ * Features:
+ * - Draggable 3D-like animated avatar (PedroII jr)
+ * - Transparent background — avatar looks alive, not like a button
+ * - Drag & drop with mouse (desktop) and touch (mobile)
+ * - Position persistence in localStorage
+ * - Context menu for controls (minimize, reset, animations toggle)
+ * - Chat panel opens on click, independently positioned
+ * - Smart nudge toasts
  */
 export function PricingMentorWidget() {
   const { isAuthenticated } = useAuthStore();
@@ -27,17 +58,33 @@ export function PricingMentorWidget() {
   } = usePricingMentorStore();
 
   const [isHovered, setIsHovered] = useState(false);
+  const [prefs, setPrefs] = useState<AvatarPrefs>(loadPrefs);
 
-  /* Derive avatar animation state from AI / UI state */
-  const avatarState: AvatarState = isTyping
-    ? (expression === 'thinking' ? 'thinking' : 'speaking')
-    : isHovered
-      ? 'hover'
-      : 'idle';
+  const avatarSize = prefs.isMinimized ? 48 : 120;
 
+  const {
+    containerRef,
+    position,
+    isDragging,
+    resetPosition,
+    wasDragged,
+  } = useDraggableAvatar({
+    elementWidth: avatarSize,
+    elementHeight: avatarSize,
+  });
+
+  // Derive avatar 3D animation state from AI / UI state
+  const avatar3DState: Avatar3DState = isDragging
+    ? 'dragging'
+    : isTyping
+      ? (expression === 'thinking' ? 'thinking' : 'speaking')
+      : isHovered
+        ? 'attention'
+        : 'idle';
+
+  // Nudge timer
   const nudgeTimer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
-  // Periodic nudge every 2 minutes (only when chat is closed)
   const startNudgeTimer = useCallback(() => {
     nudgeTimer.current = setInterval(() => {
       const { isOpen: open } = usePricingMentorStore.getState();
@@ -49,7 +96,6 @@ export function PricingMentorWidget() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Initial nudge after 30s
       const initialTimer = setTimeout(() => {
         const { isOpen: open } = usePricingMentorStore.getState();
         if (!open) triggerRandomNudge();
@@ -70,14 +116,28 @@ export function PricingMentorWidget() {
 
   const activeNudges = nudges.filter((n) => !n.dismissed).slice(-2);
 
+  const handleAvatarClick = () => {
+    // Don't open chat if we just finished dragging
+    if (wasDragged) return;
+    toggleOpen();
+  };
+
+  const handleToggleMinimize = () => {
+    const updated = { ...prefs, isMinimized: !prefs.isMinimized };
+    setPrefs(updated);
+    savePrefs(updated);
+  };
+
+  const handleToggleAnimations = () => {
+    const updated = { ...prefs, animationsEnabled: !prefs.animationsEnabled };
+    setPrefs(updated);
+    savePrefs(updated);
+  };
+
   return (
     <>
       {/* Global CSS animations */}
       <style>{`
-        @keyframes mentorBounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
-        }
         @keyframes mentorSlideIn {
           from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
@@ -86,39 +146,26 @@ export function PricingMentorWidget() {
           0%, 100% { box-shadow: 0 0 0 0 rgba(120, 190, 32, 0.4); }
           50% { box-shadow: 0 0 0 12px rgba(120, 190, 32, 0); }
         }
-        @keyframes mentorFloat {
-          0%, 100% { transform: translateY(0) translateX(0); }
-          25%      { transform: translateY(-3px) translateX(-2px); }
-          50%      { transform: translateY(-5px) translateX(0); }
-          75%      { transform: translateY(-3px) translateX(2px); }
-        }
-        @keyframes mentorGlow {
-          0%, 100% { box-shadow: 0 4px 20px rgba(120, 190, 32, 0.3); }
-          50% { box-shadow: 0 4px 30px rgba(120, 190, 32, 0.5); }
-        }
         @keyframes mentorWalkIn {
           0%   { transform: translateX(80px) translateY(0); opacity: 0; }
           60%  { transform: translateX(-4px) translateY(-3px); opacity: 1; }
           80%  { transform: translateX(2px) translateY(0); opacity: 1; }
           100% { transform: translateX(0) translateY(0); opacity: 1; }
         }
-        @keyframes mentorGrowPulse {
-          0%, 100% { transform: scale(1); }
-          50%      { transform: scale(1.12); }
-        }
       `}</style>
 
-      {/* Nudge toasts — top of FAB */}
+      {/* Nudge toasts — positioned relative to avatar */}
       {!isOpen && activeNudges.length > 0 && (
         <div
           style={{
             position: 'fixed',
-            bottom: 126,
-            right: 24,
+            bottom: position.y + avatarSize + 12,
+            left: position.x,
             zIndex: 9997,
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
+            pointerEvents: 'auto',
           }}
         >
           {activeNudges.map((nudge) => (
@@ -135,72 +182,126 @@ export function PricingMentorWidget() {
         </div>
       )}
 
-      {/* Chat Panel */}
-      <PricingMentorChat />
+      {/* Chat Panel — positioned based on avatar location */}
+      <PricingMentorChat avatarPosition={position} avatarSize={avatarSize} />
 
-      {/* Floating Action Button (FAB) with semi-realistic avatar */}
-      <button
-        onClick={toggleOpen}
+      {/* ── Draggable Avatar Container ── */}
+      <div
+        ref={containerRef}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{
           position: 'fixed',
-          bottom: 24,
-          right: 24,
-          width: isOpen ? '56px' : '88px',
-          height: isOpen ? '56px' : '88px',
-          borderRadius: '50%',
-          border: 'none',
-          backgroundColor: isOpen ? '#001022' : 'transparent',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          left: position.x,
+          bottom: position.y,
           zIndex: 9999,
-          boxShadow: isOpen ? '0 4px 20px rgba(0,0,0,0.2)' : 'none',
-          transition: 'all 0.3s ease',
-          animation: isOpen
-            ? undefined
-            : 'mentorFloat 3s ease-in-out infinite, mentorGrowPulse 6s ease-in-out infinite',
-          padding: 0,
+          cursor: isDragging ? 'grabbing' : 'grab',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          touchAction: 'none',
+          animation: 'mentorWalkIn 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
         }}
-        aria-label={isOpen ? 'Fechar Pricing Mentor' : 'Abrir Pricing Mentor'}
       >
-        {isOpen ? (
-          <X size={24} style={{ color: '#78BE20' }} />
-        ) : (
-          <PricingMentorAvatar size={88} expression={expression} avatarState={avatarState} />
-        )}
-      </button>
-
-      {/* Name label on FAB */}
-      {!isOpen && (
+        {/* Avatar click area */}
         <div
+          onClick={handleAvatarClick}
           style={{
-            position: 'fixed',
-            bottom: 6,
-            right: 6,
-            zIndex: 9999,
-            pointerEvents: 'none',
-            textAlign: 'center',
-            width: '112px',
+            cursor: isDragging ? 'grabbing' : 'pointer',
+            transition: isDragging ? 'none' : 'transform 0.2s ease',
+            transform: isDragging ? 'scale(0.95)' : isHovered ? 'scale(1.05)' : 'scale(1)',
           }}
         >
-          <span
+          <Avatar3D
+            size={avatarSize}
+            state={avatar3DState}
+            expression={expression}
+            disableAnimations={!prefs.animationsEnabled}
+            isDragging={isDragging}
+            isMinimized={prefs.isMinimized}
+          />
+        </div>
+
+        {/* Name label */}
+        {!prefs.isMinimized && (
+          <div
             style={{
-              fontSize: '10px',
-              fontWeight: 700,
-              color: '#78BE20',
-              backgroundColor: 'white',
-              padding: '3px 8px',
-              borderRadius: '6px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              letterSpacing: '0.3px',
+              textAlign: 'center',
+              marginTop: 2,
+              pointerEvents: 'none',
             }}
           >
-            Pricing Mentor
-          </span>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#78BE20',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                padding: '2px 10px',
+                borderRadius: '6px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                letterSpacing: '0.3px',
+              }}
+            >
+              PedroII jr
+            </span>
+          </div>
+        )}
+
+        {/* Context menu trigger (visible on hover or when minimized) */}
+        <div
+          style={{
+            position: 'absolute',
+            top: -4,
+            right: -4,
+            opacity: isHovered || prefs.isMinimized ? 1 : 0,
+            transition: 'opacity 0.2s ease',
+            pointerEvents: isHovered || prefs.isMinimized ? 'auto' : 'none',
+          }}
+        >
+          <AvatarContextMenu
+            onResetPosition={resetPosition}
+            onToggleMinimize={handleToggleMinimize}
+            isMinimized={prefs.isMinimized}
+            onToggleAnimations={handleToggleAnimations}
+            animationsEnabled={prefs.animationsEnabled}
+          />
         </div>
+      </div>
+
+      {/* CTA — "Pedir ajuda para o Pedro do Instala" — positioned relative to avatar */}
+      {!isOpen && !prefs.isMinimized && (
+        <a
+          href="https://wa.me/5511976019360?text=Ol%C3%A1%20Pedro%20II%2C%20preciso%20de%20ajuda%20no%20Instala."
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Pedir ajuda para o Pedro do Instala via WhatsApp"
+          title="Fale diretamente com o especialista Pedro II"
+          style={{
+            position: 'fixed',
+            bottom: position.y + (avatarSize - 48) / 2 + 4,
+            left: position.x + avatarSize + 16,
+            zIndex: 9998,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '10px 18px',
+            borderRadius: '24px',
+            backgroundColor: '#25D366',
+            color: '#FFFFFF',
+            fontSize: '13px',
+            fontWeight: 600,
+            textDecoration: 'none',
+            boxShadow: '0 4px 16px rgba(37, 211, 102, 0.35)',
+            cursor: 'pointer',
+            transition: 'transform 0.2s, box-shadow 0.2s, opacity 0.3s',
+            animation: 'mentorSlideIn 0.3s ease-out',
+            whiteSpace: 'nowrap',
+            pointerEvents: isDragging ? 'none' : 'auto',
+            opacity: isDragging ? 0 : 1,
+          }}
+        >
+          💬 Pedir ajuda para o Pedro do Instala
+        </a>
       )}
     </>
   );

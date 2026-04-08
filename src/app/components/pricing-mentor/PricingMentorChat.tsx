@@ -10,6 +10,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { PricingMentorAvatar } from './PricingMentorAvatar';
+import { EscalationCard } from './EscalationCard';
 import { usePricingMentorStore } from '../../store/pricingMentorStore';
 import { getAllMicroLessons, QUICK_ACTIONS } from '../../services/pricingMentorService';
 import { getActiveProviderName, isExternalAIAvailable, getConfiguredProviders } from '../../services/pricingMentorAIService';
@@ -17,7 +18,14 @@ import type { MentorMessage } from '../../types/pricingMentor';
 
 type ChatTab = 'chat' | 'lessons' | 'simulate';
 
-export function PricingMentorChat() {
+interface PricingMentorChatProps {
+  /** Position of the avatar (left, bottom) for relative positioning */
+  avatarPosition?: { x: number; y: number };
+  /** Size of the avatar element */
+  avatarSize?: number;
+}
+
+export function PricingMentorChat({ avatarPosition, avatarSize = 120 }: PricingMentorChatProps = {}) {
   const {
     messages,
     isOpen,
@@ -32,6 +40,8 @@ export function PricingMentorChat() {
     requestLesson,
     requestSimulation,
     clearMessages,
+    showEscalation,
+    dismissEscalation,
   } = usePricingMentorStore();
 
   const [input, setInput] = useState('');
@@ -83,8 +93,8 @@ export function PricingMentorChat() {
       <div
         style={{
           position: 'fixed',
-          bottom: 90,
-          right: 24,
+          bottom: avatarPosition ? avatarPosition.y + avatarSize + 8 : 150,
+          left: avatarPosition ? avatarPosition.x : 24,
           zIndex: 9998,
           display: 'flex',
           alignItems: 'center',
@@ -101,7 +111,7 @@ export function PricingMentorChat() {
         <PricingMentorAvatar size={36} expression={expression} avatarState={isTyping ? 'thinking' : 'idle'} />
         <div>
           <span style={{ fontSize: '14px', fontWeight: 700, color: '#1F2937', display: 'block' }}>
-            Pricing Mentor
+            PedroII jr
           </span>
           <span style={{ fontSize: '11px', color: '#78BE20' }}>
             Clique para expandir
@@ -115,8 +125,8 @@ export function PricingMentorChat() {
     <div
       style={{
         position: 'fixed',
-        bottom: 90,
-        right: 24,
+        bottom: avatarPosition ? avatarPosition.y + avatarSize + 8 : 150,
+        left: avatarPosition ? avatarPosition.x : 24,
         width: 'min(400px, calc(100vw - 48px))',
         maxHeight: 'min(600px, calc(100vh - 140px))',
         borderRadius: '20px',
@@ -142,7 +152,7 @@ export function PricingMentorChat() {
         <PricingMentorAvatar size={44} expression={expression} avatarState={isTyping ? 'thinking' : 'idle'} />
         <div style={{ flex: 1 }}>
           <div style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            Pricing Mentor
+            PedroII jr
             <Sparkles size={14} style={{ color: '#78BE20' }} />
           </div>
           <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -252,8 +262,8 @@ export function PricingMentorChat() {
                 <PricingMentorAvatar size={64} expression="wink" showLabel />
                 <p style={{ marginTop: '12px', fontSize: '14px', lineHeight: '1.6' }}>
                   {isExternalAIAvailable()
-                    ? <>Sou seu consultor de precificação com <strong>IA avançada</strong>! Pergunte qualquer coisa sobre preços, margem, custos, estratégia ou negócios.</>
-                    : <>Pergunte sobre precificação, margem, custos, estratégia ou <strong>qualquer dúvida</strong>!</>
+                    ? <>Sou o PedroII jr, seu parceiro de precificação com <strong>IA avançada</strong>! Pergunte qualquer coisa sobre preços, margem, custos, estratégia ou negócios.</>
+                    : <>Sou o PedroII jr! Pergunte sobre precificação, margem, custos, estratégia ou <strong>qualquer dúvida</strong>!</>
                   }
                 </p>
                 {/* AI Provider badges */}
@@ -340,6 +350,10 @@ export function PricingMentorChat() {
                   <TypingDots />
                 </div>
               </div>
+            )}
+            {/* Escalation card — suggest human specialist */}
+            {showEscalation && !isTyping && (
+              <EscalationCard onDismiss={dismissEscalation} />
             )}
             {/* Quick action chips after messages */}
             {messages.length > 0 && !isTyping && (

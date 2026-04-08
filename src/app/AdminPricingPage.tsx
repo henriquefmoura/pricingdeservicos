@@ -85,11 +85,6 @@ export default function AdminPricingPage() {
 
   const completedByMe = pricedCodes.length;
 
-  const targetPlazas = useMemo(() => {
-    if (!user?.plaza) return [];
-    if (isPlazaReplicator(user.plaza)) return getTargetPlazasForReplicator(user.plaza);
-    return getSimilarPlazas(user.plaza);
-  }, [user?.plaza, isPlazaReplicator, getTargetPlazasForReplicator, getSimilarPlazas]);
 
   const getServiceTypeStyles = (tipo: string) => {
     switch (tipo) {
@@ -383,7 +378,7 @@ export default function AdminPricingPage() {
                         )}
                       </div>
 
-                      {/* RIGHT: pricing inputs + alerts + replication */}
+                      {/* RIGHT: pricing inputs + alerts */}
                       <div style={{ flex: '2 1 340px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
                         {/* Inputs row */}
@@ -468,24 +463,7 @@ export default function AdminPricingPage() {
                           </div>
                         )}
 
-                        {/* Replication preview */}
-                        {targetPlazas.length > 0 && (
-                          <div style={{ padding: '12px 16px', borderRadius: '8px', backgroundColor: '#F0FDF4', border: '1px solid #D1FAE5' }}>
-                            <p style={{ fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>
-                              Este preço será replicado para aprovação em:
-                            </p>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
-                              {targetPlazas.map((plaza) => (
-                                <div key={plaza} style={{ padding: '4px 10px', borderRadius: '5px', backgroundColor: '#78BE20', fontSize: '12px', fontWeight: 700, color: '#FFFFFF' }}>
-                                  {plaza}
-                                </div>
-                              ))}
-                            </div>
-                            <p style={{ fontSize: '11px', color: '#6B7280' }}>
-                              Via {isPlazaReplicator(user?.plaza || '') ? 'configuração do Master' : 'análise de correlação'}
-                            </p>
-                          </div>
-                        )}
+
                       </div>
                     </div>
                   </div>

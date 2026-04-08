@@ -27,7 +27,11 @@ interface PriceInput {
   venda: string;
 }
 
-export function AdminPricingInterface() {
+interface AdminPricingInterfaceProps {
+  initialFilter?: 'pendentes' | 'precificados';
+}
+
+export function AdminPricingInterface({ initialFilter }: AdminPricingInterfaceProps) {
   const { user } = useAuthStore();
   const { codes, updateCodePrice, initializeMockCodes } = usePricingCodesStore();
   const { getResearchByCode, getSuggestedPrice } = useMarketResearchStore();
@@ -36,7 +40,14 @@ export function AdminPricingInterface() {
   const { getTargetPlazasForReplicator, isPlazaReplicator } = useReplicationConfigStore();
   const [priceInputs, setPriceInputs] = useState<Record<string, PriceInput>>({});
   const [editingCode, setEditingCode] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<'pendentes' | 'precificados'>('pendentes');
+  const [activeFilter, setActiveFilter] = useState<'pendentes' | 'precificados'>(initialFilter || 'pendentes');
+
+  // Sincronizar filtro quando prop externa muda
+  useEffect(() => {
+    if (initialFilter) {
+      setActiveFilter(initialFilter);
+    }
+  }, [initialFilter]);
 
   // Inicializar dados mock de correlação e códigos
   useEffect(() => {

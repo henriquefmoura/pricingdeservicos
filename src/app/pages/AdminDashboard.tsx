@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Plus, LogOut, DollarSign, TrendingUp, Package, ListChecks, Search } from 'lucide-react';
+import { Plus, LogOut, DollarSign, TrendingUp, Package, ListChecks, Search, Clock, CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -25,12 +25,17 @@ export function AdminDashboard() {
   const [venda, setVenda] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [activeTab, setActiveTab] = useState<'pricing' | 'market' | 'manage'>('pricing');
+  const [pricingFilter, setPricingFilter] = useState<'pendentes' | 'precificados'>('pendentes');
 
   // Todos os cálculos e funções DEVEM vir antes do early return
   const margem = repasse && venda ? (((parseFloat(venda) - parseFloat(repasse)) / parseFloat(venda)) * 100).toFixed(2) : '0.00';
   
   const pendingCodesForPlaza = codes.filter(
     (code) => user?.plaza && !code.prices?.[user.plaza]
+  ).length;
+
+  const pricedCodesForPlaza = codes.filter(
+    (code) => user?.plaza && !!code.prices?.[user.plaza]
   ).length;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -113,7 +118,7 @@ export function AdminDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Cards de Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -123,6 +128,64 @@ export function AdminDashboard() {
                 </div>
                 <div className="bg-blue-100 p-3 rounded-full">
                   <Package className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer transition-shadow hover:shadow-lg hover:border-orange-300 ring-offset-2 focus-visible:ring-2 focus-visible:ring-orange-400"
+            onClick={() => {
+              setActiveTab('pricing');
+              setPricingFilter('pendentes');
+            }}
+            tabIndex={0}
+            role="button"
+            aria-label="Ver códigos pendentes"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                setActiveTab('pricing');
+                setPricingFilter('pendentes');
+              }
+            }}
+          >
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Pendentes</p>
+                  <p className="text-3xl text-orange-600 mt-1">{pendingCodesForPlaza}</p>
+                </div>
+                <div className="bg-orange-100 p-3 rounded-full">
+                  <Clock className="w-6 h-6 text-orange-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer transition-shadow hover:shadow-lg hover:border-green-300 ring-offset-2 focus-visible:ring-2 focus-visible:ring-green-400"
+            onClick={() => {
+              setActiveTab('pricing');
+              setPricingFilter('precificados');
+            }}
+            tabIndex={0}
+            role="button"
+            aria-label="Ver códigos precificados"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                setActiveTab('pricing');
+                setPricingFilter('precificados');
+              }
+            }}
+          >
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Precificados</p>
+                  <p className="text-3xl text-green-600 mt-1">{pricedCodesForPlaza}</p>
+                </div>
+                <div className="bg-green-100 p-3 rounded-full">
+                  <CheckCircle2 className="w-6 h-6 text-green-600" />
                 </div>
               </div>
             </CardContent>
@@ -193,7 +256,7 @@ export function AdminDashboard() {
         </div>
 
         {/* Interface de Precificação de Códigos */}
-        {activeTab === 'pricing' && <AdminPricingInterface />}
+        {activeTab === 'pricing' && <AdminPricingInterface initialFilter={pricingFilter} />}
 
         {/* Formulário de Pesquisa de Mercado */}
         {activeTab === 'market' && <MarketResearchForm />}

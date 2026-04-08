@@ -12,8 +12,12 @@ export type Avatar3DState =
   | 'speaking'    // mouth animation, active glow
   | 'dragging';   // being moved by user
 
-/** PedroII jr character avatar image URL */
+/**
+ * PedroII jr character avatar image URL.
+ * Can be overridden via VITE_AVATAR_IMAGE_URL env var.
+ */
 const AVATAR_IMAGE_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_AVATAR_IMAGE_URL) ||
   'https://github.com/user-attachments/assets/90d11ce9-76b3-4fdb-9b43-da346a800180';
 
 interface Avatar3DProps {
@@ -71,15 +75,21 @@ export function Avatar3D({
   const displaySize = isMinimized ? 48 : size;
 
   // ── Blinking ──
+  /** Minimum interval between blinks (ms) */
+  const BLINK_MIN_INTERVAL_MS = 3000;
+  /** Random additional range for blink interval (ms) */
+  const BLINK_RANDOM_RANGE_MS = 2000;
+  /** Duration of a single blink (ms) */
+  const BLINK_DURATION_MS = 150;
+
   useEffect(() => {
     if (disableAnimations) return;
     const blink = () => {
       setBlinking(true);
-      setTimeout(() => setBlinking(false), 150);
+      setTimeout(() => setBlinking(false), BLINK_DURATION_MS);
     };
-    // Blink every 3-5 seconds
     const scheduleNext = () => {
-      const delay = 3000 + Math.random() * 2000;
+      const delay = BLINK_MIN_INTERVAL_MS + Math.random() * BLINK_RANDOM_RANGE_MS;
       return setTimeout(() => {
         blink();
         timerRef = scheduleNext();

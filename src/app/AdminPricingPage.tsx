@@ -251,7 +251,7 @@ export default function AdminPricingPage() {
                   transition: 'box-shadow 0.2s, transform 0.1s',
                 }}
               >
-                <p style={{ fontSize: '22px', fontWeight: 700, color: '#F59E0B', lineHeight: 1, margin: 0 }}>{filteredCodes.length}</p>
+                <p style={{ fontSize: '22px', fontWeight: 700, color: '#F59E0B', lineHeight: 1, margin: 0 }}>{relevantCodes.length}</p>
                 <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>Pendentes</p>
               </button>
               <button

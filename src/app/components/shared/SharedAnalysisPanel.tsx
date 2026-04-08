@@ -3,6 +3,7 @@ import { AnalysisPanel } from '../analysis/AnalysisPanel';
 import { usePricingAnalysis } from '../../hooks/usePricingAnalysis';
 import { ANALYSIS_SERVICES, ANALYSIS_PLAZAS, getDefaultAnalysisPlaza } from '../../utils/analysisConstants';
 import { updateCalculatorSnapshot } from '../../services/pricingMentorAIService';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface SharedAnalysisPanelProps {
   userPlaza?: string;
@@ -13,6 +14,7 @@ export function SharedAnalysisPanel({ userPlaza, userRole }: SharedAnalysisPanel
   const [analysisService, setAnalysisService] = useState(ANALYSIS_SERVICES[0]);
   const [analysisPlaza, setAnalysisPlaza] = useState(getDefaultAnalysisPlaza(userPlaza));
   const [analysisPrice, setAnalysisPrice] = useState(150);
+  const { gridCols, isMobile, gap } = useResponsive();
 
   const analysisData = usePricingAnalysis({
     serviceId: analysisService.id,
@@ -48,25 +50,25 @@ export function SharedAnalysisPanel({ userPlaza, userRole }: SharedAnalysisPanel
       : 'Use estas análises para fundamentar sua decisão de aprovação ou rejeição';
 
   return (
-    <div style={{ maxWidth: '1440px' }}>
+    <div style={{ maxWidth: '100%' }}>
       {/* Controls Card */}
       <div
         style={{
           backgroundColor: '#FFFFFF',
           borderRadius: '12px',
-          padding: '24px',
+          padding: isMobile ? '16px' : '24px',
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04)',
         }}
       >
-        <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#001022', marginBottom: '8px' }}>
+        <h2 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 700, color: '#001022', marginBottom: '8px' }}>
           {title}
         </h2>
-        <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '20px' }}>
+        <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: isMobile ? '16px' : '20px' }}>
           {subtitle}
         </p>
 
         {/* Selectors Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${gridCols(4)}, 1fr)`, gap: `${gap(16)}px`, marginBottom: isMobile ? '16px' : '24px' }}>
           {/* Service selector */}
           <div>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>

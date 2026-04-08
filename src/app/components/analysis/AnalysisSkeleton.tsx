@@ -2,6 +2,7 @@
 // Analysis Skeleton
 // ========================================
 import React from 'react';
+import { useResponsive } from '../../hooks/useResponsive';
 
 function SkeletonBlock({ height = 120, style }: { height?: number; style?: React.CSSProperties }) {
   return (
@@ -18,15 +19,17 @@ function SkeletonBlock({ height = 120, style }: { height?: number; style?: React
 }
 
 export function AnalysisSkeleton() {
+  const { isMobile } = useResponsive();
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <style>{`@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.5 } }`}</style>
       <SkeletonBlock height={80} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
         <SkeletonBlock height={200} />
         <SkeletonBlock height={200} />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '16px' }}>
         <SkeletonBlock height={160} />
         <SkeletonBlock height={160} />
         <SkeletonBlock height={160} />

@@ -7,12 +7,14 @@ import React from 'react';
 import { Users, DollarSign, Building2, Briefcase } from 'lucide-react';
 import type { PricingAnalysisDecisionContext } from '../../types/pricingAnalysis';
 import { formatNumber, formatCurrency } from '../../utils/pricingAnalysisMappers';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface Props {
   context: PricingAnalysisDecisionContext;
 }
 
 export function AnalysisMarketContext({ context }: Props) {
+  const { isMobile } = useResponsive();
   const { marketContext } = context;
 
   return (
@@ -21,7 +23,7 @@ export function AnalysisMarketContext({ context }: Props) {
         Mercado e Território
       </h4>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
         <MarketMetric
           icon={<DollarSign size={16} style={{ color: '#059669' }} />}
           label="Renda"

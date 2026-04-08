@@ -7,12 +7,14 @@ import React from 'react';
 import { Building2, Users, AlertTriangle, Shield } from 'lucide-react';
 import type { PricingAnalysisDecisionContext } from '../../types/pricingAnalysis';
 import { formatNumber } from '../../utils/pricingAnalysisMappers';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface Props {
   context: PricingAnalysisDecisionContext;
 }
 
 export function AnalysisOfferPressure({ context }: Props) {
+  const { isMobile } = useResponsive();
   const { marketContext, pracaName } = context;
   const level = marketContext.offerPressure ?? 'media';
   const config = getLevelConfig(level);
@@ -50,7 +52,7 @@ export function AnalysisOfferPressure({ context }: Props) {
       </div>
 
       {/* Metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
         <div style={{ padding: '10px', borderRadius: '8px', backgroundColor: '#F9FAFB', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Building2 size={16} style={{ color: '#8B5CF6' }} />
           <div>

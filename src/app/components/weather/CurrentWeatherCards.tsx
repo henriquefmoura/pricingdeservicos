@@ -17,6 +17,7 @@ import {
   formatWindSpeed,
   formatTime,
 } from '../../utils/weatherMapper';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface CurrentWeatherCardsProps {
   current: WeatherCurrent;
@@ -35,6 +36,7 @@ interface WeatherCardData {
 
 export function CurrentWeatherCards({ current, city, historicalDelta }: CurrentWeatherCardsProps) {
   const weatherInfo = getWeatherInfo(current.weatherCode);
+  const { isMobile } = useResponsive();
 
   const cards: WeatherCardData[] = [
     {
@@ -116,7 +118,7 @@ export function CurrentWeatherCards({ current, city, historicalDelta }: CurrentW
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+          gridTemplateColumns: `repeat(auto-fit, minmax(${isMobile ? '130px' : '170px'}, 1fr))`,
           gap: '12px',
         }}
       >
@@ -172,7 +174,7 @@ export function CurrentWeatherCards({ current, city, historicalDelta }: CurrentW
               <p
                 style={{
                   margin: 0,
-                  fontSize: card.highlight ? '28px' : '22px',
+                  fontSize: card.highlight ? (isMobile ? '22px' : '28px') : (isMobile ? '18px' : '22px'),
                   fontWeight: 700,
                   color: '#0F172A',
                   letterSpacing: '-0.02em',

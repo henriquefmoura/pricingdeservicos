@@ -113,8 +113,8 @@ export function PricingMentorWidget() {
         <div
           style={{
             position: 'fixed',
-            bottom: 126,
-            right: 24,
+            bottom: 186,
+            left: 24,
             zIndex: 9997,
             display: 'flex',
             flexDirection: 'column',
@@ -138,7 +138,7 @@ export function PricingMentorWidget() {
       {/* Chat Panel */}
       <PricingMentorChat />
 
-      {/* Floating Action Button (FAB) with semi-realistic avatar */}
+      {/* Floating Action Button (FAB) with semi-realistic avatar — left side */}
       <button
         onClick={toggleOpen}
         onMouseEnter={() => setIsHovered(true)}
@@ -146,9 +146,9 @@ export function PricingMentorWidget() {
         style={{
           position: 'fixed',
           bottom: 24,
-          right: 24,
-          width: isOpen ? '56px' : '88px',
-          height: isOpen ? '56px' : '88px',
+          left: 24,
+          width: isOpen ? '56px' : '120px',
+          height: isOpen ? '56px' : '120px',
           borderRadius: '50%',
           border: 'none',
           backgroundColor: isOpen ? '#001022' : 'transparent',
@@ -164,12 +164,12 @@ export function PricingMentorWidget() {
             : 'mentorFloat 3s ease-in-out infinite, mentorGrowPulse 6s ease-in-out infinite',
           padding: 0,
         }}
-        aria-label={isOpen ? 'Fechar Léo Instala' : 'Abrir Léo Instala'}
+        aria-label={isOpen ? 'Fechar PedroII jr' : 'Abrir PedroII jr'}
       >
         {isOpen ? (
           <X size={24} style={{ color: '#78BE20' }} />
         ) : (
-          <PricingMentorAvatar size={88} expression={expression} avatarState={avatarState} />
+          <PricingMentorAvatar size={120} expression={expression} avatarState={avatarState} />
         )}
       </button>
 
@@ -179,28 +179,62 @@ export function PricingMentorWidget() {
           style={{
             position: 'fixed',
             bottom: 6,
-            right: 6,
+            left: 6,
             zIndex: 9999,
             pointerEvents: 'none',
             textAlign: 'center',
-            width: '112px',
+            width: '140px',
           }}
         >
           <span
             style={{
-              fontSize: '10px',
+              fontSize: '11px',
               fontWeight: 700,
               color: '#78BE20',
               backgroundColor: 'white',
-              padding: '3px 8px',
+              padding: '3px 10px',
               borderRadius: '6px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               letterSpacing: '0.3px',
             }}
           >
-            Léo Instala
+            PedroII jr
           </span>
         </div>
+      )}
+
+      {/* CTA — "Pedir ajuda para o Pedro do Instala" */}
+      {!isOpen && (
+        <a
+          href="https://wa.me/5511976019360?text=Ol%C3%A1%20Pedro%20II%2C%20preciso%20de%20ajuda%20no%20Instala."
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Pedir ajuda para o Pedro do Instala via WhatsApp"
+          title="Fale diretamente com o especialista Pedro II"
+          style={{
+            position: 'fixed',
+            bottom: 28,
+            left: 160,
+            zIndex: 9999,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '10px 18px',
+            borderRadius: '24px',
+            backgroundColor: '#25D366',
+            color: '#FFFFFF',
+            fontSize: '13px',
+            fontWeight: 600,
+            textDecoration: 'none',
+            boxShadow: '0 4px 16px rgba(37, 211, 102, 0.35)',
+            cursor: 'pointer',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            animation: 'mentorSlideIn 0.3s ease-out',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          💬 Pedir ajuda para o Pedro do Instala
+        </a>
       )}
     </>
   );

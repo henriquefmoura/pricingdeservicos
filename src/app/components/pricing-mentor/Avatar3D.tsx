@@ -238,13 +238,13 @@ export function Avatar3D({
         }
       `}</style>
 
-      {/* Avatar container — transparent background, only character visible */}
+      {/* Avatar container — dark background, no white visible */}
       <div
         style={{
           width: displaySize,
           height: displaySize,
           borderRadius: '50%',
-          background: 'transparent',
+          background: '#001022',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -256,6 +256,8 @@ export function Avatar3D({
             ? 'none'
             : 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
           willChange: 'transform',
+          border: `2px solid rgba(120, 190, 32, 0.35)`,
+          boxShadow: `0 4px 16px ${getGlowColor()}`,
         }}
       >
         {/* Soft outer glow ring — gives depth without a visible container */}

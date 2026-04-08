@@ -235,10 +235,10 @@ export function PricingMentorWidget() {
                 fontSize: '11px',
                 fontWeight: 700,
                 color: '#78BE20',
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                backgroundColor: 'rgba(0, 16, 34, 0.85)',
                 padding: '2px 10px',
                 borderRadius: '6px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                 letterSpacing: '0.3px',
               }}
             >

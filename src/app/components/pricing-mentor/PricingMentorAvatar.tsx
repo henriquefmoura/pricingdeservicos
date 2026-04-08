@@ -76,7 +76,7 @@ export function PricingMentorAvatar({
           width: size,
           height: size,
           borderRadius: '50%',
-          background: '#F5F0EB',
+          background: '#001022',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

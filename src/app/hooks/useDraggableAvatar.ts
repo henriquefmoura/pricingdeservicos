@@ -8,8 +8,8 @@ export interface AvatarPosition {
   y: number;
 }
 
-/** Default position: bottom-left corner */
-const DEFAULT_POSITION: AvatarPosition = { x: 24, y: 24 };
+/** Default position: left side, below Notificações sidebar item */
+const DEFAULT_POSITION: AvatarPosition = { x: 60, y: 160 };
 
 /** Minimum distance from viewport edges */
 const EDGE_PADDING = 8;
@@ -92,9 +92,14 @@ export function useDraggableAvatar(
   const wasDraggedRef = useRef(false);
   const [wasDragged, setWasDragged] = useState(false);
 
+  // Ref to track current position without re-creating callbacks
+  const positionRef = useRef(position);
+  useEffect(() => { positionRef.current = position; }, [position]);
+
   // Refs for tracking drag state without re-renders
   const dragState = useRef({
     active: false,
+    dragging: false,
     startClientX: 0,
     startClientY: 0,
     startPosX: 0,
@@ -105,9 +110,10 @@ export function useDraggableAvatar(
   /** Begin drag from pointer coordinates */
   const startDrag = useCallback(
     (clientX: number, clientY: number) => {
-      const current = position;
+      const current = positionRef.current;
       dragState.current = {
         active: true,
+        dragging: false,
         startClientX: clientX,
         startClientY: clientY,
         startPosX: current.x,
@@ -117,7 +123,7 @@ export function useDraggableAvatar(
       wasDraggedRef.current = false;
       setWasDragged(false);
     },
-    [position],
+    [],
   );
 
   /** Update position during drag */
@@ -135,7 +141,8 @@ export function useDraggableAvatar(
 
       state.moved = true;
 
-      if (!isDragging) {
+      if (!state.dragging) {
+        state.dragging = true;
         setIsDragging(true);
       }
 
@@ -144,7 +151,7 @@ export function useDraggableAvatar(
       const clamped = clampToViewport(newX, newY, elementWidth, elementHeight);
       setPosition(clamped);
     },
-    [elementWidth, elementHeight, isDragging],
+    [elementWidth, elementHeight],
   );
 
   /** End drag */
@@ -155,15 +162,16 @@ export function useDraggableAvatar(
     if (state.moved) {
       wasDraggedRef.current = true;
       setWasDragged(true);
-      savePosition(position);
+      savePosition(positionRef.current);
       // Reset wasDragged after a short delay so click handlers can check it
       setTimeout(() => setWasDragged(false), 100);
     }
 
     state.active = false;
+    state.dragging = false;
     state.moved = false;
     setIsDragging(false);
-  }, [position]);
+  }, []);
 
   /** Reset to default position */
   const resetPosition = useCallback(() => {

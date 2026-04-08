@@ -86,6 +86,11 @@ export function AdminDashboard() {
     navigate('/login', { replace: true });
   };
 
+  const navigateToPricing = (filter: 'pendentes' | 'precificados') => {
+    setActiveTab('pricing');
+    setPricingFilter(filter);
+  };
+
   // Agora sim, early return DEPOIS de tudo
   if (!user) {
     return (
@@ -135,17 +140,14 @@ export function AdminDashboard() {
 
           <Card
             className="cursor-pointer transition-shadow hover:shadow-lg hover:border-orange-300 ring-offset-2 focus-visible:ring-2 focus-visible:ring-orange-400"
-            onClick={() => {
-              setActiveTab('pricing');
-              setPricingFilter('pendentes');
-            }}
+            onClick={() => navigateToPricing('pendentes')}
             tabIndex={0}
             role="button"
             aria-label="Ver códigos pendentes"
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                setActiveTab('pricing');
-                setPricingFilter('pendentes');
+                e.preventDefault();
+                navigateToPricing('pendentes');
               }
             }}
           >
@@ -164,17 +166,14 @@ export function AdminDashboard() {
 
           <Card
             className="cursor-pointer transition-shadow hover:shadow-lg hover:border-green-300 ring-offset-2 focus-visible:ring-2 focus-visible:ring-green-400"
-            onClick={() => {
-              setActiveTab('pricing');
-              setPricingFilter('precificados');
-            }}
+            onClick={() => navigateToPricing('precificados')}
             tabIndex={0}
             role="button"
             aria-label="Ver códigos precificados"
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                setActiveTab('pricing');
-                setPricingFilter('precificados');
+                e.preventDefault();
+                navigateToPricing('precificados');
               }
             }}
           >

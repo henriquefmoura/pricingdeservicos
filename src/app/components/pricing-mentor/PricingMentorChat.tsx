@@ -101,7 +101,7 @@ export function PricingMentorChat() {
         <PricingMentorAvatar size={36} expression={expression} avatarState={isTyping ? 'thinking' : 'idle'} />
         <div>
           <span style={{ fontSize: '14px', fontWeight: 700, color: '#1F2937', display: 'block' }}>
-            Pricing Mentor
+            Léo Instala
           </span>
           <span style={{ fontSize: '11px', color: '#78BE20' }}>
             Clique para expandir
@@ -142,7 +142,7 @@ export function PricingMentorChat() {
         <PricingMentorAvatar size={44} expression={expression} avatarState={isTyping ? 'thinking' : 'idle'} />
         <div style={{ flex: 1 }}>
           <div style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            Pricing Mentor
+            Léo Instala
             <Sparkles size={14} style={{ color: '#78BE20' }} />
           </div>
           <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -252,8 +252,8 @@ export function PricingMentorChat() {
                 <PricingMentorAvatar size={64} expression="wink" showLabel />
                 <p style={{ marginTop: '12px', fontSize: '14px', lineHeight: '1.6' }}>
                   {isExternalAIAvailable()
-                    ? <>Sou seu consultor de precificação com <strong>IA avançada</strong>! Pergunte qualquer coisa sobre preços, margem, custos, estratégia ou negócios.</>
-                    : <>Pergunte sobre precificação, margem, custos, estratégia ou <strong>qualquer dúvida</strong>!</>
+                    ? <>Sou o Léo Instala, seu parceiro de precificação com <strong>IA avançada</strong>! Pergunte qualquer coisa sobre preços, margem, custos, estratégia ou negócios.</>
+                    : <>Sou o Léo Instala! Pergunte sobre precificação, margem, custos, estratégia ou <strong>qualquer dúvida</strong>!</>
                   }
                 </p>
                 {/* AI Provider badges */}

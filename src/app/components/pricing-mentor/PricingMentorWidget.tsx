@@ -164,7 +164,7 @@ export function PricingMentorWidget() {
             : 'mentorFloat 3s ease-in-out infinite, mentorGrowPulse 6s ease-in-out infinite',
           padding: 0,
         }}
-        aria-label={isOpen ? 'Fechar Pricing Mentor' : 'Abrir Pricing Mentor'}
+        aria-label={isOpen ? 'Fechar Léo Instala' : 'Abrir Léo Instala'}
       >
         {isOpen ? (
           <X size={24} style={{ color: '#78BE20' }} />
@@ -198,7 +198,7 @@ export function PricingMentorWidget() {
               letterSpacing: '0.3px',
             }}
           >
-            Pricing Mentor
+            Léo Instala
           </span>
         </div>
       )}

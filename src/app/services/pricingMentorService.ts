@@ -183,9 +183,9 @@ export const QUICK_ACTIONS: QuickAction[] = [
 // ─── Response Generator ───────────────────────────────────────────────────────
 
 const GREETING_RESPONSES = [
-  'Olá! 👋 Sou o **Pricing Mentor**, seu assistente inteligente de precificação.\n\nPosso te ajudar com:\n🎯 Preços e margem\n💰 Custos e finanças\n🔍 Concorrência e mercado\n🚀 Estratégia de negócio\n🧠 Qualquer dúvida geral!\n\nComo posso te ajudar hoje?',
-  'E aí! 😊 Sou o **Pricing Mentor**, seu parceiro de precificação.\n\nPergunte sobre preços, margem, custos, estratégia ou qualquer dúvida — estou aqui pra te ajudar a ganhar mais!\n\nO que precisa?',
-  'Opa! 🎯 Sou o **Pricing Mentor** e estou pronto pra te ajudar.\n\nPosso responder sobre precificação, negócios, finanças, mercado e muito mais.\n\n💡 Dica: use os botões rápidos abaixo ou me pergunte qualquer coisa!',
+  'E aí, parceiro! 👋 Sou o **Léo Instala**, seu instalador profissional dentro da plataforma Leroy Merlin.\n\nTô aqui pra te ajudar a:\n🎯 Precificar seus serviços certinho\n💰 Entender sua margem de lucro\n🔍 Evitar prejuízo\n🚀 Melhorar sua competitividade\n\nBora trabalhar juntos? O que precisa?',
+  'Opa! 😊 Sou o **Léo Instala**, seu parceiro de precificação aqui na Leroy Merlin.\n\nPode me perguntar sobre preços, margem, custos, estratégia — qualquer dúvida de negócio. Tô aqui pra te ajudar a ganhar mais e tomar decisões melhores!\n\nVamos nessa?',
+  'Fala, mestre! 🎯 Sou o **Léo Instala** e vou te ajudar a acertar nos preços.\n\nPosso responder sobre precificação, margem, custos, concorrência e muito mais.\n\n💡 Dica: usa os botões rápidos abaixo ou me pergunta qualquer coisa!',
 ];
 
 const NUDGE_MESSAGES: MentorNudge[] = [
@@ -193,7 +193,7 @@ const NUDGE_MESSAGES: MentorNudge[] = [
   {
     id: 'nudge-low-margin',
     type: 'warning',
-    message: 'Sua margem está abaixo de 20%. Isso pode não cobrir seus custos fixos. Quer ajuda pra ajustar?',
+    message: 'Olha… desse jeito você tá trabalhando muito e ganhando pouco. Sua margem tá abaixo de 20%. Vamos ajustar isso juntos?',
     timestamp: Date.now(),
     dismissed: false,
     actionLabel: 'Ajustar margem',
@@ -202,21 +202,21 @@ const NUDGE_MESSAGES: MentorNudge[] = [
   {
     id: 'nudge-psychological',
     type: 'tip',
-    message: 'Dica: use preço psicológico! Em vez de R$200, tente R$197 ou R$199,90. A percepção muda muito. 🧠',
+    message: 'Dica do Léo: use preço psicológico! Em vez de R$200, tente R$197 ou R$199,90. A percepção muda muito. 🧠',
     timestamp: Date.now(),
     dismissed: false,
   },
   {
     id: 'nudge-cost-reminder',
     type: 'tip',
-    message: 'Lembrete: custos de deslocamento, ferramentas e tempo são frequentemente esquecidos na precificação. 👻',
+    message: 'Ei, já colocou todos os seus custos na conta? Deslocamento, ferramentas e tempo são frequentemente esquecidos. 👻',
     timestamp: Date.now(),
     dismissed: false,
   },
   {
     id: 'nudge-valor-agregado',
     type: 'tip',
-    message: 'Dica: adicionar garantia e pós-serviço pode justificar preços 20-30% maiores! 💎',
+    message: 'Dica: adicionar garantia e pós-serviço pode justificar preços 20-30% maiores! Valor não é só preço 💎',
     timestamp: Date.now(),
     dismissed: false,
   },
@@ -224,7 +224,7 @@ const NUDGE_MESSAGES: MentorNudge[] = [
   {
     id: 'nudge-provocation-1',
     type: 'provocation',
-    message: 'Você está ganhando dinheiro ou só vendendo? 🤔',
+    message: 'Preço não é só valor… é estratégia. Se você errar aqui, perde dinheiro sem perceber. 🤔',
     timestamp: Date.now(),
     dismissed: false,
     actionLabel: 'Analisar margem',
@@ -232,7 +232,7 @@ const NUDGE_MESSAGES: MentorNudge[] = [
   {
     id: 'nudge-provocation-2',
     type: 'provocation',
-    message: 'Se aumentar 10%, seu cliente realmente deixaria de comprar? 📈',
+    message: 'Se aumentar 10%, seu cliente realmente deixaria de comprar? Pensa comigo 📈',
     timestamp: Date.now(),
     dismissed: false,
     actionLabel: 'Simular aumento',
@@ -240,7 +240,7 @@ const NUDGE_MESSAGES: MentorNudge[] = [
   {
     id: 'nudge-provocation-3',
     type: 'provocation',
-    message: 'Você conhece sua margem ideal? A maioria dos prestadores não conhece... 🎯',
+    message: 'Você conhece sua margem ideal? A maioria dos profissionais não conhece… e acaba perdendo dinheiro 🎯',
     timestamp: Date.now(),
     dismissed: false,
     actionLabel: 'Descobrir agora',
@@ -248,7 +248,7 @@ const NUDGE_MESSAGES: MentorNudge[] = [
   {
     id: 'nudge-provocation-4',
     type: 'provocation',
-    message: 'Se vender mais com esse preço, você lucra ou perde? Nem sempre mais vendas = mais lucro. 💡',
+    message: 'Mais vendas nem sempre é mais lucro. Vamos ver se seu preço tá saudável? 💡',
     timestamp: Date.now(),
     dismissed: false,
     actionLabel: 'Entender por quê',
@@ -256,7 +256,7 @@ const NUDGE_MESSAGES: MentorNudge[] = [
   {
     id: 'nudge-provocation-5',
     type: 'provocation',
-    message: 'Quanto vale sua hora de trabalho? Se não sabe, pode estar cobrando pouco... ⏰',
+    message: 'Quanto vale sua hora de trabalho? Se não sabe, pode estar cobrando pouco… Vamos calcular juntos? ⏰',
     timestamp: Date.now(),
     dismissed: false,
     actionLabel: 'Calcular agora',
@@ -273,7 +273,7 @@ const NUDGE_MESSAGES: MentorNudge[] = [
   {
     id: 'nudge-question-2',
     type: 'question',
-    message: 'Sabia que uma micro aula de 2 minutos pode mudar sua forma de precificar? 📚',
+    message: 'Sabia que uma dica de 2 minutos pode mudar sua forma de precificar? Vem comigo! 📚',
     timestamp: Date.now(),
     dismissed: false,
     actionLabel: 'Aprender agora',

@@ -168,6 +168,11 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
         // Track consecutive questions for escalation detection
         const newConsecutiveCount = state.consecutiveQuestionCount + 1;
 
+        // Determine if escalation should trigger (capture before state update)
+        const shouldTriggerEscalation =
+          explicitHelp || newConsecutiveCount >= 3;
+        const wasEscalationShown = state.showEscalation;
+
         // Show typing indicator
         set({
           messages: [...state.messages, userMsg],
@@ -175,7 +180,7 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
           expression: 'thinking',
           consecutiveQuestionCount: newConsecutiveCount,
           // Show escalation immediately for explicit requests, or after 3+ consecutive questions
-          showEscalation: explicitHelp || newConsecutiveCount >= 3 || state.showEscalation,
+          showEscalation: shouldTriggerEscalation || state.showEscalation,
         });
 
         // Generate async AI response
@@ -185,13 +190,10 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
           const newBehavior = updateBehavior(currentState.behavior, category);
           const newLevel = computeUserLevel(newBehavior);
 
-          // If the AI responded successfully, add escalation suggestion message when threshold reached
-          const shouldSuggestEscalation =
-            explicitHelp || newConsecutiveCount >= 3;
-
+          // Add escalation suggestion message the first time it triggers
           const updatedMessages = [...currentState.messages, response];
 
-          if (shouldSuggestEscalation && !currentState.showEscalation) {
+          if (shouldTriggerEscalation && !wasEscalationShown) {
             const escalationMsg: MentorMessage = {
               id: `escalation-${Date.now()}`,
               role: 'mentor',

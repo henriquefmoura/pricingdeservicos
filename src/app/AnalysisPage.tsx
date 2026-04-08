@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { AppLayout } from './components/AppLayout';
 import { Card, HighlightedCard, KPICard } from './components/Card';
 import { DataTable, Column } from './components/DataTable';
-import { Map, TrendingUp, CheckCircle, AlertTriangle, ChevronRight, ArrowRight, Calculator, FileSpreadsheet } from 'lucide-react';
+import { Map, TrendingUp, CheckCircle, AlertTriangle, ChevronRight, ArrowRight, FileSpreadsheet } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell, Tooltip, Legend } from 'recharts';
 import { usePricingStore } from './store/pricingStore';
 import { useCorrelationStore } from './store/correlationStore';
@@ -288,25 +288,6 @@ export default function AnalysisPage() {
           >
             <FileSpreadsheet size={16} />
             Métricas Detalhadas
-          </button>
-          <button
-            onClick={() => navigate('/simulator')}
-            style={{
-              padding: '10px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: '#78BE20',
-              color: '#FFFFFF',
-              fontSize: '13px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <Calculator size={16} />
-            Simulador de Preços
           </button>
         </div>
       )}

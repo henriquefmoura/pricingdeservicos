@@ -131,7 +131,7 @@ export function usePricingAnalysis(
       setWeather(weatherData);
 
       // Load territorial
-      const territorialData = loadTerritorialData(pracaName);
+      const territorialData = await loadTerritorialData(pracaName, serviceId);
       setTerritorial(territorialData);
 
       // Build CNAE context (non-blocking)
@@ -150,7 +150,7 @@ export function usePricingAnalysis(
 
       // Fallback: continue without weather data
       setWeather(null);
-      const territorialData = loadTerritorialData(pracaName);
+      const territorialData = await loadTerritorialData(pracaName, serviceId);
       setTerritorial(territorialData);
       setLeroyStores(buildLeroyContext(pracaName));
       setError('Dados climáticos indisponíveis. Análise parcial baseada em dados territoriais.');

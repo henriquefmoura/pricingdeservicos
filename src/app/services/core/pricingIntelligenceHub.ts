@@ -19,7 +19,7 @@ import type { CompetitorAnalysisResult, NormalizedPrice } from '../../types/comp
 
 import { getWeatherBundle } from '../weatherService';
 import { runPricingAnalysisEngine } from '../pricingAnalysisEngine';
-import { getMockTerritorialData } from '../territorialAnalysisService';
+import { getMockTerritorialData, fetchTerritorialForPraca } from '../territorialAnalysisService';
 import { getSensitivityByServiceId, findSensitivityByName } from '../serviceSensitivityService';
 import { mapServiceToCnae } from '../ibge/cnaeService';
 import { getLeroyStoresByCity } from '../../data/leroyStores';
@@ -123,9 +123,23 @@ export async function loadWeatherData(
 // Load Territorial
 // ----------------------------------------
 
-export function loadTerritorialData(
-  pracaName: string
-): TerritorialInsightSummary {
+export async function loadTerritorialData(
+  pracaName: string,
+  serviceId?: string
+): Promise<TerritorialInsightSummary> {
+  const cacheKey = `hub_territorial_${pracaName}_${serviceId ?? ''}`;
+  const cached = getHubCache<TerritorialInsightSummary>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const data = await fetchTerritorialForPraca(pracaName, serviceId);
+    if (data) {
+      setHubCache(cacheKey, data);
+      return data;
+    }
+  } catch {
+    // Fall through to mock data
+  }
   return getMockTerritorialData(pracaName);
 }
 
@@ -238,7 +252,7 @@ export async function runPricingIntelligenceHub(
   const weather = await loadWeatherData(pracaId, pracaName, serviceId, signal);
 
   // 3. Load territorial
-  const territorial = loadTerritorialData(pracaName);
+  const territorial = await loadTerritorialData(pracaName, serviceId);
 
   // 4. Build CNAE context (non-blocking)
   let cnaeContext: CnaeContext;
@@ -313,4 +327,7 @@ export function invalidateHubCache(pracaId: string, serviceId: string): void {
   const weatherKey = buildCacheKey(pracaId, serviceId, 'weather');
   analysisCache.invalidate(weatherKey);
   hubCache.delete(`hub_cnae_${serviceId}`);
+  // pracaId is used as pracaName in loadTerritorialData callers
+  hubCache.delete(`hub_territorial_${pracaId}_${serviceId}`);
+  hubCache.delete(`hub_territorial_${pracaId}_`);
 }

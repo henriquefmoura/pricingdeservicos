@@ -146,13 +146,15 @@ export function MarketResearchForm() {
 
   // Build unique service options (name + code) from researches, sorted alphabetically by name, max 10
   const lmSuggestions = useMemo(() => {
-    const allServices = researches.map(r => ({ code: r.codigoAvulso, name: r.descricao }));
+    const serviceMap = new Map<string, { code: string; name: string }>();
+    researches.forEach(r => serviceMap.set(r.codigoAvulso, { code: r.codigoAvulso, name: r.descricao }));
     // Also add codes from store that may not have researches yet
     codes.forEach(c => {
-      if (!allServices.some(s => s.code === c.codigoAvulso)) {
-        allServices.push({ code: c.codigoAvulso, name: c.descricao });
+      if (!serviceMap.has(c.codigoAvulso)) {
+        serviceMap.set(c.codigoAvulso, { code: c.codigoAvulso, name: c.descricao });
       }
     });
+    const allServices = Array.from(serviceMap.values());
     // Sort alphabetically by name
     allServices.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
     // Filter by current input (match code or name)

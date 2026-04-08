@@ -30,7 +30,7 @@ export function PricingMentorNudge({ nudge, onDismiss, onAction }: PricingMentor
         display: 'flex',
         alignItems: 'flex-start',
         gap: '10px',
-        maxWidth: '340px',
+        maxWidth: 'min(340px, calc(100vw - 80px))',
         boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
         animation: 'mentorSlideIn 0.3s ease-out',
       }}

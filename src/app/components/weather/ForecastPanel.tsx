@@ -9,19 +9,22 @@ import {
   formatPrecipitation,
   formatDateShort,
 } from '../../utils/weatherMapper';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface ForecastPanelProps {
   forecast: WeatherDailyForecast[];
 }
 
 export function ForecastPanel({ forecast }: ForecastPanelProps) {
+  const { isMobile, isTablet } = useResponsive();
+
   if (forecast.length === 0) {
     return (
       <div
         style={{
           backgroundColor: '#FFFFFF',
           borderRadius: '12px',
-          padding: '24px',
+          padding: isMobile ? '16px' : '24px',
           border: '1px solid #F1F5F9',
           textAlign: 'center',
           color: '#94A3B8',
@@ -33,12 +36,15 @@ export function ForecastPanel({ forecast }: ForecastPanelProps) {
     );
   }
 
+  // Use auto-fit grid that adapts to screen size
+  const minCardWidth = isMobile ? '100px' : isTablet ? '110px' : '120px';
+
   return (
     <div
       style={{
         backgroundColor: '#FFFFFF',
         borderRadius: '12px',
-        padding: '24px',
+        padding: isMobile ? '16px' : '24px',
         border: '1px solid #F1F5F9',
       }}
     >
@@ -56,8 +62,8 @@ export function ForecastPanel({ forecast }: ForecastPanelProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${Math.min(forecast.length, 7)}, 1fr)`,
-          gap: '8px',
+          gridTemplateColumns: `repeat(auto-fit, minmax(${minCardWidth}, 1fr))`,
+          gap: isMobile ? '6px' : '8px',
         }}
       >
         {forecast.slice(0, 7).map((day) => {

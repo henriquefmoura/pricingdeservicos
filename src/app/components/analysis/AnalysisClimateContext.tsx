@@ -6,12 +6,14 @@
 import React from 'react';
 import { Thermometer, Droplets, Wind, Cloud, Sun, CloudRain } from 'lucide-react';
 import type { PricingAnalysisDecisionContext } from '../../types/pricingAnalysis';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface Props {
   context: PricingAnalysisDecisionContext;
 }
 
 export function AnalysisClimateContext({ context }: Props) {
+  const { isMobile } = useResponsive();
   const { climateContext } = context;
 
   if (!climateContext.enabled) {
@@ -61,7 +63,7 @@ export function AnalysisClimateContext({ context }: Props) {
       </div>
 
       {/* Current weather */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
         <WeatherMetric
           icon={<Thermometer size={16} style={{ color: '#EF4444' }} />}
           label="Temperatura"

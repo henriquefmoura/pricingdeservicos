@@ -6,6 +6,7 @@
 import React from 'react';
 import { AlertTriangle, Info, AlertCircle, CheckCircle } from 'lucide-react';
 import type { AnalysisAlert } from '../../types/pricingAnalysis';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface Props {
   alerts: AnalysisAlert[];
@@ -14,6 +15,8 @@ interface Props {
 }
 
 export function AnalysisAlertsPanel({ alerts, positiveSignals, negativeSignals }: Props) {
+  const { isMobile } = useResponsive();
+
   return (
     <div style={{ padding: '20px', borderRadius: '12px', backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB' }}>
       <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '0.5px' }}>
@@ -30,7 +33,7 @@ export function AnalysisAlertsPanel({ alerts, positiveSignals, negativeSignals }
       )}
 
       {/* Signals */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
         {/* Positive */}
         {positiveSignals.length > 0 && (
           <div>

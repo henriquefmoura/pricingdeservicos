@@ -5,6 +5,7 @@ import { UserActivityRanking } from './UserActivityRanking';
 import { ApprovalVsRejectionChart } from './ApprovalVsRejectionChart';
 import { PricingConsistencyView } from './PricingConsistencyView';
 import { KpiDetailPanel, KpiKey } from './KpiDetailPanel';
+import { useResponsive } from '../../hooks/useResponsive';
 import {
   BarChart3,
   MapPin,
@@ -31,13 +32,13 @@ const COLORS = {
 const statCardStyle: React.CSSProperties = {
   backgroundColor: '#FFFFFF',
   borderRadius: '12px',
-  padding: '24px',
+  padding: '20px',
   boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04)',
   display: 'flex',
   alignItems: 'center',
-  gap: '16px',
-  flex: '1 1 0',
-  minWidth: '200px',
+  gap: '12px',
+  flex: '1 1 auto',
+  minWidth: '0',
 };
 
 interface StatCardProps {
@@ -139,6 +140,7 @@ export function PricingGovernanceDashboard() {
   const getPlazaMetrics = useGovernanceStore((s) => s.getPlazaMetrics);
   const activityLogs = useGovernanceStore((s) => s.activityLogs);
   const getAdjustmentLog = useApprovalStore((s) => s.getAdjustmentLog);
+  const { gridCols, isMobile, gap: responsiveGap } = useResponsive();
 
   const [activeKpi, setActiveKpi] = useState<KpiKey | null>(null);
 
@@ -170,21 +172,21 @@ export function PricingGovernanceDashboard() {
   const totalUsers = userMetrics.length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: `${responsiveGap(24)}px` }}>
       {/* Header */}
       <div
         className="rounded-xl shadow-lg"
-        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: '24px' }}
+        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: isMobile ? '16px' : '24px' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '8px' }}>
-            <BarChart3 size={24} style={{ color: '#FFFFFF' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: isMobile ? '8px' : '12px', borderRadius: '8px' }}>
+            <BarChart3 size={isMobile ? 20 : 24} style={{ color: '#FFFFFF' }} />
           </div>
-          <div>
-            <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
               Acompanhamento Precificação
             </h2>
-            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
+            <p style={{ fontSize: isMobile ? '12px' : '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
               Acompanhamento do processo de precificação — atividade dos usuários, volume e qualidade
             </p>
           </div>
@@ -192,7 +194,7 @@ export function PricingGovernanceDashboard() {
       </div>
 
       {/* Summary stat cards - Row 1 */}
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${gridCols(4)}, 1fr)`, gap: `${responsiveGap(16)}px` }}>
         <StatCard
           icon={<BarChart3 size={20} />}
           iconBg="rgba(120, 190, 32, 0.15)"
@@ -231,7 +233,7 @@ export function PricingGovernanceDashboard() {
       </div>
 
       {/* Summary stat cards - Row 2: Process-focused metrics */}
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${gridCols(4)}, 1fr)`, gap: `${responsiveGap(16)}px` }}>
         <StatCard
           icon={<LogIn size={20} />}
           iconBg="rgba(99, 102, 241, 0.12)"
@@ -293,7 +295,7 @@ export function PricingGovernanceDashboard() {
         style={{
           backgroundColor: '#FFFFFF',
           borderRadius: '12px',
-          padding: '24px',
+          padding: isMobile ? '16px' : '24px',
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04)',
           borderTop: '4px solid #6366F1',
         }}

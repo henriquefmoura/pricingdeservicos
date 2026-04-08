@@ -6,6 +6,7 @@
 
 import { ExternalLink, TrendingUp, AlertCircle, Calendar, Shield } from 'lucide-react';
 import type { CompetitorContext } from '../../types/pricingAnalysis';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface Props {
   competitor: CompetitorContext;
@@ -34,6 +35,8 @@ function formatDate(dateStr: string): string {
 }
 
 export function AnalysisMarketReference({ competitor, currentPrice }: Props) {
+  const { isMobile } = useResponsive();
+
   if (!competitor.enabled) {
     return (
       <div style={{
@@ -106,7 +109,7 @@ export function AnalysisMarketReference({ competitor, currentPrice }: Props) {
       </div>
 
       {/* Price range */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 500 }}>Mínimo</p>
           <p style={{ fontSize: '16px', fontWeight: 700, color: '#374151' }}>

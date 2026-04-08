@@ -7,12 +7,14 @@ import React from 'react';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import type { PricingAnalysisDecisionContext } from '../../types/pricingAnalysis';
 import { formatCurrency, formatPercent } from '../../utils/pricingAnalysisMappers';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface Props {
   context: PricingAnalysisDecisionContext;
 }
 
 export function AnalysisPriceContext({ context }: Props) {
+  const { isMobile } = useResponsive();
   const { currentPrice, proposedPrice, priceDelta, priceDeltaPercent, historicalContext } = context;
   const isIncrease = priceDelta > 0;
   const isDecrease = priceDelta < 0;
@@ -25,12 +27,12 @@ export function AnalysisPriceContext({ context }: Props) {
         Contexto de Preço
       </h4>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
         <MetricCard label="Preço Atual" value={formatCurrency(currentPrice)} />
         <MetricCard label="Preço Proposto" value={formatCurrency(proposedPrice)} highlight={deltaColor} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
         <MetricCard
           label="Variação Absoluta"
           value={formatCurrency(Math.abs(priceDelta))}
@@ -47,7 +49,7 @@ export function AnalysisPriceContext({ context }: Props) {
 
       {/* Historical comparison */}
       <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: '#F9FAFB', border: '1px solid #F3F4F6' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '12px' }}>
           <MiniMetric label="Média Local" value={formatCurrency(historicalContext.localAverage)} />
           <MiniMetric label="Tendência" value={getTrendLabel(historicalContext.localTrend)} />
           <MiniMetric label="Posição" value={getPositionLabel(historicalContext.pricePosition)} color={getPositionColor(historicalContext.pricePosition)} />

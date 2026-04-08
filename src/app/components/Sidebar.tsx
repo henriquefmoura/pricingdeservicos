@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, BarChart2, LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, CloudSun, MapPin, Crosshair, Shield, CheckCircle, FileText, Lightbulb, ListChecks, Search, Bell, MessageSquare } from 'lucide-react';
 import { Logo } from './Logo';
+import { useResponsive } from '../hooks/useResponsive';
 
 export type UserRole = 'Master' | 'Admin' | 'Usuário';
 export type NavItem = 'Upload' | 'Análise' | 'Dashboard' | 'Admin' | 'Clima' | 'Territorial' | 'Concorrência' | 'Governança' | 'Códigos' | 'PesquisaMercado' | 'Notificações' | 'Suporte';
@@ -122,20 +123,25 @@ export function Sidebar({
 }: SidebarProps) {
   const [hoveredItem, setHoveredItem] = useState<NavItem | null>(null);
   const [isLogoutHovered, setIsLogoutHovered] = useState(false);
+  const { isLaptop } = useResponsive();
 
   const roleStyle = roleStyles[userRole];
   const navGroups = getNavItemsForRole(userRole);
 
+  // On laptop screens, use a narrower sidebar
+  const sidebarWidth = isCollapsed ? '64px' : isLaptop ? '200px' : '240px';
+
   return (
     <div
       style={{
-        width: isCollapsed ? '64px' : '240px',
+        width: sidebarWidth,
         height: '100vh',
         backgroundColor: '#001022',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
         transition: 'width 0.3s ease',
+        flexShrink: 0,
       }}
     >
       {/* Toggle Button */}

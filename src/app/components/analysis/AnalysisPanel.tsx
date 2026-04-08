@@ -9,6 +9,7 @@ import React from 'react';
 import { RefreshCw, Brain } from 'lucide-react';
 import type { PricingAnalysisDecisionContext } from '../../types/pricingAnalysis';
 import type { CompetitorContext, CnaeContext } from '../../types/pricingAnalysis';
+import { useResponsive } from '../../hooks/useResponsive';
 
 import { AnalysisDecisionSummary } from './AnalysisDecisionSummary';
 import { AnalysisPriceContext } from './AnalysisPriceContext';
@@ -38,6 +39,8 @@ interface Props {
 }
 
 export function AnalysisPanel({ context, loading, error, onRefresh, competitorContext, cnaeContext }: Props) {
+  const { isMobile } = useResponsive();
+
   if (loading) {
     return (
       <div style={{ marginTop: '24px' }}>
@@ -93,7 +96,7 @@ export function AnalysisPanel({ context, loading, error, onRefresh, competitorCo
         />
 
         {/* 2. Historical and Price Context */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
           <AnalysisPriceContext context={context} />
           <AnalysisComparisonChart context={context} />
         </div>
@@ -102,7 +105,7 @@ export function AnalysisPanel({ context, loading, error, onRefresh, competitorCo
         <AnalysisHistoricalCurve context={context} />
 
         {/* 3. Climate and Seasonality */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
           <AnalysisClimateContext context={context} />
           <AnalysisSeasonalityContext context={context} />
         </div>
@@ -116,7 +119,7 @@ export function AnalysisPanel({ context, loading, error, onRefresh, competitorCo
         )}
 
         {/* 4. Market and Territory */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
           <AnalysisMarketContext context={context} />
           <AnalysisTerritorialContext context={context} />
         </div>

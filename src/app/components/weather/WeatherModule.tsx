@@ -11,6 +11,7 @@ import { ClimateInsightBox } from './ClimateInsightBox';
 import { OperationalRiskBadge } from './OperationalRiskBadge';
 import { WeatherSkeleton } from './WeatherSkeleton';
 import { CloudOff, RefreshCw, AlertTriangle, Cloud } from 'lucide-react';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface WeatherModuleProps {
   /** Cidade inicial (opcional) */
@@ -41,6 +42,7 @@ export function WeatherModule({ initialCity, latitude, longitude }: WeatherModul
     longitude,
     autoFetch: !!initialCity,
   });
+  const { isMobile, gap } = useResponsive();
 
   const handleCitySelect = (city: string, lat?: number, lon?: number) => {
     setSelectedCity(city);
@@ -54,19 +56,19 @@ export function WeatherModule({ initialCity, latitude, longitude }: WeatherModul
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: `${gap(24)}px` }}>
       {/* Header */}
       <div
         className="rounded-xl shadow-lg"
-        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: '24px' }}
+        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: isMobile ? '16px' : '24px' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '8px' }}>
-              <Cloud size={24} style={{ color: '#FFFFFF' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: isMobile ? '8px' : '12px', borderRadius: '8px', flexShrink: 0 }}>
+              <Cloud size={isMobile ? 20 : 24} style={{ color: '#FFFFFF' }} />
             </div>
-            <div>
-              <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
+            <div style={{ minWidth: 0 }}>
+              <h2 style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
                 🌤️ Clima da Praça
               </h2>
               <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
@@ -166,7 +168,7 @@ export function WeatherModule({ initialCity, latitude, longitude }: WeatherModul
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '60px 24px',
+            padding: isMobile ? '32px 16px' : '60px 24px',
             backgroundColor: '#FFFFFF',
             borderRadius: '12px',
             border: '1px dashed #CBD5E1',

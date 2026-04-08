@@ -23,6 +23,10 @@ interface PricingMentorState {
   hasGreeted: boolean;
   behavior: UserBehavior;
   expression: 'happy' | 'thinking' | 'alert' | 'wink' | 'surprised' | 'pointing';
+  /** Counts consecutive user messages that may indicate difficulty */
+  consecutiveQuestionCount: number;
+  /** Whether to show the escalation card suggesting human specialist */
+  showEscalation: boolean;
 }
 
 interface PricingMentorActions {
@@ -39,6 +43,7 @@ interface PricingMentorActions {
   initGreeting: () => void;
   triggerRandomNudge: () => void;
   setExpression: (expr: PricingMentorState['expression']) => void;
+  dismissEscalation: () => void;
 }
 
 type PricingMentorStore = PricingMentorState & PricingMentorActions;
@@ -55,6 +60,34 @@ function computeUserLevel(behavior: UserBehavior): UserLevel {
   if (behavior.totalQuestions > 30) return 'avancado';
   if (behavior.totalQuestions > 10) return 'intermediario';
   return 'iniciante';
+}
+
+/**
+ * Phrases that indicate the user explicitly wants human support.
+ * Matched case-insensitively against user input.
+ */
+const HUMAN_HELP_PHRASES = [
+  'não entendi',
+  'nao entendi',
+  'ainda tenho dúvida',
+  'ainda tenho duvida',
+  'quero falar com alguém',
+  'quero falar com alguem',
+  'preciso de ajuda',
+  'não resolveu',
+  'nao resolveu',
+  'falar com humano',
+  'falar com pessoa',
+  'ajuda humana',
+  'suporte humano',
+  'falar com especialista',
+  'falar com pedro',
+];
+
+/** Returns true if the message text suggests the user needs human help */
+function needsHumanHelp(text: string): boolean {
+  const lower = text.toLowerCase().trim();
+  return HUMAN_HELP_PHRASES.some((phrase) => lower.includes(phrase));
 }
 
 function updateBehavior(behavior: UserBehavior, category: MentorCategory): UserBehavior {
@@ -89,6 +122,8 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
       hasGreeted: false,
       behavior: DEFAULT_BEHAVIOR,
       expression: 'happy' as PricingMentorState['expression'],
+      consecutiveQuestionCount: 0,
+      showEscalation: false,
 
       toggleOpen: () => {
         const state = get();
@@ -127,11 +162,20 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
           timestamp: Date.now(),
         };
 
+        // Check for explicit human help request
+        const explicitHelp = needsHumanHelp(text);
+
+        // Track consecutive questions for escalation detection
+        const newConsecutiveCount = state.consecutiveQuestionCount + 1;
+
         // Show typing indicator
         set({
           messages: [...state.messages, userMsg],
           isTyping: true,
           expression: 'thinking',
+          consecutiveQuestionCount: newConsecutiveCount,
+          // Show escalation immediately for explicit requests, or after 3+ consecutive questions
+          showEscalation: explicitHelp || newConsecutiveCount >= 3 || state.showEscalation,
         });
 
         // Generate async AI response
@@ -141,8 +185,26 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
           const newBehavior = updateBehavior(currentState.behavior, category);
           const newLevel = computeUserLevel(newBehavior);
 
+          // If the AI responded successfully, add escalation suggestion message when threshold reached
+          const shouldSuggestEscalation =
+            explicitHelp || newConsecutiveCount >= 3;
+
+          const updatedMessages = [...currentState.messages, response];
+
+          if (shouldSuggestEscalation && !currentState.showEscalation) {
+            const escalationMsg: MentorMessage = {
+              id: `escalation-${Date.now()}`,
+              role: 'mentor',
+              content:
+                '🤝 Quer falar com nosso especialista Pedro II? Ele pode te ajudar de forma mais direta.',
+              timestamp: Date.now(),
+              category: 'geral',
+            };
+            updatedMessages.push(escalationMsg);
+          }
+
           set({
-            messages: [...currentState.messages, response],
+            messages: updatedMessages,
             isTyping: false,
             questionCount: currentState.questionCount + 1,
             userLevel: newLevel,
@@ -242,6 +304,8 @@ export const usePricingMentorStore = create<PricingMentorStore>()(
       },
 
       setExpression: (expr) => set({ expression: expr }),
+
+      dismissEscalation: () => set({ showEscalation: false, consecutiveQuestionCount: 0 }),
     }),
     {
       name: 'pricing-mentor-storage',

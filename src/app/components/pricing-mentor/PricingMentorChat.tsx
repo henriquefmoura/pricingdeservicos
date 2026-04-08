@@ -18,7 +18,14 @@ import type { MentorMessage } from '../../types/pricingMentor';
 
 type ChatTab = 'chat' | 'lessons' | 'simulate';
 
-export function PricingMentorChat() {
+interface PricingMentorChatProps {
+  /** Position of the avatar (left, bottom) for relative positioning */
+  avatarPosition?: { x: number; y: number };
+  /** Size of the avatar element */
+  avatarSize?: number;
+}
+
+export function PricingMentorChat({ avatarPosition, avatarSize = 120 }: PricingMentorChatProps = {}) {
   const {
     messages,
     isOpen,
@@ -86,8 +93,8 @@ export function PricingMentorChat() {
       <div
         style={{
           position: 'fixed',
-          bottom: 150,
-          left: 24,
+          bottom: avatarPosition ? avatarPosition.y + avatarSize + 8 : 150,
+          left: avatarPosition ? avatarPosition.x : 24,
           zIndex: 9998,
           display: 'flex',
           alignItems: 'center',
@@ -118,8 +125,8 @@ export function PricingMentorChat() {
     <div
       style={{
         position: 'fixed',
-        bottom: 150,
-        left: 24,
+        bottom: avatarPosition ? avatarPosition.y + avatarSize + 8 : 150,
+        left: avatarPosition ? avatarPosition.x : 24,
         width: '400px',
         maxHeight: '600px',
         borderRadius: '20px',

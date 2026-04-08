@@ -1,0 +1,60 @@
+/* ========================================
+ * Global Responsive Styles
+ * Ensures the platform adapts to different screen sizes
+ * ======================================== */
+
+/* Ensure the root and body fill the viewport */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Prevent horizontal overflow on the entire app */
+body {
+  overflow-x: hidden;
+}
+
+/* Make all images responsive by default */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Tables should scroll horizontally on small screens */
+.overflow-x-auto,
+[style*="overflowX: 'auto'"] {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Global font scaling for small screens */
+@media (max-width: 768px) {
+  :root {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 1025px) {
+  :root {
+    font-size: 16px;
+  }
+}
+
+/* Recharts responsive containers should respect their parent width */
+.recharts-responsive-container {
+  max-width: 100% !important;
+}
+
+/* Ensure select and input elements don't overflow on mobile */
+@media (max-width: 768px) {
+  select, input, textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}

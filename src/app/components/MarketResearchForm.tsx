@@ -120,6 +120,10 @@ export function MarketResearchForm() {
   const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
   const [showFullHistory, setShowFullHistory] = useState(true);
 
+  // Search state for the price history tab
+  const [historySearchLM, setHistorySearchLM] = useState('');
+  const [historySearchPrestador, setHistorySearchPrestador] = useState('');
+
   // Pre-compute chart data for all services in the history tab
   const historyChartData = useMemo(() => {
     return researches.map((research) => {
@@ -134,6 +138,19 @@ export function MarketResearchForm() {
       return { research, points, competitors, suggestedPrice, avgPrice };
     });
   }, [researches, getPriceHistoryByCode, getSuggestedPrice]);
+
+  // Filter history chart data based on search terms
+  const hasHistorySearch = historySearchLM.trim() !== '' || historySearchPrestador.trim() !== '';
+  const filteredHistoryChartData = useMemo(() => {
+    if (!hasHistorySearch) return [];
+    const lmTerm = historySearchLM.trim().toLowerCase();
+    const prestadorTerm = historySearchPrestador.trim().toLowerCase();
+    return historyChartData.filter(({ research }) => {
+      const matchesLM = lmTerm === '' || research.codigoAvulso.toLowerCase().includes(lmTerm) || research.descricao.toLowerCase().includes(lmTerm);
+      const matchesPrestador = prestadorTerm === '' || research.precosConcorrentes.some(c => c.concorrente.toLowerCase().includes(prestadorTerm));
+      return matchesLM && matchesPrestador;
+    });
+  }, [historyChartData, hasHistorySearch, historySearchLM, historySearchPrestador]);
 
   // Buscar descrição quando o código é alterado
   const handleCodigoChange = (value: string) => {
@@ -768,7 +785,76 @@ export function MarketResearchForm() {
       {/* ─── Página: Histórico de Preços ─── */}
       {activePage === 'historico' && (
         <div className="space-y-6">
-          {historyChartData.length === 0 ? (
+          {/* Search bar for filtering price history */}
+          <Card className="border-2 border-[#78BE20]/30">
+            <CardContent className="py-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <Label htmlFor="history-search-lm" className="text-xs text-gray-600 mb-1 block">
+                    Buscar por LM (código ou descrição)
+                  </Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="history-search-lm"
+                      placeholder="Ex: 50041154 ou Renovação"
+                      value={historySearchLM}
+                      onChange={(e) => setHistorySearchLM(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <Label htmlFor="history-search-prestador" className="text-xs text-gray-600 mb-1 block">
+                    Buscar por Prestador / Empresa
+                  </Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="history-search-prestador"
+                      placeholder="Ex: Construtora ABC"
+                      value={historySearchPrestador}
+                      onChange={(e) => setHistorySearchPrestador(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+                {hasHistorySearch && (
+                  <div className="flex items-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setHistorySearchLM(''); setHistorySearchPrestador(''); }}
+                      className="text-xs"
+                    >
+                      Limpar busca
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {hasHistorySearch && (
+                <p className="text-xs text-gray-500 mt-2">
+                  {filteredHistoryChartData.length} resultado(s) encontrado(s)
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {!hasHistorySearch ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Busque para visualizar o histórico
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Utilize os campos acima para buscar por código LM, descrição do serviço ou prestador/empresa
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : historyChartData.length === 0 ? (
             <Card>
               <CardContent className="py-12">
                 <div className="text-center">
@@ -791,8 +877,22 @@ export function MarketResearchForm() {
                 </div>
               </CardContent>
             </Card>
+          ) : filteredHistoryChartData.length === 0 ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Nenhum resultado encontrado
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Tente buscar com outros termos ou limpe a busca para ver todas as opções
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
-            historyChartData.map(({ research, points, competitors, suggestedPrice, avgPrice }) => (
+            filteredHistoryChartData.map(({ research, points, competitors, suggestedPrice, avgPrice }) => (
               <Card key={research.codigoAvulso} className="border-2">
                 <CardHeader>
                   <div className="flex items-start justify-between">

@@ -4,10 +4,11 @@ import * as XLSX from 'xlsx';
 import { AppLayout } from './components/AppLayout';
 import { HighlightedCard, AISuggestionCard, Card } from './components/Card';
 import { Toggle } from './components/Toggle';
-import { FileSpreadsheet, BarChart2, MapPin, TrendingUp, AlertCircle, Shield } from 'lucide-react';
+import { FileSpreadsheet, BarChart2, MapPin, TrendingUp, AlertCircle, Shield, History, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import { usePricingStore } from './store/pricingStore';
 import { useAuthStore } from './store/authStore';
 import { useReplicationConfigStore } from './store/replicationConfigStore';
+import { useMarketResearchStore, PriceHistoryEntry } from './store/marketResearchStore';
 import { GoogleSheetsConfig } from './components/GoogleSheetsConfig';
 import { ReplicationConfig } from './components/ReplicationConfig';
 import { ServiceData } from './types/pricing';
@@ -23,7 +24,51 @@ export default function MasterHomePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showFullHistory, setShowFullHistory] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { priceHistory, exportData } = useMarketResearchStore();
+
+  function formatDate(dateStr: string): string {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateStr;
+    }
+  }
+
+  function getActionLabel(acao: PriceHistoryEntry['acao']): { label: string; color: string; bg: string } {
+    switch (acao) {
+      case 'added':
+        return { label: 'Adicionado', color: '#15803D', bg: '#DCFCE7' };
+      case 'updated':
+        return { label: 'Atualizado', color: '#1D4ED8', bg: '#DBEAFE' };
+      case 'removed':
+        return { label: 'Removido', color: '#DC2626', bg: '#FEE2E2' };
+    }
+  }
+
+  const handleExportData = () => {
+    const data = exportData();
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pesquisa-mercado-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Dados exportados com sucesso! Pronto para importar no Supabase.');
+  };
 
   // Auth guard
   useEffect(() => {
@@ -310,6 +355,161 @@ export default function MasterHomePage() {
             </div>
           </div>
         </HighlightedCard>
+
+        {/* Histórico Completo de Preços */}
+        {priceHistory.length > 0 && (
+          <Card style={{ border: '2px solid #FDE68A' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <History size={20} style={{ color: '#D97706' }} />
+                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#001022', margin: 0 }}>
+                    Histórico Completo de Preços
+                  </h3>
+                </div>
+                <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>
+                  {priceHistory.length} registro(s) de alterações de preços de concorrentes
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setShowFullHistory(!showFullHistory)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #E5E7EB',
+                    backgroundColor: '#FFFFFF',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: '#374151',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {showFullHistory ? (
+                    <>
+                      <ChevronUp size={16} />
+                      Recolher
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown size={16} />
+                      Expandir
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleExportData}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #6EE7B7',
+                    backgroundColor: '#FFFFFF',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: '#047857',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Download size={16} />
+                  Exportar JSON
+                </button>
+              </div>
+            </div>
+            {showFullHistory && (
+              <div style={{ borderRadius: '8px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#FFFBEB' }}>
+                      <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E7EB' }}>Ação</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E7EB' }}>Serviço</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E7EB' }}>Concorrente</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E7EB' }}>Preço</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E7EB' }}>Data</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E7EB' }}>Registrado por</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...priceHistory]
+                      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                      .map((entry) => {
+                        const { label, color, bg } = getActionLabel(entry.acao);
+                        return (
+                          <tr key={entry.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                            <td style={{ padding: '10px 12px' }}>
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: '100px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  color: color,
+                                  backgroundColor: bg,
+                                }}
+                              >
+                                {label}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 12px' }}>
+                              <div>
+                                <span style={{ fontWeight: 500, fontSize: '13px', color: '#111827' }}>{entry.descricao}</span>
+                                <span style={{ display: 'block', fontSize: '11px', color: '#9CA3AF' }}>Cód: {entry.codigoAvulso}</span>
+                              </div>
+                            </td>
+                            <td style={{ padding: '10px 12px', fontWeight: 500 }}>{entry.concorrente}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                              {entry.acao === 'updated' && entry.precoAnterior !== undefined ? (
+                                <div>
+                                  <span style={{ color: '#9CA3AF', textDecoration: 'line-through', fontSize: '11px' }}>
+                                    R$ {entry.precoAnterior.toFixed(2)}
+                                  </span>
+                                  <span style={{ display: 'block', fontWeight: 600, color: '#1D4ED8' }}>
+                                    R$ {entry.preco.toFixed(2)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span style={{ fontWeight: 600, color: entry.acao === 'removed' ? '#DC2626' : '#047857' }}>
+                                  R$ {entry.preco.toFixed(2)}
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'center', fontSize: '12px', color: '#6B7280' }}>
+                              {formatDate(entry.timestamp)}
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'center', fontSize: '12px', color: '#6B7280' }}>
+                              {entry.registradoPor}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {showFullHistory && (
+              <div
+                style={{
+                  marginTop: '16px',
+                  padding: '12px',
+                  backgroundColor: '#ECFDF5',
+                  border: '1px solid #A7F3D0',
+                  borderRadius: '8px',
+                }}
+              >
+                <p style={{ fontSize: '12px', color: '#047857', margin: 0 }}>
+                  <span style={{ fontWeight: 600 }}>💾 Dados salvos localmente.</span> Todos os registros são persistidos automaticamente no navegador.
+                  Use o botão &quot;Exportar JSON&quot; para salvar uma cópia dos dados que poderá ser importada no Supabase futuramente.
+                </p>
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* Quick Info Cards - Horizontal Row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>

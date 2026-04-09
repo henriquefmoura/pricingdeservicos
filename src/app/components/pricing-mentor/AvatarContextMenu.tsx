@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 
 interface AvatarContextMenuProps {
-  onResetPosition?: () => void;
   onToggleMinimize: () => void;
   isMinimized: boolean;
   onToggleAnimations: () => void;

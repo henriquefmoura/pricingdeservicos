@@ -12,8 +12,6 @@ import { useMarketResearchStore } from './store/marketResearchStore';
 import { useApprovalStore } from './store/approvalStore';
 import { useCorrelationStore } from './store/correlationStore';
 import { useReplicationConfigStore } from './store/replicationConfigStore';
-import { useSupportStore } from './store/supportStore';
-import { useNotificationStore } from './store/notificationStore';
 import { toast } from 'sonner';
 
 interface PriceInput {
@@ -29,8 +27,6 @@ export default function AdminPricingPage() {
   const { addApproval } = useApprovalStore();
   const { getSimilarPlazas, initializeMockData: initCorrelation } = useCorrelationStore();
   const { getTargetPlazasForReplicator, isPlazaReplicator } = useReplicationConfigStore();
-  const { createThread, addMessage } = useSupportStore();
-  const { addNotification } = useNotificationStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [priceInputs, setPriceInputs] = useState<Record<string, PriceInput>>({});
@@ -111,38 +107,15 @@ export default function AdminPricingPage() {
       `Motivo: `,
     ].filter(Boolean).join('\n');
 
-    const threadId = createThread({
-      subject,
-      fromUserId: user.id,
-      fromUserName: user.name,
-      fromUserRole: 'admin',
-      toRole: 'master',
-      plaza: user.plaza,
+    // Navigate to support page with pre-filled data; confirmation popup will be shown there
+    navigate('/admin-support', {
+      state: {
+        pendingTicket: {
+          subject,
+          message: messageBody,
+        },
+      },
     });
-
-    addMessage(threadId, {
-      fromUserId: user.id,
-      fromUserName: user.name,
-      fromUserRole: 'admin',
-      toRole: 'master',
-      toPlaza: user.plaza,
-      message: messageBody,
-    });
-
-    addNotification({
-      type: 'support_request',
-      title: `Novo chamado: ${subject}`,
-      message: messageBody.substring(0, 100) + '...',
-      fromUserId: user.id,
-      fromUserName: user.name,
-      fromUserRole: 'admin',
-      toRole: 'master',
-      plaza: user.plaza,
-      priority: 'medium',
-    });
-
-    toast.success('Chamado de suporte aberto com sucesso!');
-    navigate('/admin-support');
   };
 
   const getServiceTypeStyles = (tipo: string) => {

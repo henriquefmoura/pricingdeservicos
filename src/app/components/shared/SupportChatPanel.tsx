@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Send, Plus, ChevronLeft, Clock, CheckCircle2, X } from 'lucide-react';
+import { MessageSquare, Send, Plus, ChevronLeft, Clock, CheckCircle2, X, Trash2 } from 'lucide-react';
 import { useSupportStore } from '../../store/supportStore';
 import { useNotificationStore } from '../../store/notificationStore';
 import type { SupportThread } from '../../types/notification';
@@ -38,6 +38,7 @@ export function SupportChatPanel({
     createThread,
     addMessage,
     closeThread,
+    deleteThread,
     markThreadMessagesRead,
     getUnreadThreadCount,
     initializeMockThreads,
@@ -49,6 +50,7 @@ export function SupportChatPanel({
   const [showNewThread, setShowNewThread] = useState(false);
   const [newSubject, setNewSubject] = useState('');
   const [newFirstMessage, setNewFirstMessage] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -146,10 +148,122 @@ export function SupportChatPanel({
     }
   };
 
+  const handleDeleteThread = (threadId: string) => {
+    deleteThread(threadId);
+    setShowDeleteConfirm(null);
+    if (selectedThread === threadId) {
+      setSelectedThread(null);
+    }
+  };
+
+  // Delete confirmation popup
+  const renderDeleteConfirmPopup = () => {
+    if (!showDeleteConfirm) return null;
+    const threadToDelete = threads.find((t) => t.id === showDeleteConfirm);
+    if (!threadToDelete) return null;
+
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+        }}
+        onClick={() => setShowDeleteConfirm(null)}
+      >
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '28px',
+            maxWidth: '440px',
+            width: '90%',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: '#FEE2E2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Trash2 size={20} style={{ color: '#DC2626' }} />
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#001022', margin: 0 }}>
+              Excluir chamado
+            </h3>
+          </div>
+
+          <p style={{ fontSize: '14px', color: '#6B7280', margin: '0 0 8px' }}>
+            Tem certeza que deseja excluir este chamado?
+          </p>
+          <p style={{ fontSize: '13px', fontWeight: 600, color: '#001022', margin: '0 0 20px' }}>
+            "{threadToDelete.subject}"
+          </p>
+          <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '0 0 20px' }}>
+            Esta ação não pode ser desfeita. O chamado será removido permanentemente.
+          </p>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <button
+              onClick={() => setShowDeleteConfirm(null)}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: '1px solid #E5E7EB',
+                backgroundColor: '#FFFFFF',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#6B7280',
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => handleDeleteThread(showDeleteConfirm)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: '#DC2626',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#FFFFFF',
+              }}
+            >
+              <Trash2 size={14} />
+              Excluir
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Thread List View
   if (!selectedThread) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {renderDeleteConfirmPopup()}
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -296,6 +410,7 @@ export function SupportChatPanel({
                 thread={thread}
                 currentUserRole={currentUserRole}
                 onClick={() => setSelectedThread(thread.id)}
+                onDelete={currentUserRole === 'admin' ? (id) => setShowDeleteConfirm(id) : undefined}
               />
             ))}
           </div>
@@ -307,6 +422,7 @@ export function SupportChatPanel({
   // Chat View
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '600px' }}>
+      {renderDeleteConfirmPopup()}
       {/* Chat Header */}
       <div
         style={{
@@ -362,6 +478,27 @@ export function SupportChatPanel({
           >
             <CheckCircle2 size={14} />
             Encerrar
+          </button>
+        )}
+        {currentUserRole === 'admin' && (
+          <button
+            onClick={() => setShowDeleteConfirm(selectedThread)}
+            title="Excluir chamado"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: '1px solid #FECACA',
+              backgroundColor: '#FEF2F2',
+              cursor: 'pointer',
+              fontSize: '12px',
+              color: '#DC2626',
+            }}
+          >
+            <Trash2 size={14} />
+            Excluir
           </button>
         )}
       </div>
@@ -493,10 +630,12 @@ function ThreadCard({
   thread,
   currentUserRole,
   onClick,
+  onDelete,
 }: {
   thread: SupportThread;
   currentUserRole: string;
   onClick: () => void;
+  onDelete?: (id: string) => void;
 }) {
   const hasUnread = thread.messages.some(
     (m) => !m.read && m.fromUserRole !== currentUserRole
@@ -557,6 +696,26 @@ function ThreadCard({
             >
               {thread.plaza}
             </span>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(thread.id);
+              }}
+              title="Excluir chamado"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <Trash2 size={14} style={{ color: '#D1D5DB' }} />
+            </button>
           )}
         </div>
       </div>

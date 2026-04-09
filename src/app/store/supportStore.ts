@@ -7,6 +7,7 @@ interface SupportState {
   createThread: (thread: Omit<SupportThread, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'messages'>) => string;
   addMessage: (threadId: string, message: Omit<SupportMessage, 'id' | 'threadId' | 'createdAt' | 'read'>) => void;
   closeThread: (threadId: string) => void;
+  deleteThread: (threadId: string) => void;
   getThreadsForRole: (role: 'master' | 'admin' | 'user', plaza?: string) => SupportThread[];
   getThreadById: (threadId: string) => SupportThread | undefined;
   markThreadMessagesRead: (threadId: string, readerRole: 'master' | 'admin' | 'user') => void;
@@ -240,6 +241,12 @@ export const useSupportStore = create<SupportState>()(
           threads: state.threads.map((t) =>
             t.id === threadId ? { ...t, status: 'closed', updatedAt: new Date() } : t
           ),
+        }));
+      },
+
+      deleteThread: (threadId) => {
+        set((state) => ({
+          threads: state.threads.filter((t) => t.id !== threadId),
         }));
       },
 

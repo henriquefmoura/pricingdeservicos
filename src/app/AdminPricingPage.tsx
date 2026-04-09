@@ -90,7 +90,10 @@ export default function AdminPricingPage() {
   const completedByMe = pricedCodes.length;
 
   const handleReportPricingError = (code: PricingCode) => {
-    if (!user || !user.plaza) return;
+    if (!user || !user.plaza) {
+      toast.error('Não foi possível abrir o chamado. Verifique sua autenticação.');
+      return;
+    }
     const price = code.prices?.[user.plaza];
     const margem = price ? ((price.venda - price.repasse) / price.venda) * 100 : 0;
     const subject = `Erro no preenchimento — ${code.codigoAvulso} · ${code.descricao}`;

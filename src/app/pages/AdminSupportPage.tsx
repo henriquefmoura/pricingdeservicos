@@ -65,7 +65,7 @@ export default function AdminSupportPage() {
     addNotification({
       type: 'support_request',
       title: `Novo chamado: ${pendingTicket.subject}`,
-      message: pendingTicket.message.substring(0, 100) + '...',
+      message: pendingTicket.message.length > 100 ? pendingTicket.message.substring(0, 100) + '...' : pendingTicket.message,
       fromUserId: user.id,
       fromUserName: user.name,
       fromUserRole: 'admin',

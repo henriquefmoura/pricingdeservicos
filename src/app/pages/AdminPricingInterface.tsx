@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Save, CheckCircle2, AlertCircle, Lightbulb, TrendingUp, ListChecks } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { Save, CheckCircle2, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, ListChecks } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -20,6 +21,8 @@ import { useApprovalStore } from '../store/approvalStore';
 import { useCorrelationStore } from '../store/correlationStore';
 import { useReplicationConfigStore } from '../store/replicationConfigStore';
 import { updateCalculatorSnapshot } from '../services/pricingMentorAIService';
+import { useSupportStore } from '../store/supportStore';
+import { useNotificationStore } from '../store/notificationStore';
 import { toast } from 'sonner';
 
 interface PriceInput {
@@ -32,12 +35,15 @@ interface AdminPricingInterfaceProps {
 }
 
 export function AdminPricingInterface({ initialFilter }: AdminPricingInterfaceProps) {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const { codes, updateCodePrice, initializeMockCodes } = usePricingCodesStore();
   const { getResearchByCode, getSuggestedPrice } = useMarketResearchStore();
   const { addApproval } = useApprovalStore();
   const { getSimilarPlazas, initializeMockData } = useCorrelationStore();
   const { getTargetPlazasForReplicator, isPlazaReplicator } = useReplicationConfigStore();
+  const { createThread, addMessage } = useSupportStore();
+  const { addNotification } = useNotificationStore();
   const [priceInputs, setPriceInputs] = useState<Record<string, PriceInput>>({});
   const [editingCode, setEditingCode] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'pendentes' | 'precificados'>(initialFilter || 'pendentes');
@@ -83,6 +89,58 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
       case 'Deslocamento':
         return 'bg-purple-100 text-purple-800 border-purple-300';
     }
+  };
+
+  const handleReportPricingError = (code: PricingCode) => {
+    if (!user || !user.plaza) return;
+    const price = code.prices?.[user.plaza];
+    const subject = `Erro no preenchimento — ${code.codigoAvulso} · ${code.descricao}`;
+    const messageBody = [
+      `Solicito revisão do serviço precificado:`,
+      `• Código: ${code.codigoAvulso}`,
+      `• Serviço: ${code.descricao}`,
+      `• Tipo: ${code.tipo}`,
+      `• Unidade: ${code.unidade}`,
+      price ? `• Repasse: R$ ${price.repasse.toFixed(2)}` : '',
+      price ? `• Venda: R$ ${price.venda.toFixed(2)}` : '',
+      price ? `• Margem: ${price.margem.toFixed(2)}%` : '',
+      `• Praça: ${user.plaza}`,
+      '',
+      `Motivo: `,
+    ].filter(Boolean).join('\n');
+
+    const threadId = createThread({
+      subject,
+      fromUserId: user.id,
+      fromUserName: user.name,
+      fromUserRole: 'admin',
+      toRole: 'master',
+      plaza: user.plaza,
+    });
+
+    addMessage(threadId, {
+      fromUserId: user.id,
+      fromUserName: user.name,
+      fromUserRole: 'admin',
+      toRole: 'master',
+      toPlaza: user.plaza,
+      message: messageBody,
+    });
+
+    addNotification({
+      type: 'support_request',
+      title: `Novo chamado: ${subject}`,
+      message: messageBody.substring(0, 100) + '...',
+      fromUserId: user.id,
+      fromUserName: user.name,
+      fromUserRole: 'admin',
+      toRole: 'master',
+      plaza: user.plaza,
+      priority: 'medium',
+    });
+
+    toast.success('Chamado de erro aberto com sucesso!');
+    navigate('/admin-support');
   };
 
   const handlePriceChange = (codeId: string, field: 'repasse' | 'venda', value: string) => {
@@ -711,6 +769,13 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                                   {price.margem.toFixed(2)}%
                                 </p>
                               </div>
+                              <button
+                                onClick={() => handleReportPricingError(code)}
+                                title="Reportar erro no preenchimento"
+                                className="ml-2 p-1.5 rounded-md border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors cursor-pointer"
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           )}
                         </div>

@@ -5,13 +5,15 @@ import { AISuggestionCard, Card } from './components/Card';
 import { CurrencyInput, Input } from './components/Input';
 import { ServiceTypeBadge, ServiceType } from './components/ServiceTypeBadge';
 import { StatusBadge, BadgeStatus } from './components/StatusBadge';
-import { Search, Sparkles, Send, Save, Lightbulb, TrendingUp, CheckCircle2, AlertCircle, BarChart2 } from 'lucide-react';
+import { Search, Sparkles, Send, Save, Lightbulb, TrendingUp, CheckCircle2, AlertCircle, AlertTriangle, BarChart2 } from 'lucide-react';
 import { useAuthStore } from './store/authStore';
 import { usePricingCodesStore, PricingCode } from './store/pricingCodesStore';
 import { useMarketResearchStore } from './store/marketResearchStore';
 import { useApprovalStore } from './store/approvalStore';
 import { useCorrelationStore } from './store/correlationStore';
 import { useReplicationConfigStore } from './store/replicationConfigStore';
+import { useSupportStore } from './store/supportStore';
+import { useNotificationStore } from './store/notificationStore';
 import { toast } from 'sonner';
 
 interface PriceInput {
@@ -27,6 +29,8 @@ export default function AdminPricingPage() {
   const { addApproval } = useApprovalStore();
   const { getSimilarPlazas, initializeMockData: initCorrelation } = useCorrelationStore();
   const { getTargetPlazasForReplicator, isPlazaReplicator } = useReplicationConfigStore();
+  const { createThread, addMessage } = useSupportStore();
+  const { addNotification } = useNotificationStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [priceInputs, setPriceInputs] = useState<Record<string, PriceInput>>({});
@@ -85,6 +89,61 @@ export default function AdminPricingPage() {
 
   const completedByMe = pricedCodes.length;
 
+  const handleReportPricingError = (code: PricingCode) => {
+    if (!user || !user.plaza) {
+      toast.error('Não foi possível abrir o chamado. Verifique sua autenticação.');
+      return;
+    }
+    const price = code.prices?.[user.plaza];
+    const margem = price ? ((price.venda - price.repasse) / price.venda) * 100 : 0;
+    const subject = `Erro no preenchimento — ${code.codigoAvulso} · ${code.descricao}`;
+    const messageBody = [
+      `Solicito revisão do serviço precificado:`,
+      `• Código: ${code.codigoAvulso}`,
+      `• Serviço: ${code.descricao}`,
+      `• Tipo: ${code.tipo}`,
+      `• Unidade: ${code.unidade}`,
+      price ? `• Repasse: R$ ${price.repasse.toFixed(2)}` : '',
+      price ? `• Venda: R$ ${price.venda.toFixed(2)}` : '',
+      price ? `• Margem: ${margem.toFixed(2)}%` : '',
+      `• Praça: ${user.plaza}`,
+      '',
+      `Motivo: `,
+    ].filter(Boolean).join('\n');
+
+    const threadId = createThread({
+      subject,
+      fromUserId: user.id,
+      fromUserName: user.name,
+      fromUserRole: 'admin',
+      toRole: 'master',
+      plaza: user.plaza,
+    });
+
+    addMessage(threadId, {
+      fromUserId: user.id,
+      fromUserName: user.name,
+      fromUserRole: 'admin',
+      toRole: 'master',
+      toPlaza: user.plaza,
+      message: messageBody,
+    });
+
+    addNotification({
+      type: 'support_request',
+      title: `Novo chamado: ${subject}`,
+      message: messageBody.substring(0, 100) + '...',
+      fromUserId: user.id,
+      fromUserName: user.name,
+      fromUserRole: 'admin',
+      toRole: 'master',
+      plaza: user.plaza,
+      priority: 'medium',
+    });
+
+    toast.success('Chamado de suporte aberto com sucesso!');
+    navigate('/admin-support');
+  };
 
   const getServiceTypeStyles = (tipo: string) => {
     switch (tipo) {
@@ -548,6 +607,31 @@ export default function AdminPricingPage() {
                                   Definido por: {priceData.preenchidoPor}
                                 </p>
                               )}
+                              <button
+                                onClick={() => handleReportPricingError(code)}
+                                title="Reportar erro no preenchimento"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '6px 12px',
+                                  borderRadius: '8px',
+                                  border: '1px solid #FECACA',
+                                  backgroundColor: '#FEF2F2',
+                                  color: '#DC2626',
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  transition: 'background-color 0.2s',
+                                  alignSelf: 'flex-start',
+                                  marginTop: '4px',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FEE2E2'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FEF2F2'; }}
+                              >
+                                <AlertTriangle size={14} />
+                                Suporte
+                              </button>
                             </div>
                           )}
                         </div>

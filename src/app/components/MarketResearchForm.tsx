@@ -728,8 +728,8 @@ export function MarketResearchForm() {
         </Card>
       )}
 
-      {/* Histórico Completo de Preços */}
-      {priceHistory.length > 0 && (
+      {/* Histórico Completo de Preços — visível apenas para master */}
+      {priceHistory.length > 0 && user?.role === 'master' && (
         <Card className="border-2 border-amber-200">
           <CardHeader>
             <div className="flex items-center justify-between">

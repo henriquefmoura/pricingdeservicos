@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  RotateCcw,
   Minimize2,
   Maximize2,
   Pause,
@@ -9,7 +8,7 @@ import {
 } from 'lucide-react';
 
 interface AvatarContextMenuProps {
-  onResetPosition: () => void;
+  onResetPosition?: () => void;
   onToggleMinimize: () => void;
   isMinimized: boolean;
   onToggleAnimations: () => void;
@@ -21,7 +20,6 @@ interface AvatarContextMenuProps {
  * Provides controls: reset position, minimize, toggle animations.
  */
 export function AvatarContextMenu({
-  onResetPosition,
   onToggleMinimize,
   isMinimized,
   onToggleAnimations,
@@ -58,14 +56,6 @@ export function AvatarContextMenu({
       icon: isMinimized ? Maximize2 : Minimize2,
       onClick: () => {
         onToggleMinimize();
-        setIsOpen(false);
-      },
-    },
-    {
-      label: 'Resetar posição',
-      icon: RotateCcw,
-      onClick: () => {
-        onResetPosition();
         setIsOpen(false);
       },
     },

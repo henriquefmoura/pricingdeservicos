@@ -19,13 +19,11 @@ import type { MentorMessage } from '../../types/pricingMentor';
 type ChatTab = 'chat' | 'lessons' | 'simulate';
 
 interface PricingMentorChatProps {
-  /** Position of the avatar (left, bottom) for relative positioning */
-  avatarPosition?: { x: number; y: number };
   /** Size of the avatar element */
   avatarSize?: number;
 }
 
-export function PricingMentorChat({ avatarPosition, avatarSize = 120 }: PricingMentorChatProps = {}) {
+export function PricingMentorChat({ avatarSize = 80 }: PricingMentorChatProps = {}) {
   const {
     messages,
     isOpen,
@@ -93,8 +91,8 @@ export function PricingMentorChat({ avatarPosition, avatarSize = 120 }: PricingM
       <div
         style={{
           position: 'fixed',
-          bottom: avatarPosition ? avatarPosition.y + avatarSize + 8 : 150,
-          left: avatarPosition ? avatarPosition.x : 24,
+          right: 'clamp(8px, 2vw, 24px)',
+          bottom: `calc(clamp(8px, 2vh, 24px) + ${avatarSize + 20}px)`,
           zIndex: 9998,
           display: 'flex',
           alignItems: 'center',
@@ -125,10 +123,10 @@ export function PricingMentorChat({ avatarPosition, avatarSize = 120 }: PricingM
     <div
       style={{
         position: 'fixed',
-        bottom: avatarPosition ? avatarPosition.y + avatarSize + 8 : 150,
-        left: avatarPosition ? avatarPosition.x : 24,
-        width: 'min(400px, calc(100vw - 48px))',
-        maxHeight: 'min(600px, calc(100vh - 140px))',
+        right: 'clamp(8px, 2vw, 24px)',
+        bottom: `calc(clamp(8px, 2vh, 24px) + ${avatarSize + 20}px)`,
+        width: 'min(380px, calc(100vw - 32px))',
+        maxHeight: 'min(520px, calc(100vh - 140px))',
         borderRadius: '20px',
         backgroundColor: '#FFFFFF',
         boxShadow: '0 8px 48px rgba(0,0,0,0.2)',

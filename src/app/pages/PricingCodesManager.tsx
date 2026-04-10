@@ -102,6 +102,9 @@ export function PricingCodesManager() {
     setImportPreview([]);
 
     const reader = new FileReader();
+    reader.onerror = () => {
+      setImportError('Erro ao ler o arquivo. Tente novamente.');
+    };
     reader.onload = (evt) => {
       try {
         const data = evt.target?.result;
@@ -126,7 +129,8 @@ export function PricingCodesManager() {
           const codAtrelado = String(row['Cód Atrelado'] ?? row['Cod Atrelado'] ?? row['CodAtrelado'] ?? row['cod_atrelado'] ?? '');
           const codAvulso = String(row['Cód Avulso'] ?? row['Cod Avulso'] ?? row['CodAvulso'] ?? row['cod_avulso'] ?? '');
 
-          if (!descricao && !codAtrelado && !codAvulso) continue; // skip empty rows
+          // Skip rows without description or without any code
+          if (!descricao.trim() || (!codAtrelado.trim() && !codAvulso.trim())) continue;
 
           parsed.push({
             tipo: normalizeTipo(tipo),
@@ -141,7 +145,7 @@ export function PricingCodesManager() {
         }
 
         if (parsed.length === 0) {
-          setImportError('Nenhum registro válido encontrado na planilha. Verifique se as colunas estão com os nomes corretos: Tipo, Descrição, Unid, Cód Atrelado, Cód Avulso.');
+          setImportError('Nenhum registro válido encontrado na planilha. Verifique se as colunas estão com os nomes corretos: Tipo, Descrição/Descricao, Unid, Cód Atrelado, Cód Avulso.');
           return;
         }
 

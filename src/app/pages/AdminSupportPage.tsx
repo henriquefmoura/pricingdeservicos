@@ -5,7 +5,7 @@ import { SupportChatPanel } from '../components/shared/SupportChatPanel';
 import { useAuthStore } from '../store/authStore';
 import { useSupportStore } from '../store/supportStore';
 import { useNotificationStore } from '../store/notificationStore';
-import { AlertTriangle, X, Send } from 'lucide-react';
+import { AlertTriangle, X, Send, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PendingTicket {
@@ -95,20 +95,18 @@ export default function AdminSupportPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '900px' }}>
         {/* Page header banner */}
         <div
-          className="rounded-xl shadow-lg"
-          style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: '24px' }}
+          className="rounded-xl p-6 text-white shadow-lg"
+          style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '8px' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-3 rounded-lg">
+              <MessageSquare className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
+              <h2 className="text-2xl font-bold tracking-tight">
                 Suporte
               </h2>
-              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
+              <p className="text-white/80 text-sm mt-1">
                 Comunique-se diretamente com o Master
               </p>
             </div>

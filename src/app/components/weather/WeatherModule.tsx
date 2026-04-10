@@ -59,19 +59,19 @@ export function WeatherModule({ initialCity, latitude, longitude }: WeatherModul
     <div style={{ display: 'flex', flexDirection: 'column', gap: `${gap(24)}px` }}>
       {/* Header */}
       <div
-        className="rounded-xl shadow-lg"
-        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: isMobile ? '16px' : '24px' }}
+        className="rounded-xl p-6 text-white shadow-lg"
+        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: isMobile ? '8px' : '12px', borderRadius: '8px', flexShrink: 0 }}>
-              <Cloud size={isMobile ? 20 : 24} style={{ color: '#FFFFFF' }} />
+          <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
+            <div className="bg-white/20 p-3 rounded-lg" style={{ flexShrink: 0 }}>
+              <Cloud className="w-6 h-6 text-white" />
             </div>
             <div style={{ minWidth: 0 }}>
-              <h2 style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
+              <h2 className="text-2xl font-bold tracking-tight">
                 🌤️ Clima da Praça
               </h2>
-              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
+              <p className="text-white/80 text-sm mt-1">
                 Condições climáticas e impacto operacional
               </p>
             </div>

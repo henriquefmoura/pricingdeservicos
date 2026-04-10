@@ -178,18 +178,16 @@ export default function MasterHomePage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1440px' }}>
         {/* Page header banner */}
         <div
-          className="rounded-xl shadow-lg"
-          style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: '24px' }}
+          className="rounded-xl p-6 text-white shadow-lg"
+          style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '8px' }}>
-              <FileSpreadsheet size={24} style={{ color: '#FFFFFF' }} />
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-3 rounded-lg">
+              <FileSpreadsheet className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
-                Upload de Dados
-              </h2>
-              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
+              <h2 className="text-2xl font-bold tracking-tight">Upload de Dados</h2>
+              <p className="text-white/80 text-sm mt-1">
                 Faça upload de arquivos Excel com preços das praças
               </p>
             </div>

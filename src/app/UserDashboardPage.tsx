@@ -114,18 +114,16 @@ export default function UserDashboardPage() {
     <AppLayout activeNav="Dashboard" title="" subtitle="">
       {/* Page header banner */}
       <div
-        className="rounded-xl shadow-lg"
-        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)', padding: '24px', marginBottom: '24px' }}
+        className="rounded-xl p-6 text-white shadow-lg mb-6"
+        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '8px' }}>
-            <CheckCircle size={24} style={{ color: '#FFFFFF' }} />
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 p-3 rounded-lg">
+            <CheckCircle className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.015em' }}>
-              Validação de Preços
-            </h2>
-            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0' }}>
+            <h2 className="text-2xl font-bold tracking-tight">Validação de Preços</h2>
+            <p className="text-white/80 text-sm mt-1">
               {`Aprove, rejeite ou sugira novos preços para a praça ${user?.plaza || ''}`}
             </p>
           </div>

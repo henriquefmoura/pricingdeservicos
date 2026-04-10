@@ -145,7 +145,7 @@ export function PricingCodesManager() {
         }
 
         if (parsed.length === 0) {
-          setImportError('Nenhum registro válido encontrado na planilha. Verifique se as colunas estão com os nomes corretos: Tipo, Descrição/Descricao, Unid. Colunas opcionais: Cód Atrelado, Cód Avulso.');
+          setImportError('Nenhum registro válido encontrado na planilha. Verifique se as colunas estão com os nomes corretos: Tipo, Descrição. Colunas opcionais: Unid, Cód Atrelado, Cód Avulso.');
           return;
         }
 
@@ -214,8 +214,8 @@ export function PricingCodesManager() {
     const hasAvulso = !!code.codigoAvulso;
 
     if (hasAtrelado && hasAvulso) {
-      // When both exist, use only avulso
-      return { atrelado: code.codigoAtrelado!, avulso: code.codigoAvulso!, label: 'Ambos' };
+      // When both exist, display both but avulso takes priority as the utilized code
+      return { atrelado: code.codigoAtrelado!, avulso: code.codigoAvulso!, label: 'Avulso (prioritário)' };
     }
     if (hasAvulso) {
       return { atrelado: null, avulso: code.codigoAvulso!, label: 'Apenas Avulso' };

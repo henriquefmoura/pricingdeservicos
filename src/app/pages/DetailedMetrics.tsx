@@ -15,6 +15,7 @@ import {
 import { usePricingStore } from '../store/pricingStore';
 import { PricingAnalyzer } from '../utils/pricingAnalyzer';
 import * as XLSX from 'xlsx';
+import { AppLayout } from '../components/AppLayout';
 
 export function DetailedMetrics() {
   const navigate = useNavigate();
@@ -126,21 +127,23 @@ export function DetailedMetrics() {
 
   if (!data || !analyzer) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-96">
-          <CardHeader>
-            <CardTitle>Nenhum dado carregado</CardTitle>
-            <CardDescription>
-              Você precisa fazer upload de um arquivo Excel primeiro
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate('/')} className="w-full">
-              Voltar para Upload
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <AppLayout activeNav="Análise" title="Métricas Detalhadas" subtitle="Todas as métricas calculadas pela análise">
+        <div className="flex items-center justify-center min-h-[300px]">
+          <Card className="w-96">
+            <CardHeader>
+              <CardTitle>Nenhum dado carregado</CardTitle>
+              <CardDescription>
+                Você precisa fazer upload de um arquivo Excel primeiro
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate('/')} className="w-full">
+                Voltar para Upload
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
     );
   }
 
@@ -222,8 +225,8 @@ export function DetailedMetrics() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <AppLayout activeNav="Análise" title="Métricas Detalhadas" subtitle="Todas as métricas calculadas pela análise">
+      <div>
         {/* Gradient header */}
         <div
           className="rounded-xl p-6 text-white shadow-lg mb-6"
@@ -623,6 +626,6 @@ export function DetailedMetrics() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </AppLayout>
   );
 }

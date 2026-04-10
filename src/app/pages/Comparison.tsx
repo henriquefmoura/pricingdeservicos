@@ -15,6 +15,7 @@ import {
 import { usePricingStore } from '../store/pricingStore';
 import { PricingAnalyzer } from '../utils/pricingAnalyzer';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AppLayout } from '../components/AppLayout';
 
 export function Comparison() {
   const { plaza1, plaza2 } = useParams<{ plaza1: string; plaza2: string }>();
@@ -38,21 +39,23 @@ export function Comparison() {
 
   if (!data || !analyzer || !plaza1 || !plaza2 || !comparison || !correlation) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-96">
-          <CardHeader>
-            <CardTitle>Dados não encontrados</CardTitle>
-            <CardDescription>
-              Não foi possível carregar os dados de comparação
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate('/analysis')} className="w-full">
-              Voltar para Análise
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <AppLayout activeNav="Análise" title="Comparação Detalhada" subtitle="">
+        <div className="flex items-center justify-center min-h-[300px]">
+          <Card className="w-96">
+            <CardHeader>
+              <CardTitle>Dados não encontrados</CardTitle>
+              <CardDescription>
+                Não foi possível carregar os dados de comparação
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate('/analysis')} className="w-full">
+                Voltar para Análise
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
     );
   }
 
@@ -108,8 +111,8 @@ export function Comparison() {
   }, [comparison]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+    <AppLayout activeNav="Análise" title="Comparação Detalhada" subtitle={`${plaza1} vs ${plaza2}`}>
+      <div className="space-y-6">
         {/* Gradient header */}
         <div
           className="rounded-xl p-6 text-white shadow-lg"
@@ -537,6 +540,6 @@ export function Comparison() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AppLayout>
   );
 }

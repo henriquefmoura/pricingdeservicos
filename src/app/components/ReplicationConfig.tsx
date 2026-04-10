@@ -20,15 +20,8 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { useReplicationConfigStore } from '../store/replicationConfigStore';
+import { ALL_PLAZAS } from '../store/pricingCodesStore';
 import { toast } from 'sonner';
-
-// Lista de todas as 27 praças
-const ALL_PLAZAS = [
-  'SP', 'RJ', 'MG', 'ES', 'PR', 'SC', 'RS', 
-  'DF', 'GO', 'MT', 'MS', 'BA', 'SE', 'AL', 
-  'PE', 'PB', 'RN', 'CE', 'PI', 'MA', 'AM', 
-  'PA', 'AC', 'RO', 'RR', 'AP', 'TO'
-];
 
 export function ReplicationConfig() {
   const { rules, addRule, updateRule, deleteRule, toggleRuleActive, getAllReplicatorPlazas } = useReplicationConfigStore();

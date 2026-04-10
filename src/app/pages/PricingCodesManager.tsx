@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { Plus, Trash2, Upload, FileSpreadsheet, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Upload, FileSpreadsheet, Calendar, AlertCircle, CheckCircle2, ChevronsUpDown } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -30,9 +30,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { usePricingCodesStore, PricingCode, PricingCodeTipo } from '../store/pricingCodesStore';
+import { usePricingCodesStore, PricingCode, PricingCodeTipo, ALL_PLAZAS } from '../store/pricingCodesStore';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'sonner';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { Checkbox } from '../components/ui/checkbox';
 
 export function PricingCodesManager() {
   const { user } = useAuthStore();
@@ -163,15 +165,16 @@ export function PricingCodesManager() {
     }
   };
 
-  const handleConfirmImport = (prazo: string) => {
+  const handleConfirmImport = (prazo: string, selectedPlazas: string[]) => {
     const codesWithPrazo = importPreview.map((c) => ({
       ...c,
       prazo: prazo || '',
+      targetPlazas: selectedPlazas,
     }));
     addCodes(codesWithPrazo);
     setImportPreview([]);
     setIsImportDialogOpen(false);
-    toast.success(`${codesWithPrazo.length} código(s) importados com sucesso!`);
+    toast.success(`${codesWithPrazo.length} código(s) importados com sucesso para ${selectedPlazas.length} praça(s)!`);
   };
 
   const handleImportExcel = () => {
@@ -421,7 +424,8 @@ export function PricingCodesManager() {
                 <TableBody>
                   {codes.map((code) => {
                     const filledPlazas = Object.keys(code.prices || {}).length;
-                    const progressPercentage = (filledPlazas / 27) * 100;
+                    const totalPlazas = code.targetPlazas?.length || ALL_PLAZAS.length;
+                    const progressPercentage = (filledPlazas / totalPlazas) * 100;
 
                     return (
                       <TableRow key={code.id}>
@@ -452,7 +456,7 @@ export function PricingCodesManager() {
                         <TableCell>
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-xs text-gray-600">
-                              <span>{filledPlazas}/27 praças</span>
+                              <span>{filledPlazas}/{totalPlazas} praças</span>
                               <span>{progressPercentage.toFixed(0)}%</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -545,11 +549,43 @@ interface ImportPreviewDialogProps {
   onOpenChange: (open: boolean) => void;
   previewCodes: Omit<PricingCode, 'id' | 'createdAt' | 'status'>[];
   getTipoBadgeColor: (tipo: PricingCode['tipo']) => string;
-  onConfirm: (prazo: string) => void;
+  onConfirm: (prazo: string, selectedPlazas: string[]) => void;
 }
 
 function ImportPreviewDialog({ open, onOpenChange, previewCodes, getTipoBadgeColor, onConfirm }: ImportPreviewDialogProps) {
   const [prazo, setPrazo] = useState('');
+  const [selectedPlazas, setSelectedPlazas] = useState<Set<string>>(new Set(ALL_PLAZAS));
+  const [plazaPopoverOpen, setPlazaPopoverOpen] = useState(false);
+
+  const allSelected = selectedPlazas.size === ALL_PLAZAS.length;
+  const noneSelected = selectedPlazas.size === 0;
+
+  const togglePlaza = (plaza: string) => {
+    setSelectedPlazas((prev) => {
+      const next = new Set(prev);
+      if (next.has(plaza)) {
+        next.delete(plaza);
+      } else {
+        next.add(plaza);
+      }
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedPlazas(new Set());
+    } else {
+      setSelectedPlazas(new Set(ALL_PLAZAS));
+    }
+  };
+
+  const getPlazaLabel = () => {
+    if (allSelected) return 'Todas as praças';
+    if (noneSelected) return 'Nenhuma praça selecionada';
+    if (selectedPlazas.size <= 3) return Array.from(selectedPlazas).join(', ');
+    return `${selectedPlazas.size} praças selecionadas`;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -560,7 +596,7 @@ function ImportPreviewDialog({ open, onOpenChange, previewCodes, getTipoBadgeCol
             Pré-visualização da Importação
           </DialogTitle>
           <DialogDescription>
-            {previewCodes.length} serviço(s) encontrados na planilha. Defina o prazo e confirme a importação.
+            {previewCodes.length} serviço(s) encontrados na planilha. Defina o prazo, selecione as praças e confirme a importação.
           </DialogDescription>
         </DialogHeader>
 
@@ -574,6 +610,60 @@ function ImportPreviewDialog({ open, onOpenChange, previewCodes, getTipoBadgeCol
               onChange={(e) => setPrazo(e.target.value)}
               placeholder="Ex: 16/03 à 31/03"
             />
+          </div>
+
+          {/* Praças multi-select */}
+          <div className="space-y-2">
+            <Label>Praças de Destino</Label>
+            <Popover open={plazaPopoverOpen} onOpenChange={setPlazaPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={plazaPopoverOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  <span className="truncate">{getPlazaLabel()}</span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <div className="max-h-60 overflow-y-auto p-2 space-y-1">
+                  {/* Select/Deselect all */}
+                  <div
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 cursor-pointer border-b pb-2 mb-1"
+                    onClick={toggleAll}
+                  >
+                    <Checkbox
+                      checked={allSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label="Selecionar todas as praças"
+                    />
+                    <span className="text-sm font-medium">
+                      {allSelected ? 'Desmarcar todas' : 'Selecionar todas'}
+                    </span>
+                  </div>
+                  {/* Individual plazas */}
+                  {ALL_PLAZAS.map((plaza) => (
+                    <div
+                      key={plaza}
+                      className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-gray-100 cursor-pointer"
+                      onClick={() => togglePlaza(plaza)}
+                    >
+                      <Checkbox
+                        checked={selectedPlazas.has(plaza)}
+                        onCheckedChange={() => togglePlaza(plaza)}
+                        aria-label={`Praça ${plaza}`}
+                      />
+                      <span className="text-sm">{plaza}</span>
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            <p className="text-xs text-gray-500">
+              {selectedPlazas.size} de {ALL_PLAZAS.length} praças selecionadas
+            </p>
           </div>
 
           {/* Preview table */}
@@ -642,7 +732,7 @@ function ImportPreviewDialog({ open, onOpenChange, previewCodes, getTipoBadgeCol
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={() => onConfirm(prazo)}>
+          <Button onClick={() => onConfirm(prazo, Array.from(selectedPlazas))} disabled={noneSelected}>
             <Upload className="w-4 h-4 mr-2" />
             Importar {previewCodes.length} Serviço(s)
           </Button>

@@ -40,7 +40,7 @@ export function Comparison() {
   if (!data || !analyzer || !plaza1 || !plaza2 || !comparison || !correlation) {
     return (
       <AppLayout activeNav="Análise" title="Comparação Detalhada" subtitle="">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+        <div className="flex items-center justify-center min-h-[300px]">
           <Card className="w-96">
             <CardHeader>
               <CardTitle>Dados não encontrados</CardTitle>

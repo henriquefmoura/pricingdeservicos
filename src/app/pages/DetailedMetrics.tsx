@@ -128,7 +128,7 @@ export function DetailedMetrics() {
   if (!data || !analyzer) {
     return (
       <AppLayout activeNav="Análise" title="Métricas Detalhadas" subtitle="Todas as métricas calculadas pela análise">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+        <div className="flex items-center justify-center min-h-[300px]">
           <Card className="w-96">
             <CardHeader>
               <CardTitle>Nenhum dado carregado</CardTitle>

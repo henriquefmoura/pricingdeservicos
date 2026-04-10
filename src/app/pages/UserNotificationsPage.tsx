@@ -4,10 +4,12 @@ import { Bell } from 'lucide-react';
 import { AppLayout } from '../components/AppLayout';
 import { UserNotificationsPanel } from '../components/shared/UserNotificationsPanel';
 import { useAuthStore } from '../store/authStore';
+import { useResponsive } from '../hooks/useResponsive';
 
 export default function UserNotificationsPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
+  const { gap } = useResponsive();
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -31,7 +33,7 @@ export default function UserNotificationsPage() {
 
   return (
     <AppLayout activeNav="Notificações" title="" subtitle="">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '900px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: `${gap(24)}px` }}>
         {/* Page header banner */}
         <div
           className="rounded-xl p-6 text-white shadow-lg"

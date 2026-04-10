@@ -636,7 +636,6 @@ function ImportPreviewDialog({ open, onOpenChange, previewCodes, getTipoBadgeCol
                   >
                     <Checkbox
                       checked={allSelected}
-                      onCheckedChange={toggleAll}
                       aria-label="Selecionar todas as praças"
                     />
                     <span className="text-sm font-medium">
@@ -652,7 +651,6 @@ function ImportPreviewDialog({ open, onOpenChange, previewCodes, getTipoBadgeCol
                     >
                       <Checkbox
                         checked={selectedPlazas.has(plaza)}
-                        onCheckedChange={() => togglePlaza(plaza)}
                         aria-label={`Praça ${plaza}`}
                       />
                       <span className="text-sm">{plaza}</span>

@@ -7,6 +7,7 @@ import { useSupportStore } from '../store/supportStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { AlertTriangle, X, Send, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import { useResponsive } from '../hooks/useResponsive';
 
 interface PendingTicket {
   subject: string;
@@ -19,6 +20,7 @@ export default function AdminSupportPage() {
   const { user, isAuthenticated } = useAuthStore();
   const { createThread, addMessage } = useSupportStore();
   const { addNotification } = useNotificationStore();
+  const { gap } = useResponsive();
   const [pendingTicket, setPendingTicket] = useState<PendingTicket | null>(null);
 
   useEffect(() => {
@@ -92,7 +94,7 @@ export default function AdminSupportPage() {
 
   return (
     <AppLayout activeNav="Suporte" title="" subtitle="">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '900px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: `${gap(24)}px` }}>
         {/* Page header banner */}
         <div
           className="rounded-xl p-6 text-white shadow-lg"

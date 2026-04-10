@@ -129,8 +129,8 @@ export function PricingCodesManager() {
           const codAtrelado = String(row['Cód Atrelado'] ?? row['Cod Atrelado'] ?? row['CodAtrelado'] ?? row['cod_atrelado'] ?? '');
           const codAvulso = String(row['Cód Avulso'] ?? row['Cod Avulso'] ?? row['CodAvulso'] ?? row['cod_avulso'] ?? '');
 
-          // Skip rows without description or without any code
-          if (!descricao.trim() || (!codAtrelado.trim() && !codAvulso.trim())) continue;
+          // Skip rows without description
+          if (!descricao.trim()) continue;
 
           parsed.push({
             tipo: normalizeTipo(tipo),
@@ -145,7 +145,7 @@ export function PricingCodesManager() {
         }
 
         if (parsed.length === 0) {
-          setImportError('Nenhum registro válido encontrado na planilha. Verifique se as colunas estão com os nomes corretos: Tipo, Descrição/Descricao, Unid, Cód Atrelado, Cód Avulso.');
+          setImportError('Nenhum registro válido encontrado na planilha. Verifique se as colunas estão com os nomes corretos: Tipo, Descrição/Descricao, Unid. Colunas opcionais: Cód Atrelado, Cód Avulso.');
           return;
         }
 
@@ -208,21 +208,24 @@ export function PricingCodesManager() {
     }
   };
 
-  // Helper to display code(s) - shows both together when both present
+  // Helper to display code(s) - priority: avulso > atrelado > service name only
   const getCodesDisplay = (code: PricingCode) => {
     const hasAtrelado = !!code.codigoAtrelado;
     const hasAvulso = !!code.codigoAvulso;
 
     if (hasAtrelado && hasAvulso) {
+      // When both exist, use only avulso
       return { atrelado: code.codigoAtrelado!, avulso: code.codigoAvulso!, label: 'Ambos' };
-    }
-    if (hasAtrelado) {
-      return { atrelado: code.codigoAtrelado!, avulso: null, label: 'Apenas Atrelado' };
     }
     if (hasAvulso) {
       return { atrelado: null, avulso: code.codigoAvulso!, label: 'Apenas Avulso' };
     }
-    return { atrelado: null, avulso: null, label: '-' };
+    if (hasAtrelado) {
+      // When no avulso, bring atrelado
+      return { atrelado: code.codigoAtrelado!, avulso: null, label: 'Apenas Atrelado' };
+    }
+    // When neither exists, just the service name
+    return { atrelado: null, avulso: null, label: 'Apenas Nome' };
   };
 
   return (
@@ -557,7 +560,7 @@ function ImportPreviewDialog({ open, onOpenChange, previewCodes, getTipoBadgeCol
             Pré-visualização da Importação
           </DialogTitle>
           <DialogDescription>
-            {previewCodes.length} código(s) encontrados na planilha. Defina o prazo e confirme a importação.
+            {previewCodes.length} serviço(s) encontrados na planilha. Defina o prazo e confirme a importação.
           </DialogDescription>
         </DialogHeader>
 
@@ -583,28 +586,53 @@ function ImportPreviewDialog({ open, onOpenChange, previewCodes, getTipoBadgeCol
                   <TableHead>Unid</TableHead>
                   <TableHead>Cód. Atrelado</TableHead>
                   <TableHead>Cód. Avulso</TableHead>
+                  <TableHead>Código Utilizado</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {previewCodes.map((code, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <Badge className={getTipoBadgeColor(code.tipo)}>
-                        {code.tipo}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm font-medium text-gray-900">
-                      {code.descricao}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-600">{code.unidade}</TableCell>
-                    <TableCell className="text-sm font-mono text-gray-600">
-                      {code.codigoAtrelado || '-'}
-                    </TableCell>
-                    <TableCell className="text-sm font-mono font-semibold text-gray-900">
-                      {code.codigoAvulso || '-'}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {previewCodes.map((code, index) => {
+                  const hasAvulso = !!code.codigoAvulso;
+                  const hasAtrelado = !!code.codigoAtrelado;
+                  // Priority: avulso > atrelado > service name only
+                  const codigoUtilizado = hasAvulso
+                    ? code.codigoAvulso!
+                    : hasAtrelado
+                      ? code.codigoAtrelado!
+                      : code.descricao;
+                  const codigoTipo = hasAvulso ? 'Avulso' : hasAtrelado ? 'Atrelado' : 'Apenas Nome';
+
+                  return (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Badge className={getTipoBadgeColor(code.tipo)}>
+                          {code.tipo}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm font-medium text-gray-900">
+                        {code.descricao}
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-600">{code.unidade}</TableCell>
+                      <TableCell className="text-sm font-mono text-gray-600">
+                        {code.codigoAtrelado || '-'}
+                      </TableCell>
+                      <TableCell className="text-sm font-mono font-semibold text-gray-900">
+                        {code.codigoAvulso || '-'}
+                      </TableCell>
+                      <TableCell className="text-sm font-mono">
+                        <span className={
+                          hasAvulso
+                            ? 'font-semibold text-green-700'
+                            : hasAtrelado
+                              ? 'font-medium text-blue-700'
+                              : 'italic text-gray-500'
+                        }>
+                          {codigoUtilizado}
+                        </span>
+                        <span className="ml-1 text-xs text-gray-400">({codigoTipo})</span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -616,7 +644,7 @@ function ImportPreviewDialog({ open, onOpenChange, previewCodes, getTipoBadgeCol
           </Button>
           <Button onClick={() => onConfirm(prazo)}>
             <Upload className="w-4 h-4 mr-2" />
-            Importar {previewCodes.length} Código(s)
+            Importar {previewCodes.length} Serviço(s)
           </Button>
         </DialogFooter>
       </DialogContent>

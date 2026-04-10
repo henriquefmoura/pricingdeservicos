@@ -84,20 +84,28 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
         return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'Serviço':
         return 'bg-green-100 text-green-800 border-green-300';
+      case 'Inst + Pague -':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'Emergencial':
+        return 'bg-red-100 text-red-800 border-red-300';
       case 'Complementar':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
+        return 'bg-gray-100 text-gray-800 border-gray-300';
       case 'Deslocamento':
-        return 'bg-purple-100 text-purple-800 border-purple-300';
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-300';
     }
   };
 
   const handleReportPricingError = (code: PricingCode) => {
     if (!user || !user.plaza) return;
     const price = code.prices?.[user.plaza];
-    const subject = `Erro no preenchimento — ${code.codigoAvulso} · ${code.descricao}`;
+    const codeLabel = code.codigoAvulso || code.codigoAtrelado || '-';
+    const subject = `Erro no preenchimento — ${codeLabel} · ${code.descricao}`;
     const messageBody = [
       `Solicito revisão do serviço precificado:`,
-      `• Código: ${code.codigoAvulso}`,
+      code.codigoAvulso ? `• Cód. Avulso: ${code.codigoAvulso}` : '',
+      code.codigoAtrelado ? `• Cód. Atrelado: ${code.codigoAtrelado}` : '',
       `• Serviço: ${code.descricao}`,
       `• Tipo: ${code.tipo}`,
       `• Unidade: ${code.unidade}`,
@@ -209,7 +217,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
           : ((venda - currentVenda) / currentVenda) * 100;
         
         addApproval({
-          codigo: code.codigoAvulso,
+          codigo: code.codigoAvulso || code.codigoAtrelado || '-',
           descricao: code.descricao,
           grupo: code.tipo,
           plaza: plaza,
@@ -277,7 +285,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
       : undefined;
 
     updateCalculatorSnapshot({
-      serviceCode: code.codigoAvulso,
+      serviceCode: code.codigoAvulso || code.codigoAtrelado || '-',
       serviceName: code.descricao,
       serviceGroup: code.tipo,
       plaza: user?.plaza,
@@ -440,20 +448,22 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                               {code.descricao}
                             </h4>
                             <div className="flex items-center gap-4 text-sm text-gray-600">
-                              <span>
-                                <span className="font-medium">Código:</span>{' '}
-                                {code.codigoAvulso}
-                              </span>
-                              <span>
-                                <span className="font-medium">Unidade:</span>{' '}
-                                {code.unidade}
-                              </span>
                               {code.codigoAtrelado && (
                                 <span>
                                   <span className="font-medium">Cód. Atrelado:</span>{' '}
                                   {code.codigoAtrelado}
                                 </span>
                               )}
+                              {code.codigoAvulso && (
+                                <span>
+                                  <span className="font-medium">Cód. Avulso:</span>{' '}
+                                  {code.codigoAvulso}
+                                </span>
+                              )}
+                              <span>
+                                <span className="font-medium">Unidade:</span>{' '}
+                                {code.unidade}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -527,12 +537,13 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
 
                         {/* Preço Sugerido baseado em Pesquisa de Mercado */}
                         {(() => {
-                          const research = getResearchByCode(code.codigoAvulso);
+                          const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
+                          const research = getResearchByCode(codeRef);
                           const prestadorPrices = code.prices
                             ? Object.values(code.prices).map((p) => p.venda)
                             : [];
                           const suggestedPrice = getSuggestedPrice(
-                            code.codigoAvulso,
+                            codeRef,
                             prestadorPrices
                           );
 
@@ -725,20 +736,22 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                               {code.descricao}
                             </h4>
                             <div className="flex items-center gap-4 text-sm text-gray-600">
-                              <span>
-                                <span className="font-medium">Código:</span>{' '}
-                                {code.codigoAvulso}
-                              </span>
-                              <span>
-                                <span className="font-medium">Unidade:</span>{' '}
-                                {code.unidade}
-                              </span>
                               {code.codigoAtrelado && (
                                 <span>
                                   <span className="font-medium">Cód. Atrelado:</span>{' '}
                                   {code.codigoAtrelado}
                                 </span>
                               )}
+                              {code.codigoAvulso && (
+                                <span>
+                                  <span className="font-medium">Cód. Avulso:</span>{' '}
+                                  {code.codigoAvulso}
+                                </span>
+                              )}
+                              <span>
+                                <span className="font-medium">Unidade:</span>{' '}
+                                {code.unidade}
+                              </span>
                             </div>
                           </div>
                           {price && (

@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type PricingCodeTipo = 'Visita Técnica' | 'Serviço' | 'Inst + Pague -' | 'Emergencial' | 'Complementar' | 'Deslocamento';
+
 export interface PricingCode {
   id: string;
-  tipo: 'Visita Técnica' | 'Serviço' | 'Complementar' | 'Deslocamento';
+  tipo: PricingCodeTipo;
   descricao: string;
   unidade: string;
   codigoAtrelado?: string;
-  codigoAvulso: string;
+  codigoAvulso?: string;
   prazo: string; // Prazo para preenchimento
   status: 'pendente' | 'em_andamento' | 'concluido';
   createdAt: Date;
@@ -122,90 +124,57 @@ export const usePricingCodesStore = create<PricingCodesState>()(
           const mockCodes: Omit<PricingCode, 'id' | 'createdAt' | 'status'>[] = [
             {
               tipo: 'Visita Técnica',
-              descricao: 'Visita Técnica Renovação de Banheiro',
+              descricao: 'Visita Téc Chuveiro/Torneira Elétrica',
               unidade: 'un',
-              codigoAvulso: '50041154',
+              codigoAvulso: '50000515',
               prazo: '16/03 à 31/03',
               createdBy: 'Master Admin',
               prices: {},
             },
             {
               tipo: 'Serviço',
-              descricao: 'Renovação dos itens do banheiro (un)',
+              descricao: 'Subst/Inst de Chuveiro Elétrico (un)',
               unidade: 'un',
-              codigoAvulso: '50041155',
+              codigoAtrelado: '49050960',
+              codigoAvulso: '50019855',
               prazo: '16/03 à 31/03',
               createdBy: 'Master Admin',
               prices: {},
             },
             {
-              tipo: 'Serviço',
-              descricao: 'Aplicação Pintura Epóxi (c/ preparação) (m2)',
-              unidade: 'm2',
-              codigoAvulso: '50041157',
-              prazo: '16/03 à 31/03',
-              createdBy: 'Master Admin',
-              prices: {},
-            },
-            {
-              tipo: 'Serviço',
-              descricao: 'Aplicação Pintura Epóxi (s/ preparação) (m2)',
-              unidade: 'm2',
-              codigoAvulso: '50041158',
-              prazo: '16/03 à 31/03',
-              createdBy: 'Master Admin',
-              prices: {},
-            },
-            {
-              tipo: 'Complementar',
-              descricao: 'Adicional Inst. Box Padrão (un)',
+              tipo: 'Inst + Pague -',
+              descricao: '(+2un) Subst/Inst Chuveiro Eletrico',
               unidade: 'un',
-              codigoAvulso: '50041156',
+              codigoAtrelado: '50018045',
               prazo: '16/03 à 31/03',
               createdBy: 'Master Admin',
               prices: {},
             },
             {
-              tipo: 'Complementar',
-              descricao: 'Adicional Inst. Placas Flexíveis (m2)',
-              unidade: 'm2',
-              codigoAvulso: '50041369',
-              prazo: '16/03 à 31/03',
-              createdBy: 'Master Admin',
-              prices: {},
-            },
-            {
-              tipo: 'Complementar',
-              descricao: 'Adicional Aplic. Cimento Queimado (m2)',
-              unidade: 'm2',
-              codigoAvulso: '50041370',
-              prazo: '16/03 à 31/03',
-              createdBy: 'Master Admin',
-              prices: {},
-            },
-            {
-              tipo: 'Complementar',
-              descricao: 'Adicional Impermeabilização (m2)',
-              unidade: 'm2',
-              codigoAvulso: '50041371',
-              prazo: '16/03 à 31/03',
-              createdBy: 'Master Admin',
-              prices: {},
-            },
-            {
-              tipo: 'Complementar',
-              descricao: 'Adicional de Obra (un)',
+              tipo: 'Emergencial',
+              descricao: '(Express) Subst/Inst Chuveiro Elét',
               unidade: 'un',
-              codigoAvulso: '50041475',
+              codigoAtrelado: '50019312',
+              codigoAvulso: '50022134',
+              prazo: '16/03 à 31/03',
+              createdBy: 'Master Admin',
+              prices: {},
+            },
+            {
+              tipo: 'Complementar',
+              descricao: 'Inst. Pressurizador de Chuveiro (un)',
+              unidade: 'un',
+              codigoAtrelado: '50000510',
               prazo: '16/03 à 31/03',
               createdBy: 'Master Admin',
               prices: {},
             },
             {
               tipo: 'Deslocamento',
-              descricao: 'Deslocamento Renovação de Banheiro',
-              unidade: 'km',
-              codigoAvulso: '50041159',
+              descricao: 'Desloc Prestador Chuveiro/Torneira Elét',
+              unidade: 'un',
+              codigoAtrelado: '50000825',
+              codigoAvulso: '50026524',
               prazo: '16/03 à 31/03',
               createdBy: 'Master Admin',
               prices: {},

@@ -50,7 +50,7 @@ export function PricingMentorWidget() {
   const [isHovered, setIsHovered] = useState(false);
   const [prefs, setPrefs] = useState<AvatarPrefs>(loadPrefs);
 
-  const avatarSize = prefs.isMinimized ? 40 : 80;
+  const avatarSize = prefs.isMinimized ? 32 : 56;
 
   // Derive avatar 3D animation state from AI / UI state
   const avatar3DState: Avatar3DState = isTyping

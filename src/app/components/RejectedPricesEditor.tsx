@@ -80,7 +80,7 @@ export function RejectedPricesEditor() {
     }
 
     // Encontrar o código correspondente
-    const code = codes.find((c) => c.codigoAvulso === approval.codigo);
+    const code = codes.find((c) => c.codigoAvulso === approval.codigo || c.codigoAtrelado === approval.codigo);
     if (!code) {
       toast.error('Código não encontrado');
       return;

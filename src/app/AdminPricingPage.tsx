@@ -66,7 +66,8 @@ export default function AdminPricingPage() {
     return relevantCodes.filter(
       (code) =>
         code.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        code.codigoAvulso.includes(searchTerm)
+        (code.codigoAvulso || '').includes(searchTerm) ||
+        (code.codigoAtrelado || '').includes(searchTerm)
     );
   }, [relevantCodes, searchTerm]);
 
@@ -79,7 +80,8 @@ export default function AdminPricingPage() {
     return pricedCodes.filter(
       (code) =>
         code.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        code.codigoAvulso.includes(searchTerm)
+        (code.codigoAvulso || '').includes(searchTerm) ||
+        (code.codigoAtrelado || '').includes(searchTerm)
     );
   }, [pricedCodes, searchTerm]);
 
@@ -92,10 +94,12 @@ export default function AdminPricingPage() {
     }
     const price = code.prices?.[user.plaza];
     const margem = price ? ((price.venda - price.repasse) / price.venda) * 100 : 0;
-    const subject = `Erro no preenchimento — ${code.codigoAvulso} · ${code.descricao}`;
+    const codeLabel = code.codigoAvulso || code.codigoAtrelado || '-';
+    const subject = `Erro no preenchimento — ${codeLabel} · ${code.descricao}`;
     const messageBody = [
       `Solicito revisão do serviço precificado:`,
-      `• Código: ${code.codigoAvulso}`,
+      code.codigoAvulso ? `• Cód. Avulso: ${code.codigoAvulso}` : '',
+      code.codigoAtrelado ? `• Cód. Atrelado: ${code.codigoAtrelado}` : '',
       `• Serviço: ${code.descricao}`,
       `• Tipo: ${code.tipo}`,
       `• Unidade: ${code.unidade}`,
@@ -122,8 +126,11 @@ export default function AdminPricingPage() {
     switch (tipo) {
       case 'Serviço': return { bg: '#D1FAE5', color: '#065F46' };
       case 'Visita Técnica': return { bg: '#FEF3C7', color: '#92400E' };
-      case 'Complementar': return { bg: '#DBEAFE', color: '#1E40AF' };
-      default: return { bg: '#F3E8FF', color: '#6B21A8' };
+      case 'Inst + Pague -': return { bg: '#FEF3C7', color: '#92400E' };
+      case 'Emergencial': return { bg: '#FEE2E2', color: '#991B1B' };
+      case 'Complementar': return { bg: '#F3F4F6', color: '#374151' };
+      case 'Deslocamento': return { bg: '#F3F4F6', color: '#374151' };
+      default: return { bg: '#F3F4F6', color: '#374151' };
     }
   };
 
@@ -194,7 +201,7 @@ export default function AdminPricingPage() {
         const variation = currentVenda === 0 ? 0 : ((venda - currentVenda) / currentVenda) * 100;
 
         addApproval({
-          codigo: code.codigoAvulso,
+          codigo: code.codigoAvulso || code.codigoAtrelado || '-',
           descricao: code.descricao,
           grupo: code.tipo,
           plaza: plaza,
@@ -330,9 +337,10 @@ export default function AdminPricingPage() {
                 ) : (
                   filteredCodes.map((code) => {
                 const margem = calculateMargem(code.id);
-                const research = getResearchByCode(code.codigoAvulso);
+                const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
+                const research = getResearchByCode(codeRef);
                 const prestadorPrices = code.prices ? Object.values(code.prices).map((p) => p.venda) : [];
-                const suggestedPrice = getSuggestedPrice(code.codigoAvulso, prestadorPrices);
+                const suggestedPrice = getSuggestedPrice(codeRef, prestadorPrices);
                 const tipoStyles = getServiceTypeStyles(code.tipo);
 
                 return (
@@ -356,9 +364,16 @@ export default function AdminPricingPage() {
                             <span style={{ padding: '3px 8px', borderRadius: '5px', backgroundColor: tipoStyles.bg, fontSize: '11px', fontWeight: 600, color: tipoStyles.color }}>
                               {code.tipo}
                             </span>
-                            <span style={{ fontFamily: 'monospace', fontSize: '11px', padding: '3px 7px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563' }}>
-                              {code.codigoAvulso}
-                            </span>
+                            {code.codigoAtrelado && (
+                              <span style={{ fontFamily: 'monospace', fontSize: '11px', padding: '3px 7px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563' }}>
+                                Atr: {code.codigoAtrelado}
+                              </span>
+                            )}
+                            {code.codigoAvulso && (
+                              <span style={{ fontFamily: 'monospace', fontSize: '11px', padding: '3px 7px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563' }}>
+                                Avl: {code.codigoAvulso}
+                              </span>
+                            )}
                             <span style={{ fontSize: '11px', padding: '3px 7px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563', fontWeight: 600 }}>
                               {code.unidade}
                             </span>
@@ -544,9 +559,16 @@ export default function AdminPricingPage() {
                                 <span style={{ padding: '3px 8px', borderRadius: '5px', backgroundColor: tipoStyles.bg, fontSize: '11px', fontWeight: 600, color: tipoStyles.color }}>
                                   {code.tipo}
                                 </span>
-                                <span style={{ fontFamily: 'monospace', fontSize: '11px', padding: '3px 7px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563' }}>
-                                  {code.codigoAvulso}
-                                </span>
+                                {code.codigoAtrelado && (
+                                  <span style={{ fontFamily: 'monospace', fontSize: '11px', padding: '3px 7px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563' }}>
+                                    Atr: {code.codigoAtrelado}
+                                  </span>
+                                )}
+                                {code.codigoAvulso && (
+                                  <span style={{ fontFamily: 'monospace', fontSize: '11px', padding: '3px 7px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563' }}>
+                                    Avl: {code.codigoAvulso}
+                                  </span>
+                                )}
                                 <span style={{ fontSize: '11px', padding: '3px 7px', backgroundColor: '#F3F4F6', borderRadius: '4px', color: '#4B5563', fontWeight: 600 }}>
                                   {code.unidade}
                                 </span>

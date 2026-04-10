@@ -150,8 +150,9 @@ export function MarketResearchForm() {
     researches.forEach(r => serviceMap.set(r.codigoAvulso, { code: r.codigoAvulso, name: r.descricao }));
     // Also add codes from store that may not have researches yet
     codes.forEach(c => {
-      if (!serviceMap.has(c.codigoAvulso)) {
-        serviceMap.set(c.codigoAvulso, { code: c.codigoAvulso, name: c.descricao });
+      const codeKey = c.codigoAvulso || c.codigoAtrelado || '';
+      if (codeKey && !serviceMap.has(codeKey)) {
+        serviceMap.set(codeKey, { code: codeKey, name: c.descricao });
       }
     });
     const allServices = Array.from(serviceMap.values());
@@ -221,7 +222,7 @@ export function MarketResearchForm() {
     setCodigo(value);
     
     if (value.trim()) {
-      const foundCode = codes.find((c) => c.codigoAvulso === value.trim());
+      const foundCode = codes.find((c) => c.codigoAvulso === value.trim() || c.codigoAtrelado === value.trim());
       if (foundCode) {
         setDescricao(foundCode.descricao);
       } else {

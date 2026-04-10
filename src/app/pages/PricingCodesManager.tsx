@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Plus, Trash2, Upload, FileSpreadsheet, Calendar, AlertCircle } from 'lucide-react';
+import { useState, useRef } from 'react';
+import * as XLSX from 'xlsx';
+import { Plus, Trash2, Upload, FileSpreadsheet, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -29,14 +30,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { usePricingCodesStore, PricingCode } from '../store/pricingCodesStore';
+import { usePricingCodesStore, PricingCode, PricingCodeTipo } from '../store/pricingCodesStore';
 import { useAuthStore } from '../store/authStore';
+import { toast } from 'sonner';
 
 export function PricingCodesManager() {
   const { user } = useAuthStore();
-  const { codes, addCode, removeCode, getCodesByStatus } = usePricingCodesStore();
+  const { codes, addCode, addCodes, removeCode, getCodesByStatus, clearCodes } = usePricingCodesStore();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importPreview, setImportPreview] = useState<Omit<PricingCode, 'id' | 'createdAt' | 'status'>[]>([]);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [newCode, setNewCode] = useState<Partial<PricingCode>>({
     tipo: 'Serviço',
     unidade: 'un',
@@ -51,13 +57,13 @@ export function PricingCodesManager() {
   const completedCodes = getCodesByStatus('concluido');
 
   const handleAddCode = () => {
-    if (newCode.descricao && newCode.codigoAvulso && newCode.prazo && user) {
+    if (newCode.descricao && (newCode.codigoAvulso || newCode.codigoAtrelado) && newCode.prazo && user) {
       addCode({
-        tipo: newCode.tipo as any,
+        tipo: newCode.tipo as PricingCodeTipo,
         descricao: newCode.descricao,
         unidade: newCode.unidade || 'un',
-        codigoAvulso: newCode.codigoAvulso,
-        codigoAtrelado: newCode.codigoAtrelado,
+        codigoAvulso: newCode.codigoAvulso || undefined,
+        codigoAtrelado: newCode.codigoAtrelado || undefined,
         prazo: newCode.prazo,
         createdBy: user.name,
         prices: {},
@@ -76,9 +82,96 @@ export function PricingCodesManager() {
     }
   };
 
+  // Normalizar tipo da planilha para o tipo aceito pelo sistema
+  const normalizeTipo = (raw: string): PricingCodeTipo => {
+    const cleaned = (raw || '').trim().toLowerCase();
+    if (cleaned.includes('visita')) return 'Visita Técnica';
+    if (cleaned.includes('inst') && cleaned.includes('pague')) return 'Inst + Pague -';
+    if (cleaned.includes('emergencial') || cleaned.includes('express')) return 'Emergencial';
+    if (cleaned.includes('complementar')) return 'Complementar';
+    if (cleaned.includes('deslocamento') || cleaned.includes('desloc')) return 'Deslocamento';
+    if (cleaned.includes('servi')) return 'Serviço';
+    return 'Serviço'; // default
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportError(null);
+    setImportPreview([]);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: '' });
+
+        if (jsonData.length === 0) {
+          setImportError('O arquivo Excel está vazio.');
+          return;
+        }
+
+        // Map rows to PricingCode format
+        const parsed: Omit<PricingCode, 'id' | 'createdAt' | 'status'>[] = [];
+
+        for (const row of jsonData) {
+          // Try to find columns by common names (flexible matching)
+          const tipo = String(row['Tipo'] ?? row['tipo'] ?? '');
+          const descricao = String(row['Descrição'] ?? row['Descricao'] ?? row['descricao'] ?? row['Descriçao'] ?? '');
+          const unidade = String(row['Unid'] ?? row['Unidade'] ?? row['unid'] ?? row['unidade'] ?? 'un');
+          const codAtrelado = String(row['Cód Atrelado'] ?? row['Cod Atrelado'] ?? row['CodAtrelado'] ?? row['cod_atrelado'] ?? '');
+          const codAvulso = String(row['Cód Avulso'] ?? row['Cod Avulso'] ?? row['CodAvulso'] ?? row['cod_avulso'] ?? '');
+
+          if (!descricao && !codAtrelado && !codAvulso) continue; // skip empty rows
+
+          parsed.push({
+            tipo: normalizeTipo(tipo),
+            descricao: descricao.trim(),
+            unidade: unidade.trim() || 'un',
+            codigoAtrelado: codAtrelado.trim() || undefined,
+            codigoAvulso: codAvulso.trim() || undefined,
+            prazo: '',
+            createdBy: user?.name || 'Master Admin',
+            prices: {},
+          });
+        }
+
+        if (parsed.length === 0) {
+          setImportError('Nenhum registro válido encontrado na planilha. Verifique se as colunas estão com os nomes corretos: Tipo, Descrição, Unid, Cód Atrelado, Cód Avulso.');
+          return;
+        }
+
+        setImportPreview(parsed);
+        setIsImportDialogOpen(true);
+      } catch (err) {
+        setImportError('Erro ao processar o arquivo. Verifique se é um arquivo Excel válido (.xlsx ou .xls).');
+      }
+    };
+
+    reader.readAsBinaryString(file);
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleConfirmImport = (prazo: string) => {
+    const codesWithPrazo = importPreview.map((c) => ({
+      ...c,
+      prazo: prazo || '',
+    }));
+    addCodes(codesWithPrazo);
+    setImportPreview([]);
+    setIsImportDialogOpen(false);
+    toast.success(`${codesWithPrazo.length} código(s) importados com sucesso!`);
+  };
+
   const handleImportExcel = () => {
-    // Placeholder para importação futura
-    alert('Funcionalidade de importação de Excel será implementada em breve!');
+    fileInputRef.current?.click();
   };
 
   const getStatusBadge = (status: PricingCode['status']) => {
@@ -98,11 +191,34 @@ export function PricingCodesManager() {
         return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'Serviço':
         return 'bg-green-100 text-green-800 border-green-300';
+      case 'Inst + Pague -':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'Emergencial':
+        return 'bg-red-100 text-red-800 border-red-300';
       case 'Complementar':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
+        return 'bg-gray-100 text-gray-800 border-gray-300';
       case 'Deslocamento':
-        return 'bg-purple-100 text-purple-800 border-purple-300';
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-300';
     }
+  };
+
+  // Helper to display code(s) - shows both together when both present
+  const getCodesDisplay = (code: PricingCode) => {
+    const hasAtrelado = !!code.codigoAtrelado;
+    const hasAvulso = !!code.codigoAvulso;
+
+    if (hasAtrelado && hasAvulso) {
+      return { atrelado: code.codigoAtrelado!, avulso: code.codigoAvulso!, label: 'Ambos' };
+    }
+    if (hasAtrelado) {
+      return { atrelado: code.codigoAtrelado!, avulso: null, label: 'Apenas Atrelado' };
+    }
+    if (hasAvulso) {
+      return { atrelado: null, avulso: code.codigoAvulso!, label: 'Apenas Avulso' };
+    }
+    return { atrelado: null, avulso: null, label: '-' };
   };
 
   return (
@@ -157,6 +273,14 @@ export function PricingCodesManager() {
               </CardDescription>
             </div>
             <div className="flex gap-2">
+              {/* Hidden file input for Excel import */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
               <Button variant="outline" onClick={handleImportExcel}>
                 <Upload className="w-4 h-4 mr-2" />
                 Importar Excel
@@ -189,6 +313,8 @@ export function PricingCodesManager() {
                           <SelectContent>
                             <SelectItem value="Visita Técnica">Visita Técnica</SelectItem>
                             <SelectItem value="Serviço">Serviço</SelectItem>
+                            <SelectItem value="Inst + Pague -">Inst + Pague -</SelectItem>
+                            <SelectItem value="Emergencial">Emergencial</SelectItem>
                             <SelectItem value="Complementar">Complementar</SelectItem>
                             <SelectItem value="Deslocamento">Deslocamento</SelectItem>
                           </SelectContent>
@@ -215,7 +341,7 @@ export function PricingCodesManager() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="codigoAvulso">Código Avulso *</Label>
+                        <Label htmlFor="codigoAvulso">Código Avulso</Label>
                         <Input
                           id="codigoAvulso"
                           value={newCode.codigoAvulso}
@@ -229,7 +355,7 @@ export function PricingCodesManager() {
                           id="codigoAtrelado"
                           value={newCode.codigoAtrelado}
                           onChange={(e) => setNewCode({ ...newCode, codigoAtrelado: e.target.value })}
-                          placeholder="Opcional"
+                          placeholder="Ex: 49050960"
                         />
                       </div>
                     </div>
@@ -307,7 +433,7 @@ export function PricingCodesManager() {
                           {code.codigoAtrelado || '-'}
                         </TableCell>
                         <TableCell className="text-sm font-mono font-semibold text-gray-900">
-                          {code.codigoAvulso}
+                          {code.codigoAvulso || '-'}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1 text-sm text-gray-600">
@@ -378,6 +504,118 @@ export function PricingCodesManager() {
           </CardContent>
         </Card>
       )}
+
+      {/* Import error alert */}
+      {importError && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-red-900 mb-1">Erro na importação</h4>
+                <p className="text-sm text-red-800">{importError}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Import preview dialog */}
+      <ImportPreviewDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        previewCodes={importPreview}
+        getTipoBadgeColor={getTipoBadgeColor}
+        onConfirm={handleConfirmImport}
+      />
     </div>
+  );
+}
+
+// ----- Import Preview Dialog -----
+interface ImportPreviewDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  previewCodes: Omit<PricingCode, 'id' | 'createdAt' | 'status'>[];
+  getTipoBadgeColor: (tipo: PricingCode['tipo']) => string;
+  onConfirm: (prazo: string) => void;
+}
+
+function ImportPreviewDialog({ open, onOpenChange, previewCodes, getTipoBadgeColor, onConfirm }: ImportPreviewDialogProps) {
+  const [prazo, setPrazo] = useState('');
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-green-600" />
+            Pré-visualização da Importação
+          </DialogTitle>
+          <DialogDescription>
+            {previewCodes.length} código(s) encontrados na planilha. Defina o prazo e confirme a importação.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Prazo input */}
+          <div className="space-y-2">
+            <Label htmlFor="import-prazo">Prazo para Preenchimento</Label>
+            <Input
+              id="import-prazo"
+              value={prazo}
+              onChange={(e) => setPrazo(e.target.value)}
+              placeholder="Ex: 16/03 à 31/03"
+            />
+          </div>
+
+          {/* Preview table */}
+          <div className="overflow-x-auto border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Unid</TableHead>
+                  <TableHead>Cód. Atrelado</TableHead>
+                  <TableHead>Cód. Avulso</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {previewCodes.map((code, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <Badge className={getTipoBadgeColor(code.tipo)}>
+                        {code.tipo}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm font-medium text-gray-900">
+                      {code.descricao}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">{code.unidade}</TableCell>
+                    <TableCell className="text-sm font-mono text-gray-600">
+                      {code.codigoAtrelado || '-'}
+                    </TableCell>
+                    <TableCell className="text-sm font-mono font-semibold text-gray-900">
+                      {code.codigoAvulso || '-'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={() => onConfirm(prazo)}>
+            <Upload className="w-4 h-4 mr-2" />
+            Importar {previewCodes.length} Código(s)
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

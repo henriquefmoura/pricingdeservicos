@@ -1,6 +1,7 @@
 import React from 'react';
+import type { PricingCodeTipo } from '../store/pricingCodesStore';
 
-export type ServiceType = 'Visita Técnica' | 'Serviço' | 'Complementar' | 'Deslocamento';
+export type ServiceType = PricingCodeTipo;
 
 interface ServiceTypeBadgeProps {
   type: ServiceType;
@@ -16,13 +17,21 @@ const typeStyles: Record<ServiceType, { bg: string; text: string }> = {
     bg: '#D1FAE5',
     text: '#065F46',
   },
+  'Inst + Pague -': {
+    bg: '#FEF3C7',
+    text: '#92400E',
+  },
+  'Emergencial': {
+    bg: '#FEE2E2',
+    text: '#991B1B',
+  },
   'Complementar': {
-    bg: '#DBEAFE',
-    text: '#1E40AF',
+    bg: '#F3F4F6',
+    text: '#374151',
   },
   'Deslocamento': {
-    bg: '#EDE9FE',
-    text: '#5B21B6',
+    bg: '#F3F4F6',
+    text: '#374151',
   },
 };
 

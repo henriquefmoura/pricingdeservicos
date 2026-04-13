@@ -185,8 +185,23 @@ export const useGovernanceStore = create<GovernanceState>()(
         // Finalize computed fields
         for (const [plaza, m] of plazaMap) {
           const decided = m.totalApproved + m.totalRejected;
+          // Pending: explicit pending approvals plus unreviewed pricings
+          const unreviewedPricings = Math.max(0, m.totalPricingsReceived - decided - m.totalPending);
+          m.totalPending += unreviewedPricings;
           m.approvalRate = decided > 0 ? Math.round((m.totalApproved / decided) * 100) : 0;
           m.activeUsers = plazaUsers.get(plaza)!.size;
+
+          // Compute avg decision time from approval store timestamps
+          const plazaApprovals = approvals.filter(
+            (a) => a.plaza === plaza && (a.status === 'approved' || a.status === 'rejected') && a.reviewedAt && a.requestedAt
+          );
+          if (plazaApprovals.length > 0) {
+            const totalMinutes = plazaApprovals.reduce((sum, a) => {
+              const diff = new Date(a.reviewedAt!).getTime() - new Date(a.requestedAt).getTime();
+              return sum + Math.max(0, diff / (1000 * 60));
+            }, 0);
+            m.avgDecisionTime = Math.round(totalMinutes / plazaApprovals.length);
+          }
         }
 
         return Array.from(plazaMap.values());

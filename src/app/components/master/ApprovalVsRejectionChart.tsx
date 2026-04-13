@@ -59,12 +59,33 @@ export function ApprovalVsRejectionChart() {
       pending: p.totalPending,
     }));
 
+  const hasData = totals.approved + totals.rejected + totals.pending > 0;
+
   return (
     <div style={cardStyle}>
       <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#001022', margin: '0 0 16px 0' }}>
         Aprovações vs Rejeições
       </h3>
 
+      {!hasData ? (
+        <div
+          style={{
+            padding: '40px',
+            textAlign: 'center',
+            backgroundColor: '#F9FAFB',
+            borderRadius: '8px',
+            border: '1px dashed #D1D5DB',
+          }}
+        >
+          <p style={{ fontSize: '14px', fontWeight: 600, color: '#6B7280', margin: '0 0 4px 0' }}>
+            Nenhuma decisão registrada
+          </p>
+          <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0 }}>
+            Os dados aparecerão aqui conforme aprovações e rejeições forem registradas
+          </p>
+        </div>
+      ) : (
+      <>
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '24px' }}>
         {/* Donut chart */}
         <div style={{ width: 180, height: 180, position: 'relative', flexShrink: 0 }}>
@@ -177,6 +198,8 @@ export function ApprovalVsRejectionChart() {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      </>
+      )}
     </div>
   );
 }

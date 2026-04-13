@@ -62,81 +62,7 @@ interface ApprovalState {
   applyRejectedPrice: (id: string, newRepasse: number, newVenda: number, adjustedBy?: string) => void;
 }
 
-// Dados mock para demonstração
-const MOCK_APPROVALS: PriceApproval[] = [
-  {
-    id: 'mock-1',
-    codigo: 'VIS-001',
-    descricao: 'Vistoria de Imóveis', // Descrição do serviço
-    grupo: 'Vistoria',
-    plaza: 'SP',
-    currentRepasse: 150.00,
-    currentVenda: 250.00,
-    currentMargem: 40.00,
-    proposedRepasse: 160.00,
-    proposedVenda: 280.00,
-    proposedMargem: 42.86,
-    variation: 12.00,
-    isNewService: false,
-    status: 'pending',
-    requestedBy: 'Sistema de Simulação',
-    requestedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 horas atrás
-  },
-  {
-    id: 'mock-2',
-    codigo: 'AVA-042',
-    descricao: 'Avaliação de Imóveis', // Descrição do serviço
-    grupo: 'Avaliação',
-    plaza: 'RJ',
-    currentRepasse: 320.00,
-    currentVenda: 500.00,
-    currentMargem: 36.00,
-    proposedRepasse: 340.00,
-    proposedVenda: 550.00,
-    proposedMargem: 38.18,
-    variation: 10.00,
-    isNewService: false,
-    status: 'pending',
-    requestedBy: 'Admin',
-    requestedAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 horas atrás
-  },
-  {
-    id: 'mock-3',
-    codigo: 'LAU-015',
-    descricao: 'Laudo de Imóveis', // Descrição do serviço
-    grupo: 'Laudo',
-    plaza: 'SP',
-    currentRepasse: 280.00,
-    currentVenda: 450.00,
-    currentMargem: 37.78,
-    proposedRepasse: 290.00,
-    proposedVenda: 480.00,
-    proposedMargem: 39.58,
-    variation: 6.67,
-    isNewService: false,
-    status: 'pending',
-    requestedBy: 'Sistema de Simulação',
-    requestedAt: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hora atrás
-  },
-  {
-    id: 'mock-4',
-    codigo: 'VIS-023',
-    descricao: 'Vistoria de Imóveis', // Descrição do serviço
-    grupo: 'Vistoria',
-    plaza: 'BH',
-    currentRepasse: 130.00,
-    currentVenda: 220.00,
-    currentMargem: 40.91,
-    proposedRepasse: 135.00,
-    proposedVenda: 230.00,
-    proposedMargem: 41.30,
-    variation: 4.55,
-    isNewService: false,
-    status: 'pending',
-    requestedBy: 'Admin',
-    requestedAt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutos atrás
-  },
-];
+
 
 export const useApprovalStore = create<ApprovalState>()(
   persist(
@@ -145,9 +71,11 @@ export const useApprovalStore = create<ApprovalState>()(
       adjustmentLog: [],
 
       initializeMockData: () => {
+        // Clear any legacy mock approvals; real approvals are created via addApproval()
         const current = get().approvals;
-        if (current.length === 0) {
-          set({ approvals: MOCK_APPROVALS });
+        const hasMockApprovals = current.some((a) => a.id.startsWith('mock-'));
+        if (hasMockApprovals) {
+          set({ approvals: current.filter((a) => !a.id.startsWith('mock-')) });
         }
       },
 

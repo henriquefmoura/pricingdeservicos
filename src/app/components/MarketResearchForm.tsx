@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { Search, Plus, Trash2, TrendingUp, History, Clock, Download, ChevronDown, ChevronUp, ArrowUpDown, User, BarChart2, Filter, Target, Users, DollarSign, Layers } from 'lucide-react';
+import { Search, Plus, Trash2, TrendingUp, History, Clock, Download, ChevronDown, ChevronUp, ArrowUpDown, User, BarChart2, Filter, Target, Users, DollarSign, Layers, FolderOpen } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -32,7 +32,8 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { useMarketResearchStore, PricingStrategy, PriceHistoryEntry } from '../store/marketResearchStore';
-import { usePricingCodesStore } from '../store/pricingCodesStore';
+import { usePricingCodesStore, UNGROUPED_KEY } from '../store/pricingCodesStore';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'sonner';
 
@@ -221,11 +222,11 @@ export function MarketResearchForm() {
 
   // Build the full list of services from pricingCodesStore
   const allServices = useMemo(() => {
-    const serviceMap = new Map<string, { code: string; name: string; unidade: string; tipo: string }>();
+    const serviceMap = new Map<string, { code: string; name: string; unidade: string; tipo: string; grupoServico: string }>();
     codes.forEach(c => {
       const codeKey = c.codigoAvulso || c.codigoAtrelado || '';
       if (codeKey) {
-        serviceMap.set(codeKey, { code: codeKey, name: c.descricao, unidade: c.unidade, tipo: c.tipo });
+        serviceMap.set(codeKey, { code: codeKey, name: c.descricao, unidade: c.unidade, tipo: c.tipo, grupoServico: c.grupoServico || UNGROUPED_KEY });
       }
     });
     const list = Array.from(serviceMap.values());
@@ -241,6 +242,26 @@ export function MarketResearchForm() {
       s.name.toLowerCase().includes(term) || s.code.toLowerCase().includes(term)
     );
   }, [allServices, serviceFilter]);
+
+  // Group filtered services by grupoServico
+  const groupedServices = useMemo(() => {
+    const grouped = filteredServices.reduce<Record<string, typeof filteredServices>>((acc, service) => {
+      const group = service.grupoServico || UNGROUPED_KEY;
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(service);
+      return acc;
+    }, {});
+
+    const groupNames = Object.keys(grouped).sort((a, b) => {
+      if (a === UNGROUPED_KEY) return 1;
+      if (b === UNGROUPED_KEY) return -1;
+      return a.localeCompare(b, 'pt-BR');
+    });
+
+    const hasGroups = groupNames.some((g) => g !== UNGROUPED_KEY);
+
+    return { grouped, groupNames, hasGroups };
+  }, [filteredServices]);
 
   const toggleServiceExpanded = (code: string) => {
     setExpandedServices((prev) => ({ ...prev, [code]: !prev[code] }));
@@ -541,6 +562,312 @@ export function MarketResearchForm() {
                   ? 'Nenhum serviço disponível para precificação. Adicione códigos na página de Precificação primeiro.'
                   : 'Nenhum serviço encontrado com esse filtro.'}
               </p>
+            </div>
+          ) : groupedServices.hasGroups ? (
+            <div className="space-y-4">
+              {groupedServices.groupNames.map((groupName) => {
+                const groupServices = groupedServices.grouped[groupName];
+                const isUngrouped = groupName === UNGROUPED_KEY;
+                const displayName = isUngrouped ? 'Sem Grupo' : groupName;
+                const groupCompetitorCount = groupServices.reduce((total, s) => {
+                  const r = researches.find((re) => re.codigoAvulso === s.code);
+                  return total + (r?.precosConcorrentes.length || 0);
+                }, 0);
+
+                return (
+                  <Collapsible key={groupName}>
+                    <div className="border-2 border-[#78BE20]/30 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <CollapsibleTrigger asChild>
+                        <button
+                          className="flex items-center justify-between w-full px-8 py-6 bg-[#78BE20]/10 hover:bg-[#78BE20]/20 transition-colors text-left group border-l-4 border-l-[#78BE20]"
+                          aria-label={`Grupo ${displayName}, ${groupServices.length} serviço(s)`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <FolderOpen className="w-8 h-8 text-[#78BE20]" />
+                            <span className="font-bold text-2xl text-gray-900">{displayName}</span>
+                            <Badge variant="outline" className="text-base px-4 py-1.5 font-semibold border-[#78BE20]/40 text-[#78BE20] bg-white">
+                              {groupServices.length} serviço(s)
+                            </Badge>
+                            {groupCompetitorCount > 0 && (
+                              <Badge variant="outline" className="text-sm px-3 py-1 font-medium border-[#001022]/20 text-[#001022]/70 bg-white">
+                                {groupCompetitorCount} concorrente(s)
+                              </Badge>
+                            )}
+                          </div>
+                          <ChevronDown className="w-7 h-7 text-[#78BE20] transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="space-y-4 p-4">
+                          {groupServices.map((service) => {
+                const research = researches.find((r) => r.codigoAvulso === service.code);
+                const isExpanded = expandedServices[service.code];
+                const formData = getServiceFormData(service.code);
+                const competitorCount = research?.precosConcorrentes.length || 0;
+
+                return (
+                  <Card key={service.code} className="border border-gray-200 overflow-hidden hover:shadow-md transition-shadow border-l-4 border-l-[#78BE20]">
+                    <div
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50/70 transition-colors"
+                      onClick={() => toggleServiceExpanded(service.code)}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-semibold text-[#001022]">{service.name}</h4>
+                          <Badge variant="outline" className="text-xs bg-gray-50">{service.tipo}</Badge>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          Código: <span className="font-mono font-medium text-[#001022]/70">{service.code}</span>
+                          {service.unidade && <> · Unidade: {service.unidade}</>}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {competitorCount > 0 && (
+                          <Badge variant="outline" className="bg-[#78BE20]/10 text-[#78BE20] border-[#78BE20]/30 font-medium">
+                            {competitorCount} concorrente(s)
+                          </Badge>
+                        )}
+                        {isExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                        )}
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <CardContent className="pt-0 border-t">
+                        <div className="space-y-4 pt-4">
+                          {/* Form to add competitor price — highlighted section */}
+                          <div className="p-5 bg-gradient-to-br from-[#78BE20]/10 via-white to-[#001022]/5 border-2 border-[#78BE20]/40 rounded-2xl shadow-md ring-1 ring-[#78BE20]/10">
+                            <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-[#78BE20]/20">
+                              <div className="p-2 rounded-lg bg-[#78BE20] shadow-sm">
+                                <Plus className="w-5 h-5 text-white" />
+                              </div>
+                              <div>
+                                <p className="text-base text-[#001022] font-bold">
+                                  Registrar Preço de Concorrente
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Preencha o nome e o preço do concorrente para: <span className="font-semibold text-[#001022]">{service.name}</span>
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="space-y-2">
+                                <Label className="text-sm font-bold text-[#001022] flex items-center gap-1.5">
+                                  <Users className="w-4 h-4 text-[#78BE20]" />
+                                  Nome do Concorrente <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  placeholder="Ex: Empresa ABC"
+                                  value={formData.concorrente}
+                                  onChange={(e) => updateServiceFormData(service.code, 'concorrente', e.target.value)}
+                                  className="h-12 text-base border-2 border-[#78BE20]/30 bg-white focus:border-[#78BE20] focus:ring-[#78BE20]/20 placeholder:text-gray-400 shadow-sm"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-bold text-[#001022] flex items-center gap-1.5">
+                                  <DollarSign className="w-4 h-4 text-[#78BE20]" />
+                                  Preço Cobrado (R$) <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  value={formData.preco}
+                                  onChange={(e) => updateServiceFormData(service.code, 'preco', e.target.value)}
+                                  className="h-12 text-base text-right font-semibold border-2 border-[#78BE20]/30 bg-white focus:border-[#78BE20] focus:ring-[#78BE20]/20 placeholder:text-gray-400 shadow-sm"
+                                />
+                              </div>
+                              <div className="flex items-end">
+                                <Button
+                                  onClick={() => handleAddCompetitorForService(service.code, service.name)}
+                                  className="w-full gap-2 h-12 text-base font-bold bg-[#78BE20] hover:bg-[#6aad1a] shadow-md"
+                                  size="default"
+                                >
+                                  <Plus className="w-5 h-5" />
+                                  Adicionar
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Competitor prices table */}
+                          {research && research.precosConcorrentes.length > 0 && (
+                            <>
+                              <div className="border rounded-xl overflow-hidden shadow-sm">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow className="bg-[#001022]/[0.03]">
+                                      <TableHead>Concorrente</TableHead>
+                                      <TableHead className="text-center">Data</TableHead>
+                                      <TableHead className="text-center">Registrado por</TableHead>
+                                      <TableHead className="text-right">Preço</TableHead>
+                                      <TableHead className="text-right w-20">Ações</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {research.precosConcorrentes.map((comp) => (
+                                      <TableRow key={comp.id}>
+                                        <TableCell className="font-medium">{comp.concorrente}</TableCell>
+                                        <TableCell className="text-center text-xs text-gray-500">
+                                          <div className="flex items-center justify-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            {formatDate(comp.adicionadoEm)}
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="text-center text-xs text-gray-500">
+                                          <div className="flex items-center justify-center gap-1">
+                                            <User className="w-3 h-3" />
+                                            {comp.adicionadoPor}
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="text-right font-semibold text-green-700">
+                                          R$ {comp.preco.toFixed(2)}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleRemoveCompetitor(research.codigoAvulso, comp.id)}
+                                          >
+                                            <Trash2 className="w-4 h-4 text-red-500" />
+                                          </Button>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                    <TableRow className="bg-[#78BE20]/[0.07]">
+                                      <TableCell className="font-bold text-[#001022]">Média dos Concorrentes</TableCell>
+                                      <TableCell></TableCell>
+                                      <TableCell></TableCell>
+                                      <TableCell className="text-right font-bold text-[#78BE20]">
+                                        R${' '}
+                                        {(
+                                          research.precosConcorrentes.reduce((sum, c) => sum + c.preco, 0) /
+                                          research.precosConcorrentes.length
+                                        ).toFixed(2)}
+                                      </TableCell>
+                                      <TableCell></TableCell>
+                                    </TableRow>
+                                  </TableBody>
+                                </Table>
+                              </div>
+
+                              {/* Histórico de Preços por Serviço */}
+                              {(() => {
+                                const serviceHistory = getPriceHistoryByCode(research.codigoAvulso);
+                                if (serviceHistory.length === 0) return null;
+
+                                const isHistoryExpanded = expandedHistory[research.codigoAvulso];
+
+                                return (
+                                  <div className="border border-amber-200 rounded-lg overflow-hidden">
+                                    <button
+                                      onClick={() => toggleHistory(research.codigoAvulso)}
+                                      className="w-full flex items-center justify-between p-3 bg-amber-50 hover:bg-amber-100 transition-colors"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <History className="w-4 h-4 text-amber-700" />
+                                        <span className="text-sm font-medium text-amber-800">
+                                          Histórico de Preços ({serviceHistory.length} registro(s))
+                                        </span>
+                                      </div>
+                                      {isHistoryExpanded ? (
+                                        <ChevronUp className="w-4 h-4 text-amber-700" />
+                                      ) : (
+                                        <ChevronDown className="w-4 h-4 text-amber-700" />
+                                      )}
+                                    </button>
+                                    {isHistoryExpanded && (
+                                      <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
+                                        {serviceHistory.map((entry) => {
+                                          const { label, color } = getActionLabel(entry.acao);
+                                          return (
+                                            <div
+                                              key={entry.id}
+                                              className="flex items-center gap-3 p-2 bg-white border border-gray-100 rounded-md text-sm"
+                                            >
+                                              <Badge variant="outline" className={`text-xs ${color}`}>
+                                                {label}
+                                              </Badge>
+                                              <div className="flex-1">
+                                                <span className="font-medium">{entry.concorrente}</span>
+                                                {entry.acao === 'updated' && entry.precoAnterior !== undefined ? (
+                                                  <span className="text-gray-600">
+                                                    {' '} — R$ {entry.precoAnterior.toFixed(2)}
+                                                    <ArrowUpDown className="w-3 h-3 inline mx-1" />
+                                                    R$ {entry.preco.toFixed(2)}
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-gray-600">
+                                                    {' '} — R$ {entry.preco.toFixed(2)}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <div className="text-xs text-gray-400 flex items-center gap-1">
+                                                <Clock className="w-3 h-3" />
+                                                {formatDate(entry.timestamp)}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Preço Sugerido com Estratégia Atual */}
+                              {(() => {
+                                const suggestedPrice = getSuggestedPrice(research.codigoAvulso);
+                                if (suggestedPrice) {
+                                  return (
+                                    <div className="p-4 bg-gradient-to-r from-[#78BE20]/10 to-[#001022]/10 border-2 border-[#78BE20]/40 rounded-xl shadow-sm">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                          <div className="bg-[#78BE20] p-2.5 rounded-xl shadow-sm">
+                                            <TrendingUp className="w-5 h-5 text-white" />
+                                          </div>
+                                          <div>
+                                            <p className="text-sm text-[#001022] font-semibold">
+                                              Preço Sugerido por IA
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                              Baseado na estratégia:{' '}
+                                              <span className="font-semibold text-[#001022]">
+                                                {strategy === 'below_market' && 'Abaixo do mercado'}
+                                                {strategy === 'match_market' && 'Preço de mercado'}
+                                                {strategy === 'above_market' && 'Acima do mercado'}
+                                              </span>
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <div className="text-right">
+                                          <Badge className="bg-[#78BE20] text-white border-0 px-4 py-1.5 text-base font-bold shadow-sm">
+                                            R$ {suggestedPrice.toFixed(2)}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
+                            </>
+                          )}
+                        </div>
+                      </CardContent>
+                    )}
+                  </Card>
+                );
+              })}
+                        </div>
+                      </CollapsibleContent>
+                    </div>
+                  </Collapsible>
+                );
+              })}
             </div>
           ) : (
             <div className="space-y-4">

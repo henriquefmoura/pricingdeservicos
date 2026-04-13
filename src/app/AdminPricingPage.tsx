@@ -553,7 +553,7 @@ export default function AdminPricingPage() {
                     }
 
                     return groupNames.map((groupName) => {
-                      const groupCodes = grouped[groupName];
+                      const codesInGroup = grouped[groupName];
                       const isUngrouped = groupName === UNGROUPED_KEY;
                       const displayName = isUngrouped ? 'Sem Grupo' : groupName;
                       const isCollapsed = !!collapsedGroups[`pending-${groupName}`];
@@ -576,7 +576,7 @@ export default function AdminPricingPage() {
                             }}
                             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F3F4F6'; }}
                             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F9FAFB'; }}
-                            aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
+                            aria-label={`Grupo ${displayName}, ${codesInGroup.length} serviço(s)`}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <FolderOpen size={20} style={{ color: '#4F46E5' }} />
@@ -589,7 +589,7 @@ export default function AdminPricingPage() {
                                 color: '#6B7280',
                                 fontWeight: 500,
                               }}>
-                                {groupCodes.length} serviço(s)
+                                {codesInGroup.length} serviço(s)
                               </span>
                             </div>
                             <ChevronDown
@@ -603,7 +603,7 @@ export default function AdminPricingPage() {
                           </button>
                           {!isCollapsed && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
-                              {groupCodes.map((code) => renderPendingCard(code))}
+                              {codesInGroup.map((code) => renderPendingCard(code))}
                             </div>
                           )}
                         </div>
@@ -736,7 +736,7 @@ export default function AdminPricingPage() {
                     }
 
                     return groupNames.map((groupName) => {
-                      const groupCodes = grouped[groupName];
+                      const codesInGroup = grouped[groupName];
                       const isUngrouped = groupName === UNGROUPED_KEY;
                       const displayName = isUngrouped ? 'Sem Grupo' : groupName;
                       const isCollapsed = !!collapsedGroups[`priced-${groupName}`];
@@ -759,7 +759,7 @@ export default function AdminPricingPage() {
                             }}
                             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#DCFCE7'; }}
                             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F0FDF4'; }}
-                            aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
+                            aria-label={`Grupo ${displayName}, ${codesInGroup.length} serviço(s)`}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <FolderOpen size={20} style={{ color: '#16A34A' }} />
@@ -772,7 +772,7 @@ export default function AdminPricingPage() {
                                 color: '#16A34A',
                                 fontWeight: 500,
                               }}>
-                                {groupCodes.length} serviço(s)
+                                {codesInGroup.length} serviço(s)
                               </span>
                             </div>
                             <ChevronDown
@@ -786,7 +786,7 @@ export default function AdminPricingPage() {
                           </button>
                           {!isCollapsed && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
-                              {groupCodes.map((code) => renderPricedCard(code))}
+                              {codesInGroup.map((code) => renderPricedCard(code))}
                             </div>
                           )}
                         </div>

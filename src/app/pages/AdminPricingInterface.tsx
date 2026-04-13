@@ -371,9 +371,9 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
             </div>
 
             {/* Formulário de preços */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 rounded-xl border-2 border-green-400 bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50" style={{ boxShadow: '0 2px 8px rgba(120, 190, 32, 0.15), 0 1px 3px rgba(0, 0, 0, 0.06)' }}>
               <div className="space-y-2">
-                <Label htmlFor={`repasse-${code.id}`}>
+                <Label htmlFor={`repasse-${code.id}`} className="text-sm font-bold text-gray-800">
                   Repasse (R$) *
                 </Label>
                 <Input
@@ -386,12 +386,12 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                     handlePriceChange(code.id, 'repasse', e.target.value)
                   }
                   onFocus={() => setEditingCode(code.id)}
-                  className="text-right"
+                  className="text-right border-2 border-gray-400 focus:border-green-500 h-11 text-base font-medium"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor={`venda-${code.id}`}>
+                <Label htmlFor={`venda-${code.id}`} className="text-sm font-bold text-gray-800">
                   Preço Venda (R$) *
                 </Label>
                 <Input
@@ -404,7 +404,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                     handlePriceChange(code.id, 'venda', e.target.value)
                   }
                   onFocus={() => setEditingCode(code.id)}
-                  className="text-right"
+                  className="text-right border-2 border-gray-400 focus:border-green-500 h-11 text-base font-medium"
                 />
               </div>
 

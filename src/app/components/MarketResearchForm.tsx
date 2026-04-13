@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { Search, Plus, Trash2, TrendingUp, History, Clock, Download, ChevronDown, ChevronUp, ArrowUpDown, User, BarChart2, Filter } from 'lucide-react';
+import { Search, Plus, Trash2, TrendingUp, History, Clock, Download, ChevronDown, ChevronUp, ArrowUpDown, User, BarChart2, Filter, Target, Users, DollarSign, Layers } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -314,66 +314,127 @@ export function MarketResearchForm() {
     }));
   };
 
+  // Compute summary stats for KPI cards
+  const totalServicos = allServices.length;
+  const totalConcorrentes = useMemo(() => {
+    const uniqueNames = new Set<string>();
+    researches.forEach(r => r.precosConcorrentes.forEach(c => uniqueNames.add(c.concorrente)));
+    return uniqueNames.size;
+  }, [researches]);
+  const totalRegistros = useMemo(() => researches.reduce((acc, r) => acc + r.precosConcorrentes.length, 0), [researches]);
+  const mediaGeral = useMemo(() => {
+    const all = researches.flatMap(r => r.precosConcorrentes.map(c => c.preco));
+    return all.length > 0 ? all.reduce((a, b) => a + b, 0) / all.length : 0;
+  }, [researches]);
+
   return (
     <div className="space-y-6">
       {/* Cabeçalho da Página */}
       <div
-        className="rounded-xl p-6 text-white shadow-lg"
-        style={{ background: 'linear-gradient(to right, #001022, #1a3a1a, #78BE20)' }}
+        className="rounded-2xl p-6 text-white shadow-xl relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #001022 0%, #0a2a12 40%, #1a4a1a 70%, #78BE20 100%)' }}
       >
-        <div className="flex items-center gap-3">
-          <div className="bg-white/20 p-3 rounded-lg">
-            <Search className="w-6 h-6 text-white" />
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(120,190,32,0.4) 0%, transparent 50%)' }} />
+        <div className="relative flex items-center gap-4">
+          <div className="bg-white/15 backdrop-blur-sm p-3.5 rounded-xl border border-white/20">
+            <Search className="w-7 h-7 text-white" />
           </div>
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
               Pesquisa de Mercado
             </h2>
-            <p className="text-white/80 text-sm mt-1">
+            <p className="text-white/70 text-sm mt-1">
               Registre e acompanhe preços de concorrentes para embasar a precificação dos serviços
             </p>
           </div>
         </div>
       </div>
 
-      {/* Page selector buttons */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant={activePage === 'pesquisa' ? 'default' : 'outline'}
+      {/* Page selector tabs */}
+      <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-xl w-fit">
+        <button
           onClick={() => setActivePage('pesquisa')}
-          className={
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
             activePage === 'pesquisa'
-              ? 'bg-[#001022] text-white hover:bg-[#001022]/90'
-              : ''
-          }
+              ? 'bg-[#001022] text-white shadow-md'
+              : 'text-gray-500 hover:text-gray-700 hover:bg-white/60'
+          }`}
         >
-          <Search className="w-4 h-4 mr-2" />
+          <Search className="w-4 h-4" />
           Pesquisa de Mercado
-        </Button>
-        <Button
-          variant={activePage === 'historico' ? 'default' : 'outline'}
+        </button>
+        <button
           onClick={() => setActivePage('historico')}
-          className={
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
             activePage === 'historico'
-              ? 'bg-[#78BE20] text-white hover:bg-[#6aaa1c]'
-              : ''
-          }
+              ? 'bg-[#78BE20] text-white shadow-md'
+              : 'text-gray-500 hover:text-gray-700 hover:bg-white/60'
+          }`}
         >
-          <BarChart2 className="w-4 h-4 mr-2" />
+          <BarChart2 className="w-4 h-4" />
           Histórico de Preços
-        </Button>
+        </button>
       </div>
 
       {/* ─── Página: Pesquisa de Mercado ─── */}
       {activePage === 'pesquisa' && <>
 
+      {/* KPI Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+          <div className="p-2.5 rounded-lg bg-[#78BE20]/10">
+            <Layers className="w-5 h-5 text-[#78BE20]" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900">{totalServicos}</p>
+            <p className="text-xs text-gray-500">Serviços Cadastrados</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+          <div className="p-2.5 rounded-lg bg-[#001022]/10">
+            <Users className="w-5 h-5 text-[#001022]" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900">{totalConcorrentes}</p>
+            <p className="text-xs text-gray-500">Concorrentes Únicos</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+          <div className="p-2.5 rounded-lg bg-blue-50">
+            <Target className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900">{totalRegistros}</p>
+            <p className="text-xs text-gray-500">Preços Registrados</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+          <div className="p-2.5 rounded-lg bg-emerald-50">
+            <DollarSign className="w-5 h-5 text-emerald-600" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900">
+              {mediaGeral > 0 ? `R$ ${mediaGeral.toFixed(0)}` : '—'}
+            </p>
+            <p className="text-xs text-gray-500">Preço Médio Geral</p>
+          </div>
+        </div>
+      </div>
+
       {/* Seletor de Estratégia de Precificação */}
-      <Card className="border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+      <Card className="border border-[#78BE20]/30 bg-gradient-to-r from-[#78BE20]/5 to-[#001022]/5 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg">Estratégia de Precificação</CardTitle>
-          <CardDescription>
-            Defina como os preços sugeridos serão calculados com base na pesquisa de mercado
-          </CardDescription>
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-md bg-[#78BE20]/15">
+              <TrendingUp className="w-4 h-4 text-[#78BE20]" />
+            </div>
+            <div>
+              <CardTitle className="text-lg text-[#001022]">Estratégia de Precificação</CardTitle>
+              <CardDescription>
+                Defina como os preços sugeridos serão calculados com base na pesquisa de mercado
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -407,23 +468,23 @@ export function MarketResearchForm() {
             </div>
 
             {/* Mostrar descrição da estratégia atual */}
-            <div className="p-3 bg-white border border-purple-200 rounded-lg">
+            <div className="p-3 bg-white border border-[#78BE20]/20 rounded-lg shadow-sm">
               <div className="flex items-start gap-2">
-                <TrendingUp className="w-4 h-4 text-purple-600 mt-0.5" />
+                <TrendingUp className="w-4 h-4 text-[#78BE20] mt-0.5" />
                 <div className="text-sm">
                   {strategy === 'below_market' && (
                     <p className="text-gray-700">
-                      <span className="font-semibold text-purple-700">Estratégia Agressiva:</span> Os preços sugeridos serão calculados dando menor peso aos concorrentes, priorizando competitividade de preço.
+                      <span className="font-semibold text-[#001022]">Estratégia Agressiva:</span> Os preços sugeridos serão calculados dando menor peso aos concorrentes, priorizando competitividade de preço.
                     </p>
                   )}
                   {strategy === 'match_market' && (
                     <p className="text-gray-700">
-                      <span className="font-semibold text-purple-700">Estratégia Neutra:</span> Os preços sugeridos equilibrarão preços dos concorrentes e histórico interno com pesos iguais.
+                      <span className="font-semibold text-[#001022]">Estratégia Neutra:</span> Os preços sugeridos equilibrarão preços dos concorrentes e histórico interno com pesos iguais.
                     </p>
                   )}
                   {strategy === 'above_market' && (
                     <p className="text-gray-700">
-                      <span className="font-semibold text-purple-700">Estratégia Premium:</span> Os preços sugeridos darão maior peso aos concorrentes, permitindo posicionamento premium no mercado.
+                      <span className="font-semibold text-[#001022]">Estratégia Premium:</span> Os preços sugeridos darão maior peso aos concorrentes, permitindo posicionamento premium no mercado.
                     </p>
                   )}
                 </div>
@@ -434,16 +495,18 @@ export function MarketResearchForm() {
       </Card>
 
       {/* Serviços para Pesquisa de Mercado */}
-      <Card>
+      <Card className="shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Search className="w-5 h-5" />
+                <div className="p-1.5 rounded-md bg-[#001022]/10">
+                  <Search className="w-4 h-4 text-[#001022]" />
+                </div>
                 Serviços para Pesquisa de Mercado
               </CardTitle>
-              <CardDescription>
-                {allServices.length} serviço(s) disponíveis para precificação — adicione preços de concorrentes diretamente
+              <CardDescription className="mt-1">
+                <span className="font-semibold text-[#78BE20]">{allServices.length}</span> serviço(s) disponíveis para precificação — adicione preços de concorrentes diretamente
               </CardDescription>
             </div>
           </div>
@@ -469,9 +532,11 @@ export function MarketResearchForm() {
         </CardHeader>
         <CardContent>
           {filteredServices.length === 0 ? (
-            <div className="text-center py-8">
-              <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-gray-300" />
+              </div>
+              <p className="text-sm text-gray-500 max-w-xs mx-auto">
                 {allServices.length === 0
                   ? 'Nenhum serviço disponível para precificação. Adicione códigos na página de Precificação primeiro.'
                   : 'Nenhum serviço encontrado com esse filtro.'}
@@ -486,24 +551,24 @@ export function MarketResearchForm() {
                 const competitorCount = research?.precosConcorrentes.length || 0;
 
                 return (
-                  <Card key={service.code} className="border-2">
+                  <Card key={service.code} className="border border-gray-200 overflow-hidden hover:shadow-md transition-shadow" style={{ borderLeft: '4px solid #78BE20' }}>
                     <div
-                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50/70 transition-colors"
                       onClick={() => toggleServiceExpanded(service.code)}
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-semibold text-gray-900">{service.name}</h4>
-                          <Badge variant="outline" className="text-xs">{service.tipo}</Badge>
+                          <h4 className="font-semibold text-[#001022]">{service.name}</h4>
+                          <Badge variant="outline" className="text-xs bg-gray-50">{service.tipo}</Badge>
                         </div>
                         <p className="text-sm text-gray-500 mt-0.5">
-                          Código: <span className="font-medium">{service.code}</span>
+                          Código: <span className="font-mono font-medium text-[#001022]/70">{service.code}</span>
                           {service.unidade && <> · Unidade: {service.unidade}</>}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         {competitorCount > 0 && (
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                          <Badge variant="outline" className="bg-[#78BE20]/10 text-[#78BE20] border-[#78BE20]/30 font-medium">
                             {competitorCount} concorrente(s)
                           </Badge>
                         )}
@@ -519,8 +584,9 @@ export function MarketResearchForm() {
                       <CardContent className="pt-0 border-t">
                         <div className="space-y-4 pt-4">
                           {/* Form to add competitor price */}
-                          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p className="text-sm text-blue-900 font-medium mb-3">
+                          <div className="p-4 bg-[#78BE20]/5 border border-[#78BE20]/20 rounded-xl">
+                            <p className="text-sm text-[#001022] font-semibold mb-3 flex items-center gap-2">
+                              <Plus className="w-4 h-4 text-[#78BE20]" />
                               Adicionar preço de concorrente para: {service.name}
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -559,10 +625,10 @@ export function MarketResearchForm() {
                           {/* Competitor prices table */}
                           {research && research.precosConcorrentes.length > 0 && (
                             <>
-                              <div className="border rounded-lg overflow-hidden">
+                              <div className="border rounded-xl overflow-hidden shadow-sm">
                                 <Table>
                                   <TableHeader>
-                                    <TableRow>
+                                    <TableRow className="bg-[#001022]/[0.03]">
                                       <TableHead>Concorrente</TableHead>
                                       <TableHead className="text-center">Data</TableHead>
                                       <TableHead className="text-center">Registrado por</TableHead>
@@ -600,11 +666,11 @@ export function MarketResearchForm() {
                                         </TableCell>
                                       </TableRow>
                                     ))}
-                                    <TableRow className="bg-blue-50">
-                                      <TableCell className="font-bold">Média dos Concorrentes</TableCell>
+                                    <TableRow className="bg-[#78BE20]/[0.07]">
+                                      <TableCell className="font-bold text-[#001022]">Média dos Concorrentes</TableCell>
                                       <TableCell></TableCell>
                                       <TableCell></TableCell>
-                                      <TableCell className="text-right font-bold text-blue-700">
+                                      <TableCell className="text-right font-bold text-[#78BE20]">
                                         R${' '}
                                         {(
                                           research.precosConcorrentes.reduce((sum, c) => sum + c.preco, 0) /
@@ -686,19 +752,19 @@ export function MarketResearchForm() {
                                 const suggestedPrice = getSuggestedPrice(research.codigoAvulso);
                                 if (suggestedPrice) {
                                   return (
-                                    <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-lg">
+                                    <div className="p-4 bg-gradient-to-r from-[#78BE20]/10 to-[#001022]/10 border-2 border-[#78BE20]/40 rounded-xl shadow-sm">
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                          <div className="bg-purple-600 p-2 rounded-lg">
+                                          <div className="bg-[#78BE20] p-2.5 rounded-xl shadow-sm">
                                             <TrendingUp className="w-5 h-5 text-white" />
                                           </div>
                                           <div>
-                                            <p className="text-sm text-purple-700 font-medium">
+                                            <p className="text-sm text-[#001022] font-semibold">
                                               Preço Sugerido por IA
                                             </p>
-                                            <p className="text-xs text-purple-600">
+                                            <p className="text-xs text-gray-500">
                                               Baseado na estratégia:{' '}
-                                              <span className="font-semibold">
+                                              <span className="font-semibold text-[#001022]">
                                                 {strategy === 'below_market' && 'Abaixo do mercado'}
                                                 {strategy === 'match_market' && 'Preço de mercado'}
                                                 {strategy === 'above_market' && 'Acima do mercado'}
@@ -707,7 +773,7 @@ export function MarketResearchForm() {
                                           </div>
                                         </div>
                                         <div className="text-right">
-                                          <Badge className="bg-purple-600 text-white border-0 px-4 py-1.5 text-base">
+                                          <Badge className="bg-[#78BE20] text-white border-0 px-4 py-1.5 text-base font-bold shadow-sm">
                                             R$ {suggestedPrice.toFixed(2)}
                                           </Badge>
                                         </div>
@@ -732,16 +798,18 @@ export function MarketResearchForm() {
 
       {/* Histórico Completo de Preços — visível apenas para master */}
       {priceHistory.length > 0 && user?.role === 'master' && (
-        <Card className="border-2 border-amber-200">
-          <CardHeader>
+        <Card className="border border-[#001022]/10 shadow-sm">
+          <CardHeader className="bg-gradient-to-r from-[#001022]/[0.03] to-transparent">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <History className="w-5 h-5 text-amber-600" />
+                  <div className="p-1.5 rounded-md bg-amber-100">
+                    <History className="w-4 h-4 text-amber-700" />
+                  </div>
                   Histórico Completo de Preços
                 </CardTitle>
-                <CardDescription>
-                  {priceHistory.length} registro(s) de alterações de preços de concorrentes
+                <CardDescription className="mt-1">
+                  <span className="font-semibold text-amber-700">{priceHistory.length}</span> registro(s) de alterações de preços de concorrentes
                 </CardDescription>
               </div>
               <div className="flex gap-2">
@@ -767,7 +835,7 @@ export function MarketResearchForm() {
                   variant="outline"
                   size="sm"
                   onClick={handleExportData}
-                  className="gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                  className="gap-1 border-[#78BE20]/40 text-[#78BE20] hover:bg-[#78BE20]/10"
                 >
                   <Download className="w-4 h-4" />
                   Exportar JSON
@@ -777,10 +845,10 @@ export function MarketResearchForm() {
           </CardHeader>
           {showFullHistory && (
             <CardContent>
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-xl overflow-hidden shadow-sm">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-amber-50">
+                    <TableRow className="bg-[#001022]/[0.03]">
                       <TableHead>Ação</TableHead>
                       <TableHead>Serviço</TableHead>
                       <TableHead>Concorrente</TableHead>
@@ -836,9 +904,9 @@ export function MarketResearchForm() {
                   </TableBody>
                 </Table>
               </div>
-              <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                <p className="text-xs text-emerald-700">
-                  <span className="font-semibold">💾 Dados salvos localmente.</span> Todos os registros são persistidos automaticamente no navegador. 
+              <div className="mt-4 p-3 bg-[#78BE20]/5 border border-[#78BE20]/20 rounded-xl">
+                <p className="text-xs text-[#001022]/70">
+                  <span className="font-semibold text-[#001022]">💾 Dados salvos localmente.</span> Todos os registros são persistidos automaticamente no navegador. 
                   Use o botão &quot;Exportar JSON&quot; para salvar uma cópia dos dados que poderá ser importada no Supabase futuramente.
                 </p>
               </div>
@@ -852,8 +920,8 @@ export function MarketResearchForm() {
       {activePage === 'historico' && (
         <div className="space-y-6">
           {/* Search bar for filtering price history */}
-          <Card className="border-2 border-[#78BE20]/30">
-            <CardContent className="py-4">
+          <Card className="border border-[#78BE20]/20 shadow-sm bg-gradient-to-r from-[#78BE20]/[0.03] to-transparent">
+            <CardContent className="py-5">
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1" ref={lmDropdownRef}>
                   <Label htmlFor="history-search-lm" className="text-xs text-gray-600 mb-1 block">
@@ -942,34 +1010,38 @@ export function MarketResearchForm() {
           </Card>
 
           {!hasHistorySearch ? (
-            <Card>
-              <CardContent className="py-12">
+            <Card className="shadow-sm">
+              <CardContent className="py-16">
                 <div className="text-center">
-                  <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <div className="w-20 h-20 bg-[#78BE20]/10 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <Search className="w-10 h-10 text-[#78BE20]/50" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#001022] mb-2">
                     Busque para visualizar o histórico
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-500 max-w-sm mx-auto">
                     Utilize os campos acima para buscar por código LM, descrição do serviço ou prestador/empresa
                   </p>
                 </div>
               </CardContent>
             </Card>
           ) : historyChartData.length === 0 ? (
-            <Card>
-              <CardContent className="py-12">
+            <Card className="shadow-sm">
+              <CardContent className="py-16">
                 <div className="text-center">
-                  <BarChart2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <BarChart2 className="w-10 h-10 text-gray-300" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#001022] mb-2">
                     Nenhum histórico disponível
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-500 max-w-sm mx-auto">
                     Adicione pesquisas de mercado na outra página para visualizar o histórico de preços
                   </p>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="mt-4"
+                    className="mt-5 border-[#78BE20]/40 text-[#78BE20] hover:bg-[#78BE20]/10"
                     onClick={() => setActivePage('pesquisa')}
                   >
                     <Search className="w-4 h-4 mr-2" />
@@ -979,14 +1051,16 @@ export function MarketResearchForm() {
               </CardContent>
             </Card>
           ) : filteredHistoryChartData.length === 0 ? (
-            <Card>
-              <CardContent className="py-12">
+            <Card className="shadow-sm">
+              <CardContent className="py-16">
                 <div className="text-center">
-                  <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <Search className="w-10 h-10 text-gray-300" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#001022] mb-2">
                     Nenhum resultado encontrado
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-500 max-w-sm mx-auto">
                     Tente buscar com outros termos ou limpe a busca para ver todas as opções
                   </p>
                 </div>
@@ -994,24 +1068,24 @@ export function MarketResearchForm() {
             </Card>
           ) : (
             filteredHistoryChartData.map(({ research, points, competitors, suggestedPrice, avgPrice }) => (
-              <Card key={research.codigoAvulso} className="border-2">
-                <CardHeader>
+              <Card key={research.codigoAvulso} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden" style={{ borderTop: '3px solid #78BE20' }}>
+                <CardHeader className="bg-gradient-to-r from-[#78BE20]/[0.03] to-transparent">
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle className="flex items-center gap-2 text-base">
-                        <BarChart2 className="w-5 h-5 text-green-600" />
+                        <BarChart2 className="w-5 h-5 text-[#78BE20]" />
                         {research.descricao}
                       </CardTitle>
-                      <CardDescription>Código: {research.codigoAvulso}</CardDescription>
+                      <CardDescription className="mt-1">Código: <span className="font-mono">{research.codigoAvulso}</span></CardDescription>
                     </div>
                     <div className="flex gap-2 flex-wrap justify-end">
                       {avgPrice !== null && (
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                        <Badge variant="outline" className="bg-[#001022]/5 text-[#001022] border-[#001022]/20 font-medium">
                           Média atual: R$ {avgPrice.toFixed(2)}
                         </Badge>
                       )}
                       {suggestedPrice !== null && (
-                        <Badge className="bg-purple-600 text-white border-0">
+                        <Badge className="bg-[#78BE20] text-white border-0 font-bold shadow-sm">
                           Sugerido: R$ {suggestedPrice.toFixed(2)}
                         </Badge>
                       )}
@@ -1020,8 +1094,10 @@ export function MarketResearchForm() {
                 </CardHeader>
                 <CardContent>
                   {points.length < 2 ? (
-                    <div className="text-center py-8 text-sm text-gray-500">
-                      <History className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                    <div className="text-center py-10 text-sm text-gray-500">
+                      <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <History className="w-7 h-7 text-gray-300" />
+                      </div>
                       {points.length === 0
                         ? 'Nenhum registro disponível para exibir o gráfico.'
                         : '1 registro disponível — é necessário pelo menos 2 datas distintas para exibir o gráfico.'}
@@ -1044,9 +1120,9 @@ export function MarketResearchForm() {
                         {suggestedPrice !== null && (
                           <ReferenceLine
                             y={suggestedPrice}
-                            stroke="#8B5CF6"
+                            stroke="#78BE20"
                             strokeDasharray="6 3"
-                            label={{ value: 'Preço Sugerido', position: 'insideTopRight', fontSize: 11, fill: '#8B5CF6' }}
+                            label={{ value: 'Preço Sugerido', position: 'insideTopRight', fontSize: 11, fill: '#78BE20' }}
                           />
                         )}
                         {competitors.map((comp, idx) => (
@@ -1070,10 +1146,12 @@ export function MarketResearchForm() {
                     const serviceHistory = getPriceHistoryByCode(research.codigoAvulso);
                     if (serviceHistory.length === 0) return null;
                     return (
-                      <div className="mt-6 border rounded-lg overflow-hidden">
-                        <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
-                          <History className="w-4 h-4 text-amber-700" />
-                          <span className="text-sm font-medium text-amber-800">
+                      <div className="mt-6 border rounded-xl overflow-hidden shadow-sm">
+                        <div className="px-4 py-3 bg-gradient-to-r from-[#001022]/[0.04] to-transparent border-b border-gray-200 flex items-center gap-2">
+                          <div className="p-1 rounded bg-amber-100">
+                            <History className="w-3.5 h-3.5 text-amber-700" />
+                          </div>
+                          <span className="text-sm font-semibold text-[#001022]">
                             Histórico de Alterações ({serviceHistory.length} registro(s))
                           </span>
                         </div>

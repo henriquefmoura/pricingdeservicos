@@ -801,21 +801,21 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                   const displayName = isUngrouped ? 'Sem Grupo' : groupName;
 
                   return (
-                    <Collapsible key={groupName} defaultOpen>
-                      <div className="border-2 border-indigo-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <Collapsible key={groupName}>
+                      <div className="border-2 border-indigo-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                         <CollapsibleTrigger asChild>
                           <button
-                            className="flex items-center justify-between w-full px-5 py-4 bg-indigo-50 hover:bg-indigo-100 transition-colors text-left group border-l-4 border-l-indigo-500"
+                            className="flex items-center justify-between w-full px-8 py-6 bg-indigo-50 hover:bg-indigo-100 transition-colors text-left group border-l-4 border-l-indigo-500"
                             aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
                           >
-                            <div className="flex items-center gap-3">
-                              <FolderOpen className="w-6 h-6 text-indigo-600" />
-                              <span className="font-bold text-lg text-gray-900">{displayName}</span>
-                              <Badge variant="outline" className="text-sm px-3 py-1 font-semibold border-indigo-300 text-indigo-700 bg-white">
+                            <div className="flex items-center gap-4">
+                              <FolderOpen className="w-8 h-8 text-indigo-600" />
+                              <span className="font-bold text-2xl text-gray-900">{displayName}</span>
+                              <Badge variant="outline" className="text-base px-4 py-1.5 font-semibold border-indigo-300 text-indigo-700 bg-white">
                                 {groupCodes.length} serviço(s)
                               </Badge>
                             </div>
-                            <ChevronDown className="w-5 h-5 text-indigo-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                            <ChevronDown className="w-7 h-7 text-indigo-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
                           </button>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
@@ -871,21 +871,21 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                     const displayName = isUngrouped ? 'Sem Grupo' : groupName;
 
                     return (
-                      <Collapsible key={groupName} defaultOpen>
-                        <div className="border-2 border-green-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <Collapsible key={groupName}>
+                        <div className="border-2 border-green-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                           <CollapsibleTrigger asChild>
                             <button
-                              className="flex items-center justify-between w-full px-5 py-4 bg-green-50 hover:bg-green-100 transition-colors text-left group border-l-4 border-l-green-500"
+                              className="flex items-center justify-between w-full px-8 py-6 bg-green-50 hover:bg-green-100 transition-colors text-left group border-l-4 border-l-green-500"
                               aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
                             >
-                              <div className="flex items-center gap-3">
-                                <FolderOpen className="w-6 h-6 text-green-600" />
-                                <span className="font-bold text-lg text-gray-900">{displayName}</span>
-                                <Badge variant="outline" className="text-sm px-3 py-1 font-semibold border-green-300 text-green-700 bg-white">
+                              <div className="flex items-center gap-4">
+                                <FolderOpen className="w-8 h-8 text-green-600" />
+                                <span className="font-bold text-2xl text-gray-900">{displayName}</span>
+                                <Badge variant="outline" className="text-base px-4 py-1.5 font-semibold border-green-300 text-green-700 bg-white">
                                   {groupCodes.length} serviço(s)
                                 </Badge>
                               </div>
-                              <ChevronDown className="w-5 h-5 text-green-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                              <ChevronDown className="w-7 h-7 text-green-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
                             </button>
                           </CollapsibleTrigger>
                           <CollapsibleContent>

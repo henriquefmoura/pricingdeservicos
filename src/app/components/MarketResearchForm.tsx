@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { Search, Plus, Trash2, TrendingUp, History, Clock, Download, ChevronDown, ChevronUp, ArrowUpDown, User, BarChart2 } from 'lucide-react';
+import { Search, Plus, Trash2, TrendingUp, History, Clock, Download, ChevronDown, ChevronUp, ArrowUpDown, User, BarChart2, Filter } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -113,12 +113,14 @@ export function MarketResearchForm() {
   const { researches, strategy, priceHistory, addCompetitorPrice, removeCompetitorPrice, setStrategy, getSuggestedPrice, getPriceHistoryByCode, exportData } = useMarketResearchStore();
   
   const [activePage, setActivePage] = useState<ActivePage>('pesquisa');
-  const [codigo, setCodigo] = useState('');
-  const [concorrente, setConcorrente] = useState('');
-  const [preco, setPreco] = useState('');
-  const [descricao, setDescricao] = useState('');
+  // Per-service form state for adding competitor prices
+  const [serviceFormData, setServiceFormData] = useState<Record<string, { concorrente: string; preco: string }>>({});
+  // Track which service cards are expanded for adding competitors
+  const [expandedServices, setExpandedServices] = useState<Record<string, boolean>>({});
   const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
   const [showFullHistory, setShowFullHistory] = useState(true);
+  // Filter for the services list
+  const [serviceFilter, setServiceFilter] = useState('');
 
   // Search state for the price history tab
   const [historySearchLM, setHistorySearchLM] = useState('');
@@ -217,68 +219,77 @@ export function MarketResearchForm() {
     });
   }, [historyChartData, hasHistorySearch, historySearchLM, historySearchPrestador]);
 
-  // Buscar descrição quando o código é alterado
-  const handleCodigoChange = (value: string) => {
-    setCodigo(value);
-    
-    if (value.trim()) {
-      const foundCode = codes.find((c) => c.codigoAvulso === value.trim() || c.codigoAtrelado === value.trim());
-      if (foundCode) {
-        setDescricao(foundCode.descricao);
-      } else {
-        setDescricao('');
+  // Build the full list of services from pricingCodesStore
+  const allServices = useMemo(() => {
+    const serviceMap = new Map<string, { code: string; name: string; unidade: string; tipo: string }>();
+    codes.forEach(c => {
+      const codeKey = c.codigoAvulso || c.codigoAtrelado || '';
+      if (codeKey) {
+        serviceMap.set(codeKey, { code: codeKey, name: c.descricao, unidade: c.unidade, tipo: c.tipo });
       }
-    } else {
-      setDescricao('');
-    }
+    });
+    const list = Array.from(serviceMap.values());
+    list.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    return list;
+  }, [codes]);
+
+  // Filter services by the search input
+  const filteredServices = useMemo(() => {
+    const term = serviceFilter.trim().toLowerCase();
+    if (!term) return allServices;
+    return allServices.filter(s =>
+      s.name.toLowerCase().includes(term) || s.code.toLowerCase().includes(term)
+    );
+  }, [allServices, serviceFilter]);
+
+  const toggleServiceExpanded = (code: string) => {
+    setExpandedServices((prev) => ({ ...prev, [code]: !prev[code] }));
   };
 
-  const handleAddCompetitor = () => {
-    if (!codigo.trim()) {
-      toast.error('Por favor, insira o código do serviço');
-      return;
-    }
+  const getServiceFormData = (code: string) => {
+    return serviceFormData[code] || { concorrente: '', preco: '' };
+  };
 
-    if (!descricao) {
-      toast.error('Código não encontrado. Verifique se o código existe na lista de códigos para precificação');
-      return;
-    }
+  const updateServiceFormData = (code: string, field: 'concorrente' | 'preco', value: string) => {
+    setServiceFormData((prev) => ({
+      ...prev,
+      [code]: { ...getServiceFormData(code), [field]: value },
+    }));
+  };
 
-    if (!concorrente.trim()) {
+  const handleAddCompetitorForService = (serviceCode: string, serviceDescricao: string) => {
+    const formData = getServiceFormData(serviceCode);
+
+    if (!formData.concorrente.trim()) {
       toast.error('Por favor, insira o nome do concorrente');
       return;
     }
 
-    if (!preco || parseFloat(preco) <= 0) {
+    if (!formData.preco || parseFloat(formData.preco) <= 0) {
       toast.error('Por favor, insira um preço válido');
       return;
     }
 
     addCompetitorPrice(
-      codigo.trim(),
-      descricao,
-      concorrente.trim(),
-      parseFloat(preco),
+      serviceCode,
+      serviceDescricao,
+      formData.concorrente.trim(),
+      parseFloat(formData.preco),
       user?.name || 'Admin'
     );
 
-    // Limpar apenas concorrente e preço, manter código para adicionar mais concorrentes
-    setConcorrente('');
-    setPreco('');
-    
-    toast.success(`Preço do concorrente ${concorrente} adicionado com sucesso!`);
+    // Clear only the competitor and price for this service
+    setServiceFormData((prev) => ({
+      ...prev,
+      [serviceCode]: { concorrente: '', preco: '' },
+    }));
+
+    toast.success(`Preço do concorrente ${formData.concorrente} adicionado com sucesso!`);
   };
 
   const handleRemoveCompetitor = (codigoAvulso: string, competitorId: string) => {
     removeCompetitorPrice(codigoAvulso, competitorId);
     toast.success('Preço de concorrente removido');
-  };
-
-  const handleNewCode = () => {
-    setCodigo('');
-    setDescricao('');
-    setConcorrente('');
-    setPreco('');
   };
 
   const handleExportData = () => {
@@ -422,312 +433,302 @@ export function MarketResearchForm() {
         </CardContent>
       </Card>
 
-      {/* Formulário de Adição */}
+      {/* Serviços para Pesquisa de Mercado */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="w-5 h-5" />
-            Adicionar Pesquisa de Mercado
-          </CardTitle>
-          <CardDescription>
-            Pesquise preços da concorrência para auxiliar na precificação
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="codigo">Código do Serviço *</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="codigo"
-                    placeholder="Ex: 50041154"
-                    value={codigo}
-                    onChange={(e) => handleCodigoChange(e.target.value)}
-                  />
-                  {codigo && descricao && (
-                    <Button variant="outline" size="sm" onClick={handleNewCode}>
-                      Novo
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Descrição do Serviço</Label>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="w-5 h-5" />
+                Serviços para Pesquisa de Mercado
+              </CardTitle>
+              <CardDescription>
+                {allServices.length} serviço(s) disponíveis para precificação — adicione preços de concorrentes diretamente
+              </CardDescription>
+            </div>
+          </div>
+          {/* Filter */}
+          {allServices.length > 5 && (
+            <div className="mt-3">
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                 <Input
-                  value={descricao}
-                  disabled
-                  placeholder="Será preenchida automaticamente"
-                  className="bg-gray-50"
+                  placeholder="Filtrar por código ou descrição..."
+                  value={serviceFilter}
+                  onChange={(e) => setServiceFilter(e.target.value)}
+                  className="pl-9"
                 />
               </div>
+              {serviceFilter && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {filteredServices.length} de {allServices.length} serviço(s)
+                </p>
+              )}
             </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          {filteredServices.length === 0 ? (
+            <div className="text-center py-8">
+              <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">
+                {allServices.length === 0
+                  ? 'Nenhum serviço disponível para precificação. Adicione códigos na página de Precificação primeiro.'
+                  : 'Nenhum serviço encontrado com esse filtro.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredServices.map((service) => {
+                const research = researches.find((r) => r.codigoAvulso === service.code);
+                const isExpanded = expandedServices[service.code];
+                const formData = getServiceFormData(service.code);
+                const competitorCount = research?.precosConcorrentes.length || 0;
 
-            {descricao && (
-              <>
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-900 font-medium">
-                    Serviço identificado: {descricao}
-                  </p>
-                  <p className="text-xs text-blue-700 mt-1">
-                    Agora adicione os preços dos concorrentes abaixo
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2 md:col-span-1">
-                    <Label htmlFor="concorrente">Nome do Concorrente *</Label>
-                    <Input
-                      id="concorrente"
-                      placeholder="Ex: Empresa ABC"
-                      value={concorrente}
-                      onChange={(e) => setConcorrente(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2 md:col-span-1">
-                    <Label htmlFor="preco">Preço Cobrado (R$) *</Label>
-                    <Input
-                      id="preco"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={preco}
-                      onChange={(e) => setPreco(e.target.value)}
-                      className="text-right"
-                    />
-                  </div>
-
-                  <div className="flex items-end md:col-span-1">
-                    <Button onClick={handleAddCompetitor} className="w-full gap-2">
-                      <Plus className="w-4 h-4" />
-                      Adicionar Concorrente
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Lista de Pesquisas */}
-      {researches.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Pesquisas de Mercado Registradas
-            </CardTitle>
-            <CardDescription>
-              {researches.length} serviço(s) com pesquisa de mercado realizada
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {researches.map((research) => (
-                <Card key={research.codigoAvulso} className="border-2">
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="font-semibold text-gray-900">
-                              {research.descricao}
-                            </h4>
-                            <p className="text-sm text-gray-600">
-                              Código: <span className="font-medium">{research.codigoAvulso}</span>
-                            </p>
-                          </div>
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
-                            {research.precosConcorrentes.length} concorrente(s)
-                          </Badge>
+                return (
+                  <Card key={service.code} className="border-2">
+                    <div
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => toggleServiceExpanded(service.code)}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-semibold text-gray-900">{service.name}</h4>
+                          <Badge variant="outline" className="text-xs">{service.tipo}</Badge>
                         </div>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          Código: <span className="font-medium">{service.code}</span>
+                          {service.unidade && <> · Unidade: {service.unidade}</>}
+                        </p>
                       </div>
-
-                      <div className="border rounded-lg overflow-hidden">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Concorrente</TableHead>
-                              <TableHead className="text-center">Data</TableHead>
-                              <TableHead className="text-center">Registrado por</TableHead>
-                              <TableHead className="text-right">Preço</TableHead>
-                              <TableHead className="text-right w-20">Ações</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {research.precosConcorrentes.map((comp) => (
-                              <TableRow key={comp.id}>
-                                <TableCell className="font-medium">{comp.concorrente}</TableCell>
-                                <TableCell className="text-center text-xs text-gray-500">
-                                  <div className="flex items-center justify-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    {formatDate(comp.adicionadoEm)}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-center text-xs text-gray-500">
-                                  <div className="flex items-center justify-center gap-1">
-                                    <User className="w-3 h-3" />
-                                    {comp.adicionadoPor}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-right font-semibold text-green-700">
-                                  R$ {comp.preco.toFixed(2)}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemoveCompetitor(research.codigoAvulso, comp.id)}
-                                  >
-                                    <Trash2 className="w-4 h-4 text-red-500" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                            <TableRow className="bg-blue-50">
-                              <TableCell className="font-bold">Média dos Concorrentes</TableCell>
-                              <TableCell></TableCell>
-                              <TableCell></TableCell>
-                              <TableCell className="text-right font-bold text-blue-700">
-                                R${' '}
-                                {(
-                                  research.precosConcorrentes.reduce((sum, c) => sum + c.preco, 0) /
-                                  research.precosConcorrentes.length
-                                ).toFixed(2)}
-                              </TableCell>
-                              <TableCell></TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
+                      <div className="flex items-center gap-2">
+                        {competitorCount > 0 && (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                            {competitorCount} concorrente(s)
+                          </Badge>
+                        )}
+                        {isExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                        )}
                       </div>
+                    </div>
 
-                      {/* Histórico de Preços por Serviço */}
-                      {(() => {
-                        const serviceHistory = getPriceHistoryByCode(research.codigoAvulso);
-                        if (serviceHistory.length === 0) return null;
-
-                        const isExpanded = expandedHistory[research.codigoAvulso];
-
-                        return (
-                          <div className="border border-amber-200 rounded-lg overflow-hidden">
-                            <button
-                              onClick={() => toggleHistory(research.codigoAvulso)}
-                              className="w-full flex items-center justify-between p-3 bg-amber-50 hover:bg-amber-100 transition-colors"
-                            >
-                              <div className="flex items-center gap-2">
-                                <History className="w-4 h-4 text-amber-700" />
-                                <span className="text-sm font-medium text-amber-800">
-                                  Histórico de Preços ({serviceHistory.length} registro(s))
-                                </span>
+                    {isExpanded && (
+                      <CardContent className="pt-0 border-t">
+                        <div className="space-y-4 pt-4">
+                          {/* Form to add competitor price */}
+                          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-sm text-blue-900 font-medium mb-3">
+                              Adicionar preço de concorrente para: {service.name}
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs">Nome do Concorrente *</Label>
+                                <Input
+                                  placeholder="Ex: Empresa ABC"
+                                  value={formData.concorrente}
+                                  onChange={(e) => updateServiceFormData(service.code, 'concorrente', e.target.value)}
+                                />
                               </div>
-                              {isExpanded ? (
-                                <ChevronUp className="w-4 h-4 text-amber-700" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4 text-amber-700" />
-                              )}
-                            </button>
-                            {isExpanded && (
-                              <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
-                                {serviceHistory.map((entry) => {
-                                  const { label, color } = getActionLabel(entry.acao);
-                                  return (
-                                    <div
-                                      key={entry.id}
-                                      className="flex items-center gap-3 p-2 bg-white border border-gray-100 rounded-md text-sm"
+                              <div className="space-y-1">
+                                <Label className="text-xs">Preço Cobrado (R$) *</Label>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  value={formData.preco}
+                                  onChange={(e) => updateServiceFormData(service.code, 'preco', e.target.value)}
+                                  className="text-right"
+                                />
+                              </div>
+                              <div className="flex items-end">
+                                <Button
+                                  onClick={() => handleAddCompetitorForService(service.code, service.name)}
+                                  className="w-full gap-2"
+                                  size="sm"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  Adicionar
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Competitor prices table */}
+                          {research && research.precosConcorrentes.length > 0 && (
+                            <>
+                              <div className="border rounded-lg overflow-hidden">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead>Concorrente</TableHead>
+                                      <TableHead className="text-center">Data</TableHead>
+                                      <TableHead className="text-center">Registrado por</TableHead>
+                                      <TableHead className="text-right">Preço</TableHead>
+                                      <TableHead className="text-right w-20">Ações</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {research.precosConcorrentes.map((comp) => (
+                                      <TableRow key={comp.id}>
+                                        <TableCell className="font-medium">{comp.concorrente}</TableCell>
+                                        <TableCell className="text-center text-xs text-gray-500">
+                                          <div className="flex items-center justify-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            {formatDate(comp.adicionadoEm)}
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="text-center text-xs text-gray-500">
+                                          <div className="flex items-center justify-center gap-1">
+                                            <User className="w-3 h-3" />
+                                            {comp.adicionadoPor}
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="text-right font-semibold text-green-700">
+                                          R$ {comp.preco.toFixed(2)}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleRemoveCompetitor(research.codigoAvulso, comp.id)}
+                                          >
+                                            <Trash2 className="w-4 h-4 text-red-500" />
+                                          </Button>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                    <TableRow className="bg-blue-50">
+                                      <TableCell className="font-bold">Média dos Concorrentes</TableCell>
+                                      <TableCell></TableCell>
+                                      <TableCell></TableCell>
+                                      <TableCell className="text-right font-bold text-blue-700">
+                                        R${' '}
+                                        {(
+                                          research.precosConcorrentes.reduce((sum, c) => sum + c.preco, 0) /
+                                          research.precosConcorrentes.length
+                                        ).toFixed(2)}
+                                      </TableCell>
+                                      <TableCell></TableCell>
+                                    </TableRow>
+                                  </TableBody>
+                                </Table>
+                              </div>
+
+                              {/* Histórico de Preços por Serviço */}
+                              {(() => {
+                                const serviceHistory = getPriceHistoryByCode(research.codigoAvulso);
+                                if (serviceHistory.length === 0) return null;
+
+                                const isHistoryExpanded = expandedHistory[research.codigoAvulso];
+
+                                return (
+                                  <div className="border border-amber-200 rounded-lg overflow-hidden">
+                                    <button
+                                      onClick={() => toggleHistory(research.codigoAvulso)}
+                                      className="w-full flex items-center justify-between p-3 bg-amber-50 hover:bg-amber-100 transition-colors"
                                     >
-                                      <Badge variant="outline" className={`text-xs ${color}`}>
-                                        {label}
-                                      </Badge>
-                                      <div className="flex-1">
-                                        <span className="font-medium">{entry.concorrente}</span>
-                                        {entry.acao === 'updated' && entry.precoAnterior !== undefined ? (
-                                          <span className="text-gray-600">
-                                            {' '} — R$ {entry.precoAnterior.toFixed(2)}
-                                            <ArrowUpDown className="w-3 h-3 inline mx-1" />
-                                            R$ {entry.preco.toFixed(2)}
-                                          </span>
-                                        ) : (
-                                          <span className="text-gray-600">
-                                            {' '} — R$ {entry.preco.toFixed(2)}
-                                          </span>
-                                        )}
+                                      <div className="flex items-center gap-2">
+                                        <History className="w-4 h-4 text-amber-700" />
+                                        <span className="text-sm font-medium text-amber-800">
+                                          Histórico de Preços ({serviceHistory.length} registro(s))
+                                        </span>
                                       </div>
-                                      <div className="text-xs text-gray-400 flex items-center gap-1">
-                                        <Clock className="w-3 h-3" />
-                                        {formatDate(entry.timestamp)}
+                                      {isHistoryExpanded ? (
+                                        <ChevronUp className="w-4 h-4 text-amber-700" />
+                                      ) : (
+                                        <ChevronDown className="w-4 h-4 text-amber-700" />
+                                      )}
+                                    </button>
+                                    {isHistoryExpanded && (
+                                      <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
+                                        {serviceHistory.map((entry) => {
+                                          const { label, color } = getActionLabel(entry.acao);
+                                          return (
+                                            <div
+                                              key={entry.id}
+                                              className="flex items-center gap-3 p-2 bg-white border border-gray-100 rounded-md text-sm"
+                                            >
+                                              <Badge variant="outline" className={`text-xs ${color}`}>
+                                                {label}
+                                              </Badge>
+                                              <div className="flex-1">
+                                                <span className="font-medium">{entry.concorrente}</span>
+                                                {entry.acao === 'updated' && entry.precoAnterior !== undefined ? (
+                                                  <span className="text-gray-600">
+                                                    {' '} — R$ {entry.precoAnterior.toFixed(2)}
+                                                    <ArrowUpDown className="w-3 h-3 inline mx-1" />
+                                                    R$ {entry.preco.toFixed(2)}
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-gray-600">
+                                                    {' '} — R$ {entry.preco.toFixed(2)}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <div className="text-xs text-gray-400 flex items-center gap-1">
+                                                <Clock className="w-3 h-3" />
+                                                {formatDate(entry.timestamp)}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Preço Sugerido com Estratégia Atual */}
+                              {(() => {
+                                const suggestedPrice = getSuggestedPrice(research.codigoAvulso);
+                                if (suggestedPrice) {
+                                  return (
+                                    <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-lg">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                          <div className="bg-purple-600 p-2 rounded-lg">
+                                            <TrendingUp className="w-5 h-5 text-white" />
+                                          </div>
+                                          <div>
+                                            <p className="text-sm text-purple-700 font-medium">
+                                              Preço Sugerido por IA
+                                            </p>
+                                            <p className="text-xs text-purple-600">
+                                              Baseado na estratégia:{' '}
+                                              <span className="font-semibold">
+                                                {strategy === 'below_market' && 'Abaixo do mercado'}
+                                                {strategy === 'match_market' && 'Preço de mercado'}
+                                                {strategy === 'above_market' && 'Acima do mercado'}
+                                              </span>
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <div className="text-right">
+                                          <Badge className="bg-purple-600 text-white border-0 px-4 py-1.5 text-base">
+                                            R$ {suggestedPrice.toFixed(2)}
+                                          </Badge>
+                                        </div>
                                       </div>
                                     </div>
                                   );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Preço Sugerido com Estratégia Atual */}
-                      {(() => {
-                        const suggestedPrice = getSuggestedPrice(research.codigoAvulso);
-                        if (suggestedPrice) {
-                          return (
-                            <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-lg">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="bg-purple-600 p-2 rounded-lg">
-                                    <TrendingUp className="w-5 h-5 text-white" />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-purple-700 font-medium">
-                                      Preço Sugerido por IA
-                                    </p>
-                                    <p className="text-xs text-purple-600">
-                                      Baseado na estratégia:{' '}
-                                      <span className="font-semibold">
-                                        {strategy === 'below_market' && 'Abaixo do mercado'}
-                                        {strategy === 'match_market' && 'Preço de mercado'}
-                                        {strategy === 'above_market' && 'Acima do mercado'}
-                                      </span>
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <Badge className="bg-purple-600 text-white border-0 px-4 py-1.5 text-base">
-                                    R$ {suggestedPrice.toFixed(2)}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                                }
+                                return null;
+                              })()}
+                            </>
+                          )}
+                        </div>
+                      </CardContent>
+                    )}
+                  </Card>
+                );
+              })}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {researches.length === 0 && (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center">
-              <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Nenhuma pesquisa de mercado registrada
-              </h3>
-              <p className="text-sm text-gray-600">
-                Comece adicionando preços de concorrentes para os serviços que você precisa precificar
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* Histórico Completo de Preços — visível apenas para master */}
       {priceHistory.length > 0 && user?.role === 'master' && (

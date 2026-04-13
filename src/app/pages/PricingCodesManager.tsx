@@ -614,20 +614,20 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
 
         return (
           <Collapsible key={groupName} defaultOpen>
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border-2 border-indigo-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <CollapsibleTrigger asChild>
                 <button
-                  className="flex items-center justify-between w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left group"
+                  className="flex items-center justify-between w-full px-5 py-4 bg-indigo-50 hover:bg-indigo-100 transition-colors text-left group border-l-4 border-l-indigo-500"
                   aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
                 >
                   <div className="flex items-center gap-3">
-                    <FolderOpen className="w-5 h-5 text-indigo-600" />
-                    <span className="font-semibold text-gray-900">{displayName}</span>
-                    <Badge variant="outline" className="text-xs">
+                    <FolderOpen className="w-6 h-6 text-indigo-600" />
+                    <span className="font-bold text-lg text-gray-900">{displayName}</span>
+                    <Badge variant="outline" className="text-sm px-3 py-1 font-semibold border-indigo-300 text-indigo-700 bg-white">
                       {groupCodes.length} serviço(s)
                     </Badge>
                   </div>
-                  <ChevronDown className="w-4 h-4 text-gray-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                  <ChevronDown className="w-5 h-5 text-indigo-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>

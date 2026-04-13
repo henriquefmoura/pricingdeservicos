@@ -460,7 +460,7 @@ export default function AdminPricingPage() {
                             <div style={{ flex: '2 1 340px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
                               {/* Inputs row */}
-                              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap', padding: '16px', backgroundColor: '#F9FAFB', borderRadius: '10px' }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap', padding: '18px 20px', background: 'linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 50%, #F0FDFA 100%)', borderRadius: '12px', border: '2px solid #78BE20', boxShadow: '0 2px 8px rgba(120, 190, 32, 0.15), 0 1px 3px rgba(0, 0, 0, 0.06)' }}>
                                 <div style={{ flex: '1 1 120px' }}>
                                   <CurrencyInput
                                     label="Repasse (R$)"
@@ -497,19 +497,20 @@ export default function AdminPricingPage() {
                                   onClick={() => handleSavePrice(code)}
                                   disabled={!priceInputs[code.id]?.repasse || !priceInputs[code.id]?.venda}
                                   style={{
-                                    padding: '11px 18px',
+                                    padding: '12px 22px',
                                     borderRadius: '8px',
                                     border: 'none',
                                     backgroundColor: priceInputs[code.id]?.repasse && priceInputs[code.id]?.venda ? '#78BE20' : '#D1D5DB',
                                     color: '#FFFFFF',
-                                    fontSize: '13px',
-                                    fontWeight: 600,
+                                    fontSize: '14px',
+                                    fontWeight: 700,
                                     cursor: priceInputs[code.id]?.repasse && priceInputs[code.id]?.venda ? 'pointer' : 'not-allowed',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '7px',
                                     flexShrink: 0,
                                     marginBottom: '8px',
+                                    boxShadow: priceInputs[code.id]?.repasse && priceInputs[code.id]?.venda ? '0 2px 6px rgba(120, 190, 32, 0.3)' : 'none',
                                   }}
                                 >
                                   <Save size={15} />

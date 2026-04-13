@@ -115,10 +115,11 @@ export function CurrencyInput({
         {label && (
           <label
             style={{
-              color: '#374151',
-              fontSize: '13px',
-              fontWeight: 600,
+              color: '#1F2937',
+              fontSize: '14px',
+              fontWeight: 700,
               lineHeight: 1.4,
+              letterSpacing: '-0.01em',
             }}
           >
             {label}
@@ -171,8 +172,8 @@ export function CurrencyInput({
           <span
             style={{
               fontSize: '14px',
-              color: '#6B7280',
-              fontWeight: 400,
+              color: '#4B5563',
+              fontWeight: 600,
             }}
           >
             R$
@@ -195,21 +196,21 @@ export function CurrencyInput({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           style={{
-            height: '40px',
+            height: '44px',
             width: '100%',
             paddingLeft: '52px', // Space for R$ prefix
             paddingRight: '12px',
             borderRadius: '8px',
-            border: `1.5px solid ${
-              error ? '#DA291C' : isFocused ? '#78BE20' : '#D1D5DB'
+            border: `2px solid ${
+              error ? '#DA291C' : isFocused ? '#78BE20' : '#9CA3AF'
             }`,
             backgroundColor: disabled ? '#F3F4F6' : '#FFFFFF',
-            fontSize: '14px',
-            fontWeight: 400,
+            fontSize: '15px',
+            fontWeight: 500,
             color: disabled ? '#9CA3AF' : '#001022',
             outline: 'none',
             transition: 'all 0.2s ease',
-            boxShadow: isFocused && !error ? '0 0 0 3px rgba(120, 190, 32, 0.20)' : 'none',
+            boxShadow: isFocused && !error ? '0 0 0 3px rgba(120, 190, 32, 0.20)' : '0 1px 2px rgba(0, 0, 0, 0.05)',
             cursor: disabled ? 'not-allowed' : 'text',
           }}
           {...props}

@@ -14,7 +14,7 @@ import {
 } from '../components/ui/table';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { usePricingCodesStore, PricingCode } from '../store/pricingCodesStore';
+import { usePricingCodesStore, PricingCode, UNGROUPED_KEY } from '../store/pricingCodesStore';
 import { useAuthStore } from '../store/authStore';
 import { useMarketResearchStore } from '../store/marketResearchStore';
 import { useApprovalStore } from '../store/approvalStore';
@@ -270,19 +270,19 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
   // Helper para agrupar códigos por grupoServico
   const groupCodesByServico = (codesToGroup: PricingCode[]) => {
     const grouped = codesToGroup.reduce<Record<string, PricingCode[]>>((acc, code) => {
-      const group = code.grupoServico || '__sem_grupo__';
+      const group = code.grupoServico || UNGROUPED_KEY;
       if (!acc[group]) acc[group] = [];
       acc[group].push(code);
       return acc;
     }, {});
 
     const groupNames = Object.keys(grouped).sort((a, b) => {
-      if (a === '__sem_grupo__') return 1;
-      if (b === '__sem_grupo__') return -1;
+      if (a === UNGROUPED_KEY) return 1;
+      if (b === UNGROUPED_KEY) return -1;
       return a.localeCompare(b);
     });
 
-    const hasGroups = groupNames.some((g) => g !== '__sem_grupo__');
+    const hasGroups = groupNames.some((g) => g !== UNGROUPED_KEY);
 
     return { grouped, groupNames, hasGroups };
   };
@@ -589,7 +589,9 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
 
   // Render helper for a single priced code card
   const renderPricedCodeCard = (code: PricingCode) => {
-    const price = code.prices?.[user!.plaza!];
+    const plaza = user?.plaza;
+    if (!plaza) return null;
+    const price = code.prices?.[plaza];
     return (
       <Card key={code.id} className="border-2 border-green-200 bg-green-50/30">
         <CardContent className="pt-6">
@@ -795,7 +797,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
               <div className="space-y-4">
                 {pendentesGrouped.groupNames.map((groupName) => {
                   const groupCodes = pendentesGrouped.grouped[groupName];
-                  const isUngrouped = groupName === '__sem_grupo__';
+                  const isUngrouped = groupName === UNGROUPED_KEY;
                   const displayName = isUngrouped ? 'Sem Grupo' : groupName;
 
                   return (
@@ -865,7 +867,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                 <div className="space-y-4">
                   {precificadosGrouped.groupNames.map((groupName) => {
                     const groupCodes = precificadosGrouped.grouped[groupName];
-                    const isUngrouped = groupName === '__sem_grupo__';
+                    const isUngrouped = groupName === UNGROUPED_KEY;
                     const displayName = isUngrouped ? 'Sem Grupo' : groupName;
 
                     return (

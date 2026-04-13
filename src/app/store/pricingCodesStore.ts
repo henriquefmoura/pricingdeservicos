@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware';
 
 export type PricingCodeTipo = 'Visita Técnica' | 'Serviço' | 'Inst + Pague -' | 'Emergencial' | 'Complementar' | 'Deslocamento';
 
+// Chave para códigos sem grupo de serviço
+export const UNGROUPED_KEY = '__sem_grupo__';
+
 // Lista de todas as 27 praças
 export const ALL_PLAZAS = [
   'SP', 'RJ', 'MG', 'ES', 'PR', 'SC', 'RS', 

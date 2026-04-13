@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { usePricingCodesStore, PricingCode, PricingCodeTipo, ALL_PLAZAS } from '../store/pricingCodesStore';
+import { usePricingCodesStore, PricingCode, PricingCodeTipo, ALL_PLAZAS, UNGROUPED_KEY } from '../store/pricingCodesStore';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
@@ -103,7 +103,7 @@ export function PricingCodesManager() {
   // Helper to find column value by trying multiple possible column names
   const findColumnValue = (row: Record<string, unknown>, possibleNames: string[], fallback = ''): string => {
     for (const name of possibleNames) {
-      if (row[name] !== undefined && row[name] !== '') return String(row[name]);
+      if (row[name] !== undefined && row[name] !== null && String(row[name]).trim() !== '') return String(row[name]);
     }
     return fallback;
   };
@@ -498,20 +498,20 @@ interface GroupedCodesViewProps {
 function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode }: GroupedCodesViewProps) {
   // Group codes by grupoServico
   const grouped = codes.reduce<Record<string, PricingCode[]>>((acc, code) => {
-    const group = code.grupoServico || '__sem_grupo__';
+    const group = code.grupoServico || UNGROUPED_KEY;
     if (!acc[group]) acc[group] = [];
     acc[group].push(code);
     return acc;
   }, {});
 
   const groupNames = Object.keys(grouped).sort((a, b) => {
-    if (a === '__sem_grupo__') return 1;
-    if (b === '__sem_grupo__') return -1;
+    if (a === UNGROUPED_KEY) return 1;
+    if (b === UNGROUPED_KEY) return -1;
     return a.localeCompare(b);
   });
 
   // If no groups are defined, render a flat table
-  const hasGroups = groupNames.some((g) => g !== '__sem_grupo__');
+  const hasGroups = groupNames.some((g) => g !== UNGROUPED_KEY);
 
   const renderCodesTable = (groupCodes: PricingCode[]) => (
     <div className="overflow-x-auto">
@@ -609,7 +609,7 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
     <div className="space-y-3">
       {groupNames.map((groupName) => {
         const groupCodes = grouped[groupName];
-        const isUngrouped = groupName === '__sem_grupo__';
+        const isUngrouped = groupName === UNGROUPED_KEY;
         const displayName = isUngrouped ? 'Sem Grupo' : groupName;
 
         return (

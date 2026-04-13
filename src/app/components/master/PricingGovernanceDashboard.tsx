@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useGovernanceStore } from '../../store/governanceStore';
 import { useApprovalStore } from '../../store/approvalStore';
+import { usePricingCodesStore } from '../../store/pricingCodesStore';
 import { UserActivityRanking } from './UserActivityRanking';
 import { ApprovalVsRejectionChart } from './ApprovalVsRejectionChart';
 import { PricingConsistencyView } from './PricingConsistencyView';
@@ -140,6 +141,7 @@ export function PricingGovernanceDashboard() {
   const getPlazaMetrics = useGovernanceStore((s) => s.getPlazaMetrics);
   const activityLogs = useGovernanceStore((s) => s.activityLogs);
   const getAdjustmentLog = useApprovalStore((s) => s.getAdjustmentLog);
+  const codes = usePricingCodesStore((s) => s.codes);
   const { gridCols, isMobile, gap: responsiveGap } = useResponsive();
 
   const [activeKpi, setActiveKpi] = useState<KpiKey | null>(null);
@@ -153,8 +155,9 @@ export function PricingGovernanceDashboard() {
   const adjustmentLog = getAdjustmentLog();
   const adjustmentLogReversed = adjustmentLog.slice().reverse();
 
-  const totalPricings = plazaMetrics.reduce((sum, p) => sum + p.totalPricingsReceived, 0);
-  const activePlazas = plazaMetrics.filter((p) => p.activeUsers > 0).length;
+  // Códigos Precificados: total codes in the pricing system
+  const totalCodes = codes.length;
+  const activePlazas = plazaMetrics.filter((p) => p.activeUsers > 0 || p.totalPricingsReceived > 0).length;
 
   const totalApproved = plazaMetrics.reduce((sum, p) => sum + p.totalApproved, 0);
   const totalRejected = plazaMetrics.reduce((sum, p) => sum + p.totalRejected, 0);
@@ -197,9 +200,8 @@ export function PricingGovernanceDashboard() {
           icon={<BarChart3 size={20} />}
           iconBg="rgba(120, 190, 32, 0.15)"
           iconColor={COLORS.primary}
-          value={totalPricings}
+          value={totalCodes}
           label="Códigos Precificados"
-          trend={{ value: '+12% mês', positive: true }}
           onClick={() => setActiveKpi('codigosPrecificados')}
         />
         <StatCard

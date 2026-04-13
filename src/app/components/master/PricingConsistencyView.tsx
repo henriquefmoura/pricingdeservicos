@@ -74,6 +74,26 @@ export function PricingConsistencyView() {
         </h3>
       </div>
 
+      {plazaResearch.length === 0 ? (
+        <div
+          style={{
+            padding: '40px',
+            textAlign: 'center',
+            backgroundColor: '#F9FAFB',
+            borderRadius: '8px',
+            border: '1px dashed #D1D5DB',
+          }}
+        >
+          <Search size={40} color="#D1D5DB" style={{ margin: '0 auto 12px' }} />
+          <p style={{ fontSize: '14px', fontWeight: 600, color: '#6B7280', margin: '0 0 4px 0' }}>
+            Nenhuma pesquisa de mercado registrada
+          </p>
+          <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0 }}>
+            Os dados aparecerão aqui conforme os usuários realizem pesquisas de mercado
+          </p>
+        </div>
+      ) : (
+      <>
       {/* Alert banner */}
       {lowUsagePlazas.length > 0 && (
         <div
@@ -211,6 +231,8 @@ export function PricingConsistencyView() {
           </div>
         ))}
       </div>
+      </>
+      )}
     </div>
   );
 }

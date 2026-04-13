@@ -75,6 +75,24 @@ function RankingTable({ title, users, roleIcon, roleBadgeBg, roleBadgeColor, rol
       </div>
 
       <div style={{ overflowX: 'auto' }}>
+        {users.length === 0 ? (
+          <div
+            style={{
+              padding: '40px',
+              textAlign: 'center',
+              backgroundColor: '#F9FAFB',
+              borderRadius: '8px',
+              border: '1px dashed #D1D5DB',
+            }}
+          >
+            <p style={{ fontSize: '14px', fontWeight: 600, color: '#6B7280', margin: '0 0 4px 0' }}>
+              Nenhuma atividade registrada
+            </p>
+            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0 }}>
+              As métricas aparecerão aqui conforme os usuários utilizem o sistema
+            </p>
+          </div>
+        ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -144,6 +162,7 @@ function RankingTable({ title, users, roleIcon, roleBadgeBg, roleBadgeColor, rol
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   );

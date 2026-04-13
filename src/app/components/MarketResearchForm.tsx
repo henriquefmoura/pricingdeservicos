@@ -583,39 +583,55 @@ export function MarketResearchForm() {
                     {isExpanded && (
                       <CardContent className="pt-0 border-t">
                         <div className="space-y-4 pt-4">
-                          {/* Form to add competitor price */}
-                          <div className="p-4 bg-[#78BE20]/5 border border-[#78BE20]/20 rounded-xl">
-                            <p className="text-sm text-[#001022] font-semibold mb-3 flex items-center gap-2">
-                              <Plus className="w-4 h-4 text-[#78BE20]" />
-                              Adicionar preço de concorrente para: {service.name}
-                            </p>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                              <div className="space-y-1">
-                                <Label className="text-xs">Nome do Concorrente *</Label>
+                          {/* Form to add competitor price — highlighted section */}
+                          <div className="p-5 bg-gradient-to-br from-[#78BE20]/10 via-white to-[#001022]/5 border-2 border-[#78BE20]/40 rounded-2xl shadow-md ring-1 ring-[#78BE20]/10">
+                            <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-[#78BE20]/20">
+                              <div className="p-2 rounded-lg bg-[#78BE20] shadow-sm">
+                                <Plus className="w-5 h-5 text-white" />
+                              </div>
+                              <div>
+                                <p className="text-base text-[#001022] font-bold">
+                                  Registrar Preço de Concorrente
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Preencha o nome e o preço do concorrente para: <span className="font-semibold text-[#001022]">{service.name}</span>
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="space-y-2">
+                                <Label className="text-sm font-bold text-[#001022] flex items-center gap-1.5">
+                                  <Users className="w-4 h-4 text-[#78BE20]" />
+                                  Nome do Concorrente <span className="text-red-500">*</span>
+                                </Label>
                                 <Input
                                   placeholder="Ex: Empresa ABC"
                                   value={formData.concorrente}
                                   onChange={(e) => updateServiceFormData(service.code, 'concorrente', e.target.value)}
+                                  className="h-12 text-base border-2 border-[#78BE20]/30 bg-white focus:border-[#78BE20] focus:ring-[#78BE20]/20 placeholder:text-gray-400 shadow-sm"
                                 />
                               </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs">Preço Cobrado (R$) *</Label>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-bold text-[#001022] flex items-center gap-1.5">
+                                  <DollarSign className="w-4 h-4 text-[#78BE20]" />
+                                  Preço Cobrado (R$) <span className="text-red-500">*</span>
+                                </Label>
                                 <Input
                                   type="number"
                                   step="0.01"
                                   placeholder="0.00"
                                   value={formData.preco}
                                   onChange={(e) => updateServiceFormData(service.code, 'preco', e.target.value)}
-                                  className="text-right"
+                                  className="h-12 text-base text-right font-semibold border-2 border-[#78BE20]/30 bg-white focus:border-[#78BE20] focus:ring-[#78BE20]/20 placeholder:text-gray-400 shadow-sm"
                                 />
                               </div>
                               <div className="flex items-end">
                                 <Button
                                   onClick={() => handleAddCompetitorForService(service.code, service.name)}
-                                  className="w-full gap-2"
-                                  size="sm"
+                                  className="w-full gap-2 h-12 text-base font-bold bg-[#78BE20] hover:bg-[#6aad1a] shadow-md"
+                                  size="default"
                                 >
-                                  <Plus className="w-4 h-4" />
+                                  <Plus className="w-5 h-5" />
                                   Adicionar
                                 </Button>
                               </div>

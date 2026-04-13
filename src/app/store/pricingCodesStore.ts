@@ -13,6 +13,7 @@ export const ALL_PLAZAS = [
 
 export interface PricingCode {
   id: string;
+  grupoServico?: string; // Grupo de Serviço para agrupamento
   tipo: PricingCodeTipo;
   descricao: string;
   unidade: string;
@@ -133,6 +134,7 @@ export const usePricingCodesStore = create<PricingCodesState>()(
         if (currentCodes.length === 0) {
           const mockCodes: Omit<PricingCode, 'id' | 'createdAt' | 'status'>[] = [
             {
+              grupoServico: 'Chuveiro/Torneira Elétrica',
               tipo: 'Visita Técnica',
               descricao: 'Visita Téc Chuveiro/Torneira Elétrica',
               unidade: 'un',
@@ -142,6 +144,7 @@ export const usePricingCodesStore = create<PricingCodesState>()(
               prices: {},
             },
             {
+              grupoServico: 'Chuveiro/Torneira Elétrica',
               tipo: 'Serviço',
               descricao: 'Subst/Inst de Chuveiro Elétrico (un)',
               unidade: 'un',
@@ -152,6 +155,7 @@ export const usePricingCodesStore = create<PricingCodesState>()(
               prices: {},
             },
             {
+              grupoServico: 'Chuveiro/Torneira Elétrica',
               tipo: 'Inst + Pague -',
               descricao: '(+2un) Subst/Inst Chuveiro Eletrico',
               unidade: 'un',
@@ -161,6 +165,7 @@ export const usePricingCodesStore = create<PricingCodesState>()(
               prices: {},
             },
             {
+              grupoServico: 'Chuveiro/Torneira Elétrica',
               tipo: 'Emergencial',
               descricao: '(Express) Subst/Inst Chuveiro Elét',
               unidade: 'un',
@@ -171,6 +176,7 @@ export const usePricingCodesStore = create<PricingCodesState>()(
               prices: {},
             },
             {
+              grupoServico: 'Chuveiro/Torneira Elétrica',
               tipo: 'Complementar',
               descricao: 'Inst. Pressurizador de Chuveiro (un)',
               unidade: 'un',
@@ -180,6 +186,7 @@ export const usePricingCodesStore = create<PricingCodesState>()(
               prices: {},
             },
             {
+              grupoServico: 'Chuveiro/Torneira Elétrica',
               tipo: 'Deslocamento',
               descricao: 'Desloc Prestador Chuveiro/Torneira Elét',
               unidade: 'un',

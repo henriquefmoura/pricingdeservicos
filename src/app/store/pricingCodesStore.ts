@@ -3,6 +3,14 @@ import { persist } from 'zustand/middleware';
 
 export type PricingCodeTipo = 'Visita Técnica' | 'Serviço' | 'Inst + Pague -' | 'Emergencial' | 'Complementar' | 'Deslocamento';
 
+// Lista de todas as 27 praças
+export const ALL_PLAZAS = [
+  'SP', 'RJ', 'MG', 'ES', 'PR', 'SC', 'RS', 
+  'DF', 'GO', 'MT', 'MS', 'BA', 'SE', 'AL', 
+  'PE', 'PB', 'RN', 'CE', 'PI', 'MA', 'AM', 
+  'PA', 'AC', 'RO', 'RR', 'AP', 'TO'
+];
+
 export interface PricingCode {
   id: string;
   tipo: PricingCodeTipo;
@@ -14,6 +22,7 @@ export interface PricingCode {
   status: 'pendente' | 'em_andamento' | 'concluido';
   createdAt: Date;
   createdBy: string;
+  targetPlazas?: string[]; // Praças alvo para este código
   prices?: {
     [plaza: string]: {
       repasse: number;
@@ -91,9 +100,10 @@ export const usePricingCodesStore = create<PricingCodesState>()(
                 },
               };
 
-              // Verificar se todas as praças foram preenchidas (considerando 27 praças)
+              // Verificar se todas as praças foram preenchidas
               const filledPlazas = Object.keys(updatedCode.prices || {}).length;
-              if (filledPlazas >= 27) {
+              const totalPlazas = code.targetPlazas?.length || ALL_PLAZAS.length;
+              if (filledPlazas >= totalPlazas) {
                 updatedCode.status = 'concluido';
               } else if (filledPlazas > 0) {
                 updatedCode.status = 'em_andamento';

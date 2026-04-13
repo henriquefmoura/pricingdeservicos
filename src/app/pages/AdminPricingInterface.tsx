@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Save, CheckCircle2, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, ListChecks } from 'lucide-react';
+import { Save, CheckCircle2, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, ListChecks, ChevronDown, FolderOpen } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -24,6 +24,7 @@ import { updateCalculatorSnapshot } from '../services/pricingMentorAIService';
 import { useSupportStore } from '../store/supportStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { toast } from 'sonner';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 
 interface PriceInput {
   repasse: string;
@@ -266,6 +267,29 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
     return ((venda - repasse) / venda) * 100;
   };
 
+  // Helper para agrupar códigos por grupoServico
+  const groupCodesByServico = (codesToGroup: PricingCode[]) => {
+    const grouped = codesToGroup.reduce<Record<string, PricingCode[]>>((acc, code) => {
+      const group = code.grupoServico || '__sem_grupo__';
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(code);
+      return acc;
+    }, {});
+
+    const groupNames = Object.keys(grouped).sort((a, b) => {
+      if (a === '__sem_grupo__') return 1;
+      if (b === '__sem_grupo__') return -1;
+      return a.localeCompare(b);
+    });
+
+    const hasGroups = groupNames.some((g) => g !== '__sem_grupo__');
+
+    return { grouped, groupNames, hasGroups };
+  };
+
+  const pendentesGrouped = useMemo(() => groupCodesByServico(relevantCodes), [relevantCodes]);
+  const precificadosGrouped = useMemo(() => groupCodesByServico(pricedCodes), [pricedCodes]);
+
   // RPA: Update calculator snapshot when user edits a pricing code
   useEffect(() => {
     if (!editingCode) return;
@@ -300,6 +324,350 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
   const completedByMe = codes.filter(
     (code) => user?.plaza && code.prices?.[user.plaza]
   ).length;
+
+  // Render helper for a single pending code card
+  const renderPendingCodeCard = (code: PricingCode) => {
+    const margem = calculateMargem(code.id);
+    const isEditing = editingCode === code.id;
+    const hasInput = priceInputs[code.id];
+
+    return (
+      <Card key={code.id} className="border-2">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            {/* Cabeçalho do código */}
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge className={getTipoBadgeColor(code.tipo)}>
+                    {code.tipo}
+                  </Badge>
+                  <span className="text-xs text-gray-500">
+                    Prazo: {code.prazo}
+                  </span>
+                </div>
+                <h4 className="font-semibold text-gray-900 mb-1">
+                  {code.descricao}
+                </h4>
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  {code.codigoAtrelado && (
+                    <span>
+                      <span className="font-medium">Cód. Atrelado:</span>{' '}
+                      {code.codigoAtrelado}
+                    </span>
+                  )}
+                  {code.codigoAvulso && (
+                    <span>
+                      <span className="font-medium">Cód. Avulso:</span>{' '}
+                      {code.codigoAvulso}
+                    </span>
+                  )}
+                  <span>
+                    <span className="font-medium">Unidade:</span>{' '}
+                    {code.unidade}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Formulário de preços */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="space-y-2">
+                <Label htmlFor={`repasse-${code.id}`}>
+                  Repasse (R$) *
+                </Label>
+                <Input
+                  id={`repasse-${code.id}`}
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={priceInputs[code.id]?.repasse || ''}
+                  onChange={(e) =>
+                    handlePriceChange(code.id, 'repasse', e.target.value)
+                  }
+                  onFocus={() => setEditingCode(code.id)}
+                  className="text-right"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor={`venda-${code.id}`}>
+                  Preço Venda (R$) *
+                </Label>
+                <Input
+                  id={`venda-${code.id}`}
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={priceInputs[code.id]?.venda || ''}
+                  onChange={(e) =>
+                    handlePriceChange(code.id, 'venda', e.target.value)
+                  }
+                  onFocus={() => setEditingCode(code.id)}
+                  className="text-right"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Margem (%)</Label>
+                <div
+                  className={`h-10 px-3 py-2 border rounded-md text-right font-semibold flex items-center justify-end ${
+                    margem !== null
+                      ? margem >= 15
+                        ? 'bg-green-50 text-green-700 border-green-300'
+                        : margem >= 10
+                        ? 'bg-yellow-50 text-yellow-700 border-yellow-300'
+                        : 'bg-red-50 text-red-700 border-red-300'
+                      : 'bg-gray-100 text-gray-400 border-gray-200'
+                  }`}
+                >
+                  {margem !== null ? `${margem.toFixed(2)}%` : '-'}
+                </div>
+              </div>
+
+              <div className="flex items-end">
+                <Button
+                  onClick={() => handleSavePrice(code)}
+                  disabled={!hasInput || !hasInput.repasse || !hasInput.venda}
+                  className="w-full gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Salvar
+                </Button>
+              </div>
+            </div>
+
+            {/* Preço Sugerido baseado em Pesquisa de Mercado */}
+            {(() => {
+              const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
+              const research = getResearchByCode(codeRef);
+              const prestadorPrices = code.prices
+                ? Object.values(code.prices).map((p) => p.venda)
+                : [];
+              const suggestedPrice = getSuggestedPrice(
+                codeRef,
+                prestadorPrices
+              );
+
+              if (suggestedPrice || research) {
+                return (
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-blue-600 p-2 rounded-lg flex-shrink-0">
+                        <Lightbulb className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h5 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                          Preço Sugerido por IA
+                          {suggestedPrice && (
+                            <Badge className="bg-blue-600 text-white border-0">
+                              R$ {suggestedPrice.toFixed(2)}
+                            </Badge>
+                          )}
+                        </h5>
+                        <div className="space-y-2 text-sm">
+                          {research && research.precosConcorrentes.length > 0 && (
+                            <div className="bg-white/70 p-3 rounded-md border border-blue-200">
+                              <div className="flex items-center gap-2 mb-2">
+                                <TrendingUp className="w-4 h-4 text-blue-700" />
+                                <span className="font-medium text-blue-900">
+                                  Pesquisa de Mercado ({research.precosConcorrentes.length} concorrente
+                                  {research.precosConcorrentes.length > 1 ? 's' : ''})
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                {research.precosConcorrentes.map((comp) => (
+                                  <div key={comp.id} className="text-blue-800">
+                                    <span className="font-medium">{comp.concorrente}:</span>{' '}
+                                    R$ {comp.preco.toFixed(2)}
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="mt-2 pt-2 border-t border-blue-200 text-blue-900 font-semibold">
+                                Média dos Concorrentes: R${' '}
+                                {(
+                                  research.precosConcorrentes.reduce(
+                                    (sum, c) => sum + c.preco,
+                                    0
+                                  ) / research.precosConcorrentes.length
+                                ).toFixed(2)}
+                              </div>
+                            </div>
+                          )}
+                          {prestadorPrices.length > 0 && (
+                            <div className="bg-white/70 p-3 rounded-md border border-blue-200">
+                              <span className="font-medium text-blue-900">
+                                Preços de Prestadores ({prestadorPrices.length} praça
+                                {prestadorPrices.length > 1 ? 's' : ''}):
+                              </span>{' '}
+                              <span className="text-blue-800">
+                                Média R${' '}
+                                {(
+                                  prestadorPrices.reduce((sum, p) => sum + p, 0) /
+                                  prestadorPrices.length
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                          {suggestedPrice && (
+                            <p className="text-blue-800 mt-2">
+                              💡 <strong>Recomendação:</strong> Com base nos dados de mercado
+                              e preços de outras praças, sugerimos um preço de venda próximo a{' '}
+                              <strong className="text-blue-900">
+                                R$ {suggestedPrice.toFixed(2)}
+                              </strong>
+                              . Ajuste conforme as condições da sua praça.
+                            </p>
+                          )}
+                        </div>
+                        {suggestedPrice && (
+                          <div className="mt-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setPriceInputs((prev) => ({
+                                  ...prev,
+                                  [code.id]: {
+                                    ...prev[code.id],
+                                    venda: suggestedPrice.toFixed(2),
+                                  },
+                                }));
+                                setEditingCode(code.id);
+                                toast.success('Preço sugerido aplicado ao campo de venda');
+                              }}
+                              className="gap-2 text-blue-700 border-blue-300 hover:bg-blue-100"
+                            >
+                              <Lightbulb className="w-4 h-4" />
+                              Usar Preço Sugerido
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
+            {/* Alertas de validação */}
+            {isEditing && hasInput && hasInput.repasse && hasInput.venda && (
+              <div className="mt-2">
+                {margem !== null && margem < 10 && (
+                  <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-red-800">
+                      <strong>Atenção:</strong> A margem está abaixo de 10%, o
+                      que pode não ser rentável.
+                    </p>
+                  </div>
+                )}
+                {margem !== null && margem >= 10 && margem < 15 && (
+                  <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-yellow-800">
+                      A margem está entre 10-15%, dentro do aceitável mas pode ser otimizada.
+                    </p>
+                  </div>
+                )}
+                {margem !== null && margem >= 15 && (
+                  <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-green-800">
+                      Excelente! A margem está acima de 15%, dentro do ideal.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Render helper for a single priced code card
+  const renderPricedCodeCard = (code: PricingCode) => {
+    const price = code.prices?.[user!.plaza!];
+    return (
+      <Card key={code.id} className="border-2 border-green-200 bg-green-50/30">
+        <CardContent className="pt-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge className={getTipoBadgeColor(code.tipo)}>
+                  {code.tipo}
+                </Badge>
+                <span className="text-xs text-gray-500">
+                  Prazo: {code.prazo}
+                </span>
+                <CheckCircle2 className="w-4 h-4 text-green-600" />
+              </div>
+              <h4 className="font-semibold text-gray-900 mb-1">
+                {code.descricao}
+              </h4>
+              <div className="flex items-center gap-4 text-sm text-gray-600">
+                {code.codigoAtrelado && (
+                  <span>
+                    <span className="font-medium">Cód. Atrelado:</span>{' '}
+                    {code.codigoAtrelado}
+                  </span>
+                )}
+                {code.codigoAvulso && (
+                  <span>
+                    <span className="font-medium">Cód. Avulso:</span>{' '}
+                    {code.codigoAvulso}
+                  </span>
+                )}
+                <span>
+                  <span className="font-medium">Unidade:</span>{' '}
+                  {code.unidade}
+                </span>
+              </div>
+            </div>
+            {price && (
+              <div className="flex items-center gap-4 text-sm ml-4">
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Repasse</p>
+                  <p className="font-semibold text-gray-800">
+                    R$ {price.repasse.toFixed(2)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Venda</p>
+                  <p className="font-semibold text-gray-800">
+                    R$ {price.venda.toFixed(2)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Margem</p>
+                  <p
+                    className={`font-semibold ${
+                      price.margem >= 15
+                        ? 'text-green-700'
+                        : price.margem >= 10
+                        ? 'text-yellow-700'
+                        : 'text-red-700'
+                    }`}
+                  >
+                    {price.margem.toFixed(2)}%
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleReportPricingError(code)}
+                  title="Reportar erro no preenchimento"
+                  className="ml-2 p-1.5 rounded-md border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors cursor-pointer"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   if (totalCodes === 0 && completedByMe > 0 && activeFilter === 'pendentes') {
     return (
@@ -423,268 +791,46 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {relevantCodes.map((code) => {
-                const margem = calculateMargem(code.id);
-                const isEditing = editingCode === code.id;
-                const hasInput = priceInputs[code.id];
+            {pendentesGrouped.hasGroups ? (
+              <div className="space-y-4">
+                {pendentesGrouped.groupNames.map((groupName) => {
+                  const groupCodes = pendentesGrouped.grouped[groupName];
+                  const isUngrouped = groupName === '__sem_grupo__';
+                  const displayName = isUngrouped ? 'Sem Grupo' : groupName;
 
-                return (
-                  <Card key={code.id} className="border-2">
-                    <CardContent className="pt-6">
-                      <div className="space-y-4">
-                        {/* Cabeçalho do código */}
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge className={getTipoBadgeColor(code.tipo)}>
-                                {code.tipo}
+                  return (
+                    <Collapsible key={groupName} defaultOpen>
+                      <div className="border rounded-lg overflow-hidden">
+                        <CollapsibleTrigger asChild>
+                          <button
+                            className="flex items-center justify-between w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left group"
+                            aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <FolderOpen className="w-5 h-5 text-indigo-600" />
+                              <span className="font-semibold text-gray-900">{displayName}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {groupCodes.length} serviço(s)
                               </Badge>
-                              <span className="text-xs text-gray-500">
-                                Prazo: {code.prazo}
-                              </span>
                             </div>
-                            <h4 className="font-semibold text-gray-900 mb-1">
-                              {code.descricao}
-                            </h4>
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
-                              {code.codigoAtrelado && (
-                                <span>
-                                  <span className="font-medium">Cód. Atrelado:</span>{' '}
-                                  {code.codigoAtrelado}
-                                </span>
-                              )}
-                              {code.codigoAvulso && (
-                                <span>
-                                  <span className="font-medium">Cód. Avulso:</span>{' '}
-                                  {code.codigoAvulso}
-                                </span>
-                              )}
-                              <span>
-                                <span className="font-medium">Unidade:</span>{' '}
-                                {code.unidade}
-                              </span>
-                            </div>
+                            <ChevronDown className="w-4 h-4 text-gray-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="space-y-4 p-4">
+                            {groupCodes.map((code) => renderPendingCodeCard(code))}
                           </div>
-                        </div>
-
-                        {/* Formulário de preços */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
-                          <div className="space-y-2">
-                            <Label htmlFor={`repasse-${code.id}`}>
-                              Repasse (R$) *
-                            </Label>
-                            <Input
-                              id={`repasse-${code.id}`}
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={priceInputs[code.id]?.repasse || ''}
-                              onChange={(e) =>
-                                handlePriceChange(code.id, 'repasse', e.target.value)
-                              }
-                              onFocus={() => setEditingCode(code.id)}
-                              className="text-right"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor={`venda-${code.id}`}>
-                              Preço Venda (R$) *
-                            </Label>
-                            <Input
-                              id={`venda-${code.id}`}
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={priceInputs[code.id]?.venda || ''}
-                              onChange={(e) =>
-                                handlePriceChange(code.id, 'venda', e.target.value)
-                              }
-                              onFocus={() => setEditingCode(code.id)}
-                              className="text-right"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Margem (%)</Label>
-                            <div
-                              className={`h-10 px-3 py-2 border rounded-md text-right font-semibold flex items-center justify-end ${
-                                margem !== null
-                                  ? margem >= 15
-                                    ? 'bg-green-50 text-green-700 border-green-300'
-                                    : margem >= 10
-                                    ? 'bg-yellow-50 text-yellow-700 border-yellow-300'
-                                    : 'bg-red-50 text-red-700 border-red-300'
-                                  : 'bg-gray-100 text-gray-400 border-gray-200'
-                              }`}
-                            >
-                              {margem !== null ? `${margem.toFixed(2)}%` : '-'}
-                            </div>
-                          </div>
-
-                          <div className="flex items-end">
-                            <Button
-                              onClick={() => handleSavePrice(code)}
-                              disabled={!hasInput || !hasInput.repasse || !hasInput.venda}
-                              className="w-full gap-2"
-                            >
-                              <Save className="w-4 h-4" />
-                              Salvar
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Preço Sugerido baseado em Pesquisa de Mercado */}
-                        {(() => {
-                          const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
-                          const research = getResearchByCode(codeRef);
-                          const prestadorPrices = code.prices
-                            ? Object.values(code.prices).map((p) => p.venda)
-                            : [];
-                          const suggestedPrice = getSuggestedPrice(
-                            codeRef,
-                            prestadorPrices
-                          );
-
-                          if (suggestedPrice || research) {
-                            return (
-                              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg">
-                                <div className="flex items-start gap-3">
-                                  <div className="bg-blue-600 p-2 rounded-lg flex-shrink-0">
-                                    <Lightbulb className="w-5 h-5 text-white" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <h5 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                                      Preço Sugerido por IA
-                                      {suggestedPrice && (
-                                        <Badge className="bg-blue-600 text-white border-0">
-                                          R$ {suggestedPrice.toFixed(2)}
-                                        </Badge>
-                                      )}
-                                    </h5>
-                                    <div className="space-y-2 text-sm">
-                                      {research && research.precosConcorrentes.length > 0 && (
-                                        <div className="bg-white/70 p-3 rounded-md border border-blue-200">
-                                          <div className="flex items-center gap-2 mb-2">
-                                            <TrendingUp className="w-4 h-4 text-blue-700" />
-                                            <span className="font-medium text-blue-900">
-                                              Pesquisa de Mercado ({research.precosConcorrentes.length} concorrente
-                                              {research.precosConcorrentes.length > 1 ? 's' : ''})
-                                            </span>
-                                          </div>
-                                          <div className="grid grid-cols-2 gap-2 text-xs">
-                                            {research.precosConcorrentes.map((comp) => (
-                                              <div key={comp.id} className="text-blue-800">
-                                                <span className="font-medium">{comp.concorrente}:</span>{' '}
-                                                R$ {comp.preco.toFixed(2)}
-                                              </div>
-                                            ))}
-                                          </div>
-                                          <div className="mt-2 pt-2 border-t border-blue-200 text-blue-900 font-semibold">
-                                            Média dos Concorrentes: R${' '}
-                                            {(
-                                              research.precosConcorrentes.reduce(
-                                                (sum, c) => sum + c.preco,
-                                                0
-                                              ) / research.precosConcorrentes.length
-                                            ).toFixed(2)}
-                                          </div>
-                                        </div>
-                                      )}
-                                      {prestadorPrices.length > 0 && (
-                                        <div className="bg-white/70 p-3 rounded-md border border-blue-200">
-                                          <span className="font-medium text-blue-900">
-                                            Preços de Prestadores ({prestadorPrices.length} praça
-                                            {prestadorPrices.length > 1 ? 's' : ''}):
-                                          </span>{' '}
-                                          <span className="text-blue-800">
-                                            Média R${' '}
-                                            {(
-                                              prestadorPrices.reduce((sum, p) => sum + p, 0) /
-                                              prestadorPrices.length
-                                            ).toFixed(2)}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {suggestedPrice && (
-                                        <p className="text-blue-800 mt-2">
-                                          💡 <strong>Recomendação:</strong> Com base nos dados de mercado
-                                          e preços de outras praças, sugerimos um preço de venda próximo a{' '}
-                                          <strong className="text-blue-900">
-                                            R$ {suggestedPrice.toFixed(2)}
-                                          </strong>
-                                          . Ajuste conforme as condições da sua praça.
-                                        </p>
-                                      )}
-                                    </div>
-                                    {suggestedPrice && (
-                                      <div className="mt-3">
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => {
-                                            setPriceInputs((prev) => ({
-                                              ...prev,
-                                              [code.id]: {
-                                                ...prev[code.id],
-                                                venda: suggestedPrice.toFixed(2),
-                                              },
-                                            }));
-                                            setEditingCode(code.id);
-                                            toast.success('Preço sugerido aplicado ao campo de venda');
-                                          }}
-                                          className="gap-2 text-blue-700 border-blue-300 hover:bg-blue-100"
-                                        >
-                                          <Lightbulb className="w-4 h-4" />
-                                          Usar Preço Sugerido
-                                        </Button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        })()}
-
-                        {/* Alertas de validação */}
-                        {isEditing && hasInput && hasInput.repasse && hasInput.venda && (
-                          <div className="mt-2">
-                            {margem !== null && margem < 10 && (
-                              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                                <p className="text-xs text-red-800">
-                                  <strong>Atenção:</strong> A margem está abaixo de 10%, o
-                                  que pode não ser rentável.
-                                </p>
-                              </div>
-                            )}
-                            {margem !== null && margem >= 10 && margem < 15 && (
-                              <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <AlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
-                                <p className="text-xs text-yellow-800">
-                                  A margem está entre 10-15%, dentro do aceitável mas pode ser otimizada.
-                                </p>
-                              </div>
-                            )}
-                            {margem !== null && margem >= 15 && (
-                              <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                                <p className="text-xs text-green-800">
-                                  Excelente! A margem está acima de 15%, dentro do ideal.
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        </CollapsibleContent>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                    </Collapsible>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {relevantCodes.map((code) => renderPendingCodeCard(code))}
+              </div>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -715,88 +861,46 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {pricedCodes.map((code) => {
-                  const price = code.prices?.[user!.plaza!];
-                  return (
-                    <Card key={code.id} className="border-2 border-green-200 bg-green-50/30">
-                      <CardContent className="pt-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge className={getTipoBadgeColor(code.tipo)}>
-                                {code.tipo}
-                              </Badge>
-                              <span className="text-xs text-gray-500">
-                                Prazo: {code.prazo}
-                              </span>
-                              <CheckCircle2 className="w-4 h-4 text-green-600" />
-                            </div>
-                            <h4 className="font-semibold text-gray-900 mb-1">
-                              {code.descricao}
-                            </h4>
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
-                              {code.codigoAtrelado && (
-                                <span>
-                                  <span className="font-medium">Cód. Atrelado:</span>{' '}
-                                  {code.codigoAtrelado}
-                                </span>
-                              )}
-                              {code.codigoAvulso && (
-                                <span>
-                                  <span className="font-medium">Cód. Avulso:</span>{' '}
-                                  {code.codigoAvulso}
-                                </span>
-                              )}
-                              <span>
-                                <span className="font-medium">Unidade:</span>{' '}
-                                {code.unidade}
-                              </span>
-                            </div>
-                          </div>
-                          {price && (
-                            <div className="flex items-center gap-4 text-sm ml-4">
-                              <div className="text-right">
-                                <p className="text-xs text-gray-500">Repasse</p>
-                                <p className="font-semibold text-gray-800">
-                                  R$ {price.repasse.toFixed(2)}
-                                </p>
+              {precificadosGrouped.hasGroups ? (
+                <div className="space-y-4">
+                  {precificadosGrouped.groupNames.map((groupName) => {
+                    const groupCodes = precificadosGrouped.grouped[groupName];
+                    const isUngrouped = groupName === '__sem_grupo__';
+                    const displayName = isUngrouped ? 'Sem Grupo' : groupName;
+
+                    return (
+                      <Collapsible key={groupName} defaultOpen>
+                        <div className="border rounded-lg overflow-hidden">
+                          <CollapsibleTrigger asChild>
+                            <button
+                              className="flex items-center justify-between w-full px-4 py-3 bg-green-50 hover:bg-green-100 transition-colors text-left group"
+                              aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <FolderOpen className="w-5 h-5 text-green-600" />
+                                <span className="font-semibold text-gray-900">{displayName}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {groupCodes.length} serviço(s)
+                                </Badge>
                               </div>
-                              <div className="text-right">
-                                <p className="text-xs text-gray-500">Venda</p>
-                                <p className="font-semibold text-gray-800">
-                                  R$ {price.venda.toFixed(2)}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-xs text-gray-500">Margem</p>
-                                <p
-                                  className={`font-semibold ${
-                                    price.margem >= 15
-                                      ? 'text-green-700'
-                                      : price.margem >= 10
-                                      ? 'text-yellow-700'
-                                      : 'text-red-700'
-                                  }`}
-                                >
-                                  {price.margem.toFixed(2)}%
-                                </p>
-                              </div>
-                              <button
-                                onClick={() => handleReportPricingError(code)}
-                                title="Reportar erro no preenchimento"
-                                className="ml-2 p-1.5 rounded-md border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors cursor-pointer"
-                              >
-                                <AlertTriangle className="w-3.5 h-3.5" />
-                              </button>
+                              <ChevronDown className="w-4 h-4 text-gray-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                            </button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="space-y-4 p-4">
+                              {groupCodes.map((code) => renderPricedCodeCard(code))}
                             </div>
-                          )}
+                          </CollapsibleContent>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+                      </Collapsible>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pricedCodes.map((code) => renderPricedCodeCard(code))}
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : (

@@ -100,6 +100,14 @@ export function PricingCodesManager() {
     return 'Serviço'; // default
   };
 
+  // Helper to find column value by trying multiple possible column names
+  const findColumnValue = (row: Record<string, unknown>, possibleNames: string[], fallback = ''): string => {
+    for (const name of possibleNames) {
+      if (row[name] !== undefined && row[name] !== '') return String(row[name]);
+    }
+    return fallback;
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -129,12 +137,12 @@ export function PricingCodesManager() {
 
         for (const row of jsonData) {
           // Try to find columns by common names (flexible matching)
-          const grupoServico = String(row['Grupo de Serviço'] ?? row['Grupo de Servico'] ?? row['Grupo Serviço'] ?? row['Grupo Servico'] ?? row['grupo_servico'] ?? row['GrupoServico'] ?? row['Grupo'] ?? '');
-          const tipo = String(row['Tipo'] ?? row['tipo'] ?? '');
-          const descricao = String(row['Descrição'] ?? row['Descricao'] ?? row['descricao'] ?? row['Descriçao'] ?? '');
-          const unidade = String(row['Unid'] ?? row['Unidade'] ?? row['unid'] ?? row['unidade'] ?? 'un');
-          const codAtrelado = String(row['Cód Atrelado'] ?? row['Cod Atrelado'] ?? row['CodAtrelado'] ?? row['cod_atrelado'] ?? '');
-          const codAvulso = String(row['Cód Avulso'] ?? row['Cod Avulso'] ?? row['CodAvulso'] ?? row['cod_avulso'] ?? '');
+          const grupoServico = findColumnValue(row, ['Grupo de Serviço', 'Grupo de Servico', 'Grupo Serviço', 'Grupo Servico', 'grupo_servico', 'GrupoServico', 'Grupo']);
+          const tipo = findColumnValue(row, ['Tipo', 'tipo']);
+          const descricao = findColumnValue(row, ['Descrição', 'Descricao', 'descricao', 'Descriçao']);
+          const unidade = findColumnValue(row, ['Unid', 'Unidade', 'unid', 'unidade'], 'un');
+          const codAtrelado = findColumnValue(row, ['Cód Atrelado', 'Cod Atrelado', 'CodAtrelado', 'cod_atrelado']);
+          const codAvulso = findColumnValue(row, ['Cód Avulso', 'Cod Avulso', 'CodAvulso', 'cod_avulso']);
 
           // Skip rows without description
           if (!descricao.trim()) continue;
@@ -608,7 +616,10 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
           <Collapsible key={groupName} defaultOpen>
             <div className="border rounded-lg overflow-hidden">
               <CollapsibleTrigger asChild>
-                <button className="flex items-center justify-between w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left group">
+                <button
+                  className="flex items-center justify-between w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left group"
+                  aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
+                >
                   <div className="flex items-center gap-3">
                     <FolderOpen className="w-5 h-5 text-indigo-600" />
                     <span className="font-semibold text-gray-900">{displayName}</span>

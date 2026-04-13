@@ -32,7 +32,7 @@ export default function AdminPricingPage() {
   const [priceInputs, setPriceInputs] = useState<Record<string, PriceInput>>({});
   const [editingCode, setEditingCode] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'pendentes' | 'precificados'>('pendentes');
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   // Auth guard
   useEffect(() => {
@@ -175,7 +175,7 @@ export default function AdminPricingPage() {
   };
 
   const toggleGroup = (groupName: string) => {
-    setCollapsedGroups((prev) => ({
+    setExpandedGroups((prev) => ({
       ...prev,
       [groupName]: !prev[groupName],
     }));
@@ -556,10 +556,10 @@ export default function AdminPricingPage() {
                       const codesInGroup = grouped[groupName];
                       const isUngrouped = groupName === UNGROUPED_KEY;
                       const displayName = isUngrouped ? 'Sem Grupo' : groupName;
-                      const isCollapsed = !!collapsedGroups[`pending-${groupName}`];
+                      const isCollapsed = !expandedGroups[`pending-${groupName}`];
 
                       return (
-                        <div key={groupName} style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #E5E7EB' }}>
+                        <div key={groupName} style={{ borderRadius: '16px', overflow: 'hidden', border: '2px solid #E5E7EB' }}>
                           <button
                             onClick={() => toggleGroup(`pending-${groupName}`)}
                             style={{
@@ -567,7 +567,7 @@ export default function AdminPricingPage() {
                               alignItems: 'center',
                               justifyContent: 'space-between',
                               width: '100%',
-                              padding: '14px 18px',
+                              padding: '24px 28px',
                               backgroundColor: '#F9FAFB',
                               border: 'none',
                               cursor: 'pointer',
@@ -578,14 +578,14 @@ export default function AdminPricingPage() {
                             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F9FAFB'; }}
                             aria-label={`Grupo ${displayName}, ${codesInGroup.length} serviço(s)`}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <FolderOpen size={20} style={{ color: '#4F46E5' }} />
-                              <span style={{ fontWeight: 600, fontSize: '15px', color: '#111827' }}>{displayName}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                              <FolderOpen size={28} style={{ color: '#4F46E5' }} />
+                              <span style={{ fontWeight: 700, fontSize: '22px', color: '#111827' }}>{displayName}</span>
                               <span style={{
-                                padding: '2px 10px',
-                                borderRadius: '12px',
+                                padding: '4px 14px',
+                                borderRadius: '14px',
                                 border: '1px solid #D1D5DB',
-                                fontSize: '12px',
+                                fontSize: '15px',
                                 color: '#6B7280',
                                 fontWeight: 500,
                               }}>
@@ -593,7 +593,7 @@ export default function AdminPricingPage() {
                               </span>
                             </div>
                             <ChevronDown
-                              size={18}
+                              size={24}
                               style={{
                                 color: '#6B7280',
                                 transition: 'transform 0.2s',
@@ -739,10 +739,10 @@ export default function AdminPricingPage() {
                       const codesInGroup = grouped[groupName];
                       const isUngrouped = groupName === UNGROUPED_KEY;
                       const displayName = isUngrouped ? 'Sem Grupo' : groupName;
-                      const isCollapsed = !!collapsedGroups[`priced-${groupName}`];
+                      const isCollapsed = !expandedGroups[`priced-${groupName}`];
 
                       return (
-                        <div key={groupName} style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #D1FAE5' }}>
+                        <div key={groupName} style={{ borderRadius: '16px', overflow: 'hidden', border: '2px solid #D1FAE5' }}>
                           <button
                             onClick={() => toggleGroup(`priced-${groupName}`)}
                             style={{
@@ -750,7 +750,7 @@ export default function AdminPricingPage() {
                               alignItems: 'center',
                               justifyContent: 'space-between',
                               width: '100%',
-                              padding: '14px 18px',
+                              padding: '24px 28px',
                               backgroundColor: '#F0FDF4',
                               border: 'none',
                               cursor: 'pointer',
@@ -761,14 +761,14 @@ export default function AdminPricingPage() {
                             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F0FDF4'; }}
                             aria-label={`Grupo ${displayName}, ${codesInGroup.length} serviço(s)`}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <FolderOpen size={20} style={{ color: '#16A34A' }} />
-                              <span style={{ fontWeight: 600, fontSize: '15px', color: '#111827' }}>{displayName}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                              <FolderOpen size={28} style={{ color: '#16A34A' }} />
+                              <span style={{ fontWeight: 700, fontSize: '22px', color: '#111827' }}>{displayName}</span>
                               <span style={{
-                                padding: '2px 10px',
-                                borderRadius: '12px',
+                                padding: '4px 14px',
+                                borderRadius: '14px',
                                 border: '1px solid #BBF7D0',
-                                fontSize: '12px',
+                                fontSize: '15px',
                                 color: '#16A34A',
                                 fontWeight: 500,
                               }}>
@@ -776,7 +776,7 @@ export default function AdminPricingPage() {
                               </span>
                             </div>
                             <ChevronDown
-                              size={18}
+                              size={24}
                               style={{
                                 color: '#6B7280',
                                 transition: 'transform 0.2s',

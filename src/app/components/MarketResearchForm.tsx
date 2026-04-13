@@ -414,7 +414,7 @@ export function MarketResearchForm() {
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900">
-              {mediaGeral > 0 ? `R$ ${mediaGeral.toFixed(0)}` : '—'}
+              {mediaGeral > 0 ? `R$ ${mediaGeral.toFixed(2)}` : '—'}
             </p>
             <p className="text-xs text-gray-500">Preço Médio Geral</p>
           </div>
@@ -551,7 +551,7 @@ export function MarketResearchForm() {
                 const competitorCount = research?.precosConcorrentes.length || 0;
 
                 return (
-                  <Card key={service.code} className="border border-gray-200 overflow-hidden hover:shadow-md transition-shadow" style={{ borderLeft: '4px solid #78BE20' }}>
+                  <Card key={service.code} className="border border-gray-200 overflow-hidden hover:shadow-md transition-shadow border-l-4 border-l-[#78BE20]">
                     <div
                       className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50/70 transition-colors"
                       onClick={() => toggleServiceExpanded(service.code)}
@@ -1068,7 +1068,7 @@ export function MarketResearchForm() {
             </Card>
           ) : (
             filteredHistoryChartData.map(({ research, points, competitors, suggestedPrice, avgPrice }) => (
-              <Card key={research.codigoAvulso} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden" style={{ borderTop: '3px solid #78BE20' }}>
+              <Card key={research.codigoAvulso} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden border-t-[3px] border-t-[#78BE20]">
                 <CardHeader className="bg-gradient-to-r from-[#78BE20]/[0.03] to-transparent">
                   <div className="flex items-start justify-between">
                     <div>

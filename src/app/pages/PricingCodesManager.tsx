@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { Plus, Trash2, Upload, FileSpreadsheet, Calendar, AlertCircle, CheckCircle2, ChevronsUpDown } from 'lucide-react';
+import { Plus, Trash2, Upload, FileSpreadsheet, Calendar, AlertCircle, CheckCircle2, ChevronsUpDown, ChevronDown, FolderOpen } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -30,11 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { usePricingCodesStore, PricingCode, PricingCodeTipo, ALL_PLAZAS } from '../store/pricingCodesStore';
+import { usePricingCodesStore, PricingCode, PricingCodeTipo, ALL_PLAZAS, UNGROUPED_KEY } from '../store/pricingCodesStore';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Checkbox } from '../components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 
 export function PricingCodesManager() {
   const { user } = useAuthStore();
@@ -52,6 +53,7 @@ export function PricingCodesManager() {
     descricao: '',
     codigoAvulso: '',
     codigoAtrelado: '',
+    grupoServico: '',
   });
 
   const pendingCodes = getCodesByStatus('pendente');
@@ -66,6 +68,7 @@ export function PricingCodesManager() {
         unidade: newCode.unidade || 'un',
         codigoAvulso: newCode.codigoAvulso || undefined,
         codigoAtrelado: newCode.codigoAtrelado || undefined,
+        grupoServico: newCode.grupoServico?.trim() || undefined,
         prazo: newCode.prazo,
         createdBy: user.name,
         prices: {},
@@ -79,6 +82,7 @@ export function PricingCodesManager() {
         descricao: '',
         codigoAvulso: '',
         codigoAtrelado: '',
+        grupoServico: '',
       });
       setIsDialogOpen(false);
     }
@@ -94,6 +98,14 @@ export function PricingCodesManager() {
     if (cleaned.includes('deslocamento') || cleaned.includes('desloc')) return 'Deslocamento';
     if (cleaned.includes('servi')) return 'Serviço';
     return 'Serviço'; // default
+  };
+
+  // Helper to find column value by trying multiple possible column names
+  const findColumnValue = (row: Record<string, unknown>, possibleNames: string[], fallback = ''): string => {
+    for (const name of possibleNames) {
+      if (row[name] !== undefined && row[name] !== null && String(row[name]).trim() !== '') return String(row[name]);
+    }
+    return fallback;
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,11 +137,12 @@ export function PricingCodesManager() {
 
         for (const row of jsonData) {
           // Try to find columns by common names (flexible matching)
-          const tipo = String(row['Tipo'] ?? row['tipo'] ?? '');
-          const descricao = String(row['Descrição'] ?? row['Descricao'] ?? row['descricao'] ?? row['Descriçao'] ?? '');
-          const unidade = String(row['Unid'] ?? row['Unidade'] ?? row['unid'] ?? row['unidade'] ?? 'un');
-          const codAtrelado = String(row['Cód Atrelado'] ?? row['Cod Atrelado'] ?? row['CodAtrelado'] ?? row['cod_atrelado'] ?? '');
-          const codAvulso = String(row['Cód Avulso'] ?? row['Cod Avulso'] ?? row['CodAvulso'] ?? row['cod_avulso'] ?? '');
+          const grupoServico = findColumnValue(row, ['Grupo de Serviço', 'Grupo de Servico', 'Grupo Serviço', 'Grupo Servico', 'grupo_servico', 'GrupoServico', 'Grupo']);
+          const tipo = findColumnValue(row, ['Tipo', 'tipo']);
+          const descricao = findColumnValue(row, ['Descrição', 'Descricao', 'descricao', 'Descriçao']);
+          const unidade = findColumnValue(row, ['Unid', 'Unidade', 'unid', 'unidade'], 'un');
+          const codAtrelado = findColumnValue(row, ['Cód Atrelado', 'Cod Atrelado', 'CodAtrelado', 'cod_atrelado']);
+          const codAvulso = findColumnValue(row, ['Cód Avulso', 'Cod Avulso', 'CodAvulso', 'cod_avulso']);
 
           // Skip rows without description
           if (!descricao.trim()) continue;
@@ -140,6 +153,7 @@ export function PricingCodesManager() {
             unidade: unidade.trim() || 'un',
             codigoAtrelado: codAtrelado.trim() || undefined,
             codigoAvulso: codAvulso.trim() || undefined,
+            grupoServico: grupoServico.trim() || undefined,
             prazo: '',
             createdBy: user?.name || 'Master Admin',
             prices: {},
@@ -147,7 +161,7 @@ export function PricingCodesManager() {
         }
 
         if (parsed.length === 0) {
-          setImportError('Nenhum registro válido encontrado na planilha. Verifique se as colunas estão com os nomes corretos: Tipo, Descrição. Colunas opcionais: Unid, Cód Atrelado, Cód Avulso.');
+          setImportError('Nenhum registro válido encontrado na planilha. Verifique se as colunas estão com os nomes corretos: Tipo, Descrição. Colunas opcionais: Grupo de Serviço, Unid, Cód Atrelado, Cód Avulso.');
           return;
         }
 
@@ -310,6 +324,15 @@ export function PricingCodesManager() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="grupoServico">Grupo de Serviço</Label>
+                      <Input
+                        id="grupoServico"
+                        value={newCode.grupoServico}
+                        onChange={(e) => setNewCode({ ...newCode, grupoServico: e.target.value })}
+                        placeholder="Ex: Chuveiro/Torneira Elétrica"
+                      />
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="tipo">Tipo *</Label>
@@ -406,91 +429,12 @@ export function PricingCodesManager() {
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Unid</TableHead>
-                    <TableHead>Cód. Atrelado</TableHead>
-                    <TableHead>Cód. Avulso</TableHead>
-                    <TableHead>Prazo</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Progresso</TableHead>
-                    <TableHead className="text-center">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {codes.map((code) => {
-                    const filledPlazas = Object.keys(code.prices || {}).length;
-                    const totalPlazas = code.targetPlazas?.length || ALL_PLAZAS.length;
-                    const progressPercentage = (filledPlazas / totalPlazas) * 100;
-
-                    return (
-                      <TableRow key={code.id}>
-                        <TableCell>
-                          <Badge className={getTipoBadgeColor(code.tipo)}>
-                            {code.tipo}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-xs">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {code.descricao}
-                          </p>
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-600">{code.unidade}</TableCell>
-                        <TableCell className="text-sm font-mono text-gray-600">
-                          {code.codigoAtrelado || '-'}
-                        </TableCell>
-                        <TableCell className="text-sm font-mono font-semibold text-gray-900">
-                          {code.codigoAvulso || '-'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm text-gray-600">
-                            <Calendar className="w-3 h-3" />
-                            {code.prazo}
-                          </div>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(code.status)}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-xs text-gray-600">
-                              <span>{filledPlazas}/{totalPlazas} praças</span>
-                              <span>{progressPercentage.toFixed(0)}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div
-                                className={`h-2 rounded-full transition-all ${
-                                  progressPercentage === 100
-                                    ? 'bg-green-600'
-                                    : progressPercentage > 0
-                                    ? 'bg-blue-600'
-                                    : 'bg-gray-400'
-                                }`}
-                                style={{ width: `${progressPercentage}%` }}
-                              />
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-center">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeCode(code.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+            <GroupedCodesView
+              codes={codes}
+              getTipoBadgeColor={getTipoBadgeColor}
+              getStatusBadge={getStatusBadge}
+              removeCode={removeCode}
+            />
           )}
         </CardContent>
       </Card>
@@ -539,6 +483,160 @@ export function PricingCodesManager() {
         getTipoBadgeColor={getTipoBadgeColor}
         onConfirm={handleConfirmImport}
       />
+    </div>
+  );
+}
+
+// ----- Grouped Codes View -----
+interface GroupedCodesViewProps {
+  codes: PricingCode[];
+  getTipoBadgeColor: (tipo: PricingCode['tipo']) => string;
+  getStatusBadge: (status: PricingCode['status']) => React.ReactNode;
+  removeCode: (id: string) => void;
+}
+
+function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode }: GroupedCodesViewProps) {
+  // Group codes by grupoServico
+  const grouped = codes.reduce<Record<string, PricingCode[]>>((acc, code) => {
+    const group = code.grupoServico || UNGROUPED_KEY;
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(code);
+    return acc;
+  }, {});
+
+  const groupNames = Object.keys(grouped).sort((a, b) => {
+    if (a === UNGROUPED_KEY) return 1;
+    if (b === UNGROUPED_KEY) return -1;
+    return a.localeCompare(b);
+  });
+
+  // If no groups are defined, render a flat table
+  const hasGroups = groupNames.some((g) => g !== UNGROUPED_KEY);
+
+  const renderCodesTable = (groupCodes: PricingCode[]) => (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Tipo</TableHead>
+            <TableHead>Descrição</TableHead>
+            <TableHead>Unid</TableHead>
+            <TableHead>Cód. Atrelado</TableHead>
+            <TableHead>Cód. Avulso</TableHead>
+            <TableHead>Prazo</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Progresso</TableHead>
+            <TableHead className="text-center">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {groupCodes.map((code) => {
+            const filledPlazas = Object.keys(code.prices || {}).length;
+            const totalPlazas = code.targetPlazas?.length || ALL_PLAZAS.length;
+            const progressPercentage = (filledPlazas / totalPlazas) * 100;
+
+            return (
+              <TableRow key={code.id}>
+                <TableCell>
+                  <Badge className={getTipoBadgeColor(code.tipo)}>
+                    {code.tipo}
+                  </Badge>
+                </TableCell>
+                <TableCell className="max-w-xs">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {code.descricao}
+                  </p>
+                </TableCell>
+                <TableCell className="text-sm text-gray-600">{code.unidade}</TableCell>
+                <TableCell className="text-sm font-mono text-gray-600">
+                  {code.codigoAtrelado || '-'}
+                </TableCell>
+                <TableCell className="text-sm font-mono font-semibold text-gray-900">
+                  {code.codigoAvulso || '-'}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <Calendar className="w-3 h-3" />
+                    {code.prazo}
+                  </div>
+                </TableCell>
+                <TableCell>{getStatusBadge(code.status)}</TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs text-gray-600">
+                      <span>{filledPlazas}/{totalPlazas} praças</span>
+                      <span>{progressPercentage.toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${
+                          progressPercentage === 100
+                            ? 'bg-green-600'
+                            : progressPercentage > 0
+                            ? 'bg-blue-600'
+                            : 'bg-gray-400'
+                        }`}
+                        style={{ width: `${progressPercentage}%` }}
+                      />
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeCode(code.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  if (!hasGroups) {
+    return renderCodesTable(codes);
+  }
+
+  return (
+    <div className="space-y-3">
+      {groupNames.map((groupName) => {
+        const groupCodes = grouped[groupName];
+        const isUngrouped = groupName === UNGROUPED_KEY;
+        const displayName = isUngrouped ? 'Sem Grupo' : groupName;
+
+        return (
+          <Collapsible key={groupName} defaultOpen>
+            <div className="border rounded-lg overflow-hidden">
+              <CollapsibleTrigger asChild>
+                <button
+                  className="flex items-center justify-between w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left group"
+                  aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
+                >
+                  <div className="flex items-center gap-3">
+                    <FolderOpen className="w-5 h-5 text-indigo-600" />
+                    <span className="font-semibold text-gray-900">{displayName}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {groupCodes.length} serviço(s)
+                    </Badge>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                {renderCodesTable(groupCodes)}
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+        );
+      })}
     </div>
   );
 }
@@ -669,6 +767,7 @@ function ImportPreviewDialog({ open, onOpenChange, previewCodes, getTipoBadgeCol
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Grupo de Serviço</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Descrição</TableHead>
                   <TableHead>Unid</TableHead>
@@ -691,6 +790,9 @@ function ImportPreviewDialog({ open, onOpenChange, previewCodes, getTipoBadgeCol
 
                   return (
                     <TableRow key={index}>
+                      <TableCell className="text-sm font-medium text-indigo-700">
+                        {code.grupoServico || '-'}
+                      </TableCell>
                       <TableCell>
                         <Badge className={getTipoBadgeColor(code.tipo)}>
                           {code.tipo}

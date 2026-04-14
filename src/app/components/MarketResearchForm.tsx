@@ -1,18 +1,11 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { Search, Plus, Trash2, TrendingUp, History, Clock, Download, ChevronDown, ChevronUp, ArrowUpDown, User, BarChart2, Filter, Target, Users, DollarSign, Layers, FolderOpen } from 'lucide-react';
+import { Search, Plus, Trash2, TrendingUp, History, Clock, Download, ChevronDown, ChevronUp, ArrowUpDown, User, BarChart2, Filter, Target, Users, DollarSign, Layers, FolderOpen, ArrowLeft } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Badge } from '../components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select';
 import {
   Table,
   TableBody,
@@ -32,7 +25,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { useMarketResearchStore, PricingStrategy, PriceHistoryEntry } from '../store/marketResearchStore';
+import { useMarketResearchStore, PriceHistoryEntry } from '../store/marketResearchStore';
 import { usePricingCodesStore, UNGROUPED_KEY } from '../store/pricingCodesStore';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'sonner';
@@ -63,7 +56,7 @@ function getActionLabel(acao: PriceHistoryEntry['acao']): { label: string; color
   }
 }
 
-type ActivePage = 'pesquisa' | 'historico';
+type ActivePage = 'pesquisa' | 'historico' | 'kpi_servicos' | 'kpi_concorrentes' | 'kpi_registros' | 'kpi_media';
 
 // Build chart data for a service: one point per date with each competitor as a key
 function buildChartData(history: PriceHistoryEntry[]) {
@@ -111,7 +104,7 @@ const CHART_COLORS = ['#78BE20', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#0
 export function MarketResearchForm() {
   const { user } = useAuthStore();
   const { codes } = usePricingCodesStore();
-  const { researches, strategy, priceHistory, addCompetitorPrice, removeCompetitorPrice, setStrategy, getSuggestedPrice, getPriceHistoryByCode, exportData } = useMarketResearchStore();
+  const { researches, strategy, priceHistory, addCompetitorPrice, removeCompetitorPrice, getSuggestedPrice, getPriceHistoryByCode, exportData } = useMarketResearchStore();
   
   const [activePage, setActivePage] = useState<ActivePage>('pesquisa');
   // Per-service form state for adding competitor prices
@@ -347,6 +340,43 @@ export function MarketResearchForm() {
     return all.length > 0 ? all.reduce((a, b) => a + b, 0) / all.length : 0;
   }, [researches]);
 
+  // Build grouped KPI data for detail views
+  const kpiGroupedData = useMemo(() => {
+    // Map service code -> grupoServico
+    const codeToGroup = new Map<string, string>();
+    codes.forEach(c => {
+      const codeKey = c.codigoAvulso || c.codigoAtrelado || '';
+      if (codeKey) {
+        codeToGroup.set(codeKey, c.grupoServico || UNGROUPED_KEY);
+      }
+    });
+
+    // Group services by grupoServico
+    const servicesByGroup: Record<string, typeof allServices> = {};
+    allServices.forEach(service => {
+      const group = service.grupoServico || UNGROUPED_KEY;
+      if (!servicesByGroup[group]) servicesByGroup[group] = [];
+      servicesByGroup[group].push(service);
+    });
+
+    // Group researches by grupoServico
+    const researchesByGroup: Record<string, typeof researches> = {};
+    researches.forEach(r => {
+      const group = codeToGroup.get(r.codigoAvulso) || UNGROUPED_KEY;
+      if (!researchesByGroup[group]) researchesByGroup[group] = [];
+      researchesByGroup[group].push(r);
+    });
+
+    // Get sorted group names
+    const allGroupNames = [...new Set([...Object.keys(servicesByGroup), ...Object.keys(researchesByGroup)])].sort((a, b) => {
+      if (a === UNGROUPED_KEY) return 1;
+      if (b === UNGROUPED_KEY) return -1;
+      return a.localeCompare(b, 'pt-BR');
+    });
+
+    return { servicesByGroup, researchesByGroup, allGroupNames };
+  }, [codes, allServices, researches]);
+
   return (
     <div className="space-y-6">
       {/* Cabeçalho da Página */}
@@ -399,10 +429,13 @@ export function MarketResearchForm() {
       {/* ─── Página: Pesquisa de Mercado ─── */}
       {activePage === 'pesquisa' && <>
 
-      {/* KPI Summary Cards */}
+      {/* KPI Summary Cards — interactive */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
-          <div className="p-2.5 rounded-lg bg-[#78BE20]/10">
+        <div
+          onClick={() => setActivePage('kpi_servicos')}
+          className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm hover:shadow-lg hover:border-[#78BE20]/50 transition-all cursor-pointer group"
+        >
+          <div className="p-2.5 rounded-lg bg-[#78BE20]/10 group-hover:bg-[#78BE20]/20 transition-colors">
             <Layers className="w-5 h-5 text-[#78BE20]" />
           </div>
           <div>
@@ -410,8 +443,11 @@ export function MarketResearchForm() {
             <p className="text-xs text-gray-500">Serviços Cadastrados</p>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
-          <div className="p-2.5 rounded-lg bg-[#001022]/10">
+        <div
+          onClick={() => setActivePage('kpi_concorrentes')}
+          className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm hover:shadow-lg hover:border-[#001022]/50 transition-all cursor-pointer group"
+        >
+          <div className="p-2.5 rounded-lg bg-[#001022]/10 group-hover:bg-[#001022]/20 transition-colors">
             <Users className="w-5 h-5 text-[#001022]" />
           </div>
           <div>
@@ -419,8 +455,11 @@ export function MarketResearchForm() {
             <p className="text-xs text-gray-500">Concorrentes Únicos</p>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
-          <div className="p-2.5 rounded-lg bg-blue-50">
+        <div
+          onClick={() => setActivePage('kpi_registros')}
+          className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm hover:shadow-lg hover:border-blue-400 transition-all cursor-pointer group"
+        >
+          <div className="p-2.5 rounded-lg bg-blue-50 group-hover:bg-blue-100 transition-colors">
             <Target className="w-5 h-5 text-blue-600" />
           </div>
           <div>
@@ -428,8 +467,11 @@ export function MarketResearchForm() {
             <p className="text-xs text-gray-500">Preços Registrados</p>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
-          <div className="p-2.5 rounded-lg bg-emerald-50">
+        <div
+          onClick={() => setActivePage('kpi_media')}
+          className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm hover:shadow-lg hover:border-emerald-400 transition-all cursor-pointer group"
+        >
+          <div className="p-2.5 rounded-lg bg-emerald-50 group-hover:bg-emerald-100 transition-colors">
             <DollarSign className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
@@ -440,79 +482,6 @@ export function MarketResearchForm() {
           </div>
         </div>
       </div>
-
-      {/* Seletor de Estratégia de Precificação */}
-      <Card className="border border-[#78BE20]/30 bg-gradient-to-r from-[#78BE20]/5 to-[#001022]/5 shadow-sm">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-md bg-[#78BE20]/15">
-              <TrendingUp className="w-4 h-4 text-[#78BE20]" />
-            </div>
-            <div>
-              <CardTitle className="text-lg text-[#001022]">Estratégia de Precificação</CardTitle>
-              <CardDescription>
-                Defina como os preços sugeridos serão calculados com base na pesquisa de mercado
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="strategy">Estratégia de Mercado</Label>
-              <Select value={strategy} onValueChange={(value) => setStrategy(value as PricingStrategy)}>
-                <SelectTrigger id="strategy" className="bg-white">
-                  <SelectValue placeholder="Selecione uma estratégia" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="below_market">
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">Abaixo do mercado</span>
-                      <span className="text-xs text-gray-500">Competir por preço (peso concorrentes: 0.8)</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="match_market">
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">Preço de mercado</span>
-                      <span className="text-xs text-gray-500">Acompanhar mercado (peso concorrentes: 1.0)</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="above_market">
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">Acima do mercado</span>
-                      <span className="text-xs text-gray-500">Posicionamento premium (peso concorrentes: 1.5)</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Mostrar descrição da estratégia atual */}
-            <div className="p-3 bg-white border border-[#78BE20]/20 rounded-lg shadow-sm">
-              <div className="flex items-start gap-2">
-                <TrendingUp className="w-4 h-4 text-[#78BE20] mt-0.5" />
-                <div className="text-sm">
-                  {strategy === 'below_market' && (
-                    <p className="text-gray-700">
-                      <span className="font-semibold text-[#001022]">Estratégia Agressiva:</span> Os preços sugeridos serão calculados dando menor peso aos concorrentes, priorizando competitividade de preço.
-                    </p>
-                  )}
-                  {strategy === 'match_market' && (
-                    <p className="text-gray-700">
-                      <span className="font-semibold text-[#001022]">Estratégia Neutra:</span> Os preços sugeridos equilibrarão preços dos concorrentes e histórico interno com pesos iguais.
-                    </p>
-                  )}
-                  {strategy === 'above_market' && (
-                    <p className="text-gray-700">
-                      <span className="font-semibold text-[#001022]">Estratégia Premium:</span> Os preços sugeridos darão maior peso aos concorrentes, permitindo posicionamento premium no mercado.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Serviços para Pesquisa de Mercado */}
       <Card className="shadow-sm">
@@ -1551,6 +1520,346 @@ export function MarketResearchForm() {
           )}
 
 
+        </div>
+      )}
+
+      {/* ─── Página: KPI Serviços Cadastrados ─── */}
+      {activePage === 'kpi_servicos' && (
+        <div className="space-y-6">
+          <Button variant="outline" size="sm" onClick={() => setActivePage('pesquisa')} className="gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para Pesquisa
+          </Button>
+          <Card className="shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-[#78BE20]/[0.05] to-transparent">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-[#78BE20]/10">
+                  <Layers className="w-6 h-6 text-[#78BE20]" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl text-[#001022]">Serviços Cadastrados</CardTitle>
+                  <CardDescription>
+                    <span className="font-semibold text-[#78BE20]">{totalServicos}</span> serviço(s) — separados por grupo de serviço
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {kpiGroupedData.allGroupNames.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-8">Nenhum serviço cadastrado.</p>
+              ) : (
+                <div className="space-y-4">
+                  {kpiGroupedData.allGroupNames.map((groupName) => {
+                    const groupServices = kpiGroupedData.servicesByGroup[groupName] || [];
+                    if (groupServices.length === 0) return null;
+                    const displayName = groupName === UNGROUPED_KEY ? 'Sem Grupo' : groupName;
+                    return (
+                      <Collapsible key={groupName} defaultOpen>
+                        <div className="border rounded-xl overflow-hidden shadow-sm">
+                          <CollapsibleTrigger asChild>
+                            <button className="flex items-center justify-between w-full px-5 py-4 bg-[#001022]/[0.03] hover:bg-[#001022]/[0.06] transition-colors text-left group border-l-4 border-l-[#78BE20]">
+                              <div className="flex items-center gap-3">
+                                <FolderOpen className="w-5 h-5 text-[#78BE20]" />
+                                <span className="font-semibold text-lg text-gray-900">{displayName}</span>
+                                <Badge variant="outline" className="text-sm px-3 py-1 font-semibold border-[#78BE20]/40 text-[#78BE20] bg-white">
+                                  {groupServices.length} serviço(s)
+                                </Badge>
+                              </div>
+                              <ChevronDown className="w-5 h-5 text-[#78BE20] transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                            </button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="divide-y divide-gray-100">
+                              {groupServices.map((service) => (
+                                <div key={service.code} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50">
+                                  <div>
+                                    <p className="font-medium text-[#001022]">{service.name}</p>
+                                    <p className="text-xs text-gray-500">
+                                      Código: <span className="font-mono">{service.code}</span>
+                                      {service.unidade && <> · {service.unidade}</>}
+                                    </p>
+                                  </div>
+                                  <Badge variant="outline" className="text-xs bg-gray-50">{service.tipo}</Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </div>
+                      </Collapsible>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Página: KPI Concorrentes Únicos ─── */}
+      {activePage === 'kpi_concorrentes' && (
+        <div className="space-y-6">
+          <Button variant="outline" size="sm" onClick={() => setActivePage('pesquisa')} className="gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para Pesquisa
+          </Button>
+          <Card className="shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-[#001022]/[0.03] to-transparent">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-[#001022]/10">
+                  <Users className="w-6 h-6 text-[#001022]" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl text-[#001022]">Concorrentes Únicos</CardTitle>
+                  <CardDescription>
+                    <span className="font-semibold text-[#001022]">{totalConcorrentes}</span> concorrente(s) — separados por grupo de serviço
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {kpiGroupedData.allGroupNames.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-8">Nenhum concorrente registrado.</p>
+              ) : (
+                <div className="space-y-4">
+                  {kpiGroupedData.allGroupNames.map((groupName) => {
+                    const groupResearches = kpiGroupedData.researchesByGroup[groupName] || [];
+                    const uniqueCompetitors = new Map<string, number[]>();
+                    groupResearches.forEach(r =>
+                      r.precosConcorrentes.forEach(c => {
+                        if (!uniqueCompetitors.has(c.concorrente)) uniqueCompetitors.set(c.concorrente, []);
+                        uniqueCompetitors.get(c.concorrente)!.push(c.preco);
+                      })
+                    );
+                    if (uniqueCompetitors.size === 0) return null;
+                    const displayName = groupName === UNGROUPED_KEY ? 'Sem Grupo' : groupName;
+                    return (
+                      <Collapsible key={groupName} defaultOpen>
+                        <div className="border rounded-xl overflow-hidden shadow-sm">
+                          <CollapsibleTrigger asChild>
+                            <button className="flex items-center justify-between w-full px-5 py-4 bg-[#001022]/[0.03] hover:bg-[#001022]/[0.06] transition-colors text-left group border-l-4 border-l-[#001022]">
+                              <div className="flex items-center gap-3">
+                                <FolderOpen className="w-5 h-5 text-[#001022]" />
+                                <span className="font-semibold text-lg text-gray-900">{displayName}</span>
+                                <Badge variant="outline" className="text-sm px-3 py-1 font-semibold border-[#001022]/30 text-[#001022] bg-white">
+                                  {uniqueCompetitors.size} concorrente(s)
+                                </Badge>
+                              </div>
+                              <ChevronDown className="w-5 h-5 text-[#001022] transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                            </button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="divide-y divide-gray-100">
+                              {Array.from(uniqueCompetitors.entries())
+                                .sort(([a], [b]) => a.localeCompare(b, 'pt-BR'))
+                                .map(([name, prices]) => {
+                                  const avg = prices.reduce((s, p) => s + p, 0) / prices.length;
+                                  return (
+                                    <div key={name} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50">
+                                      <div className="flex items-center gap-2">
+                                        <User className="w-4 h-4 text-gray-400" />
+                                        <p className="font-medium text-[#001022]">{name}</p>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-sm font-semibold text-gray-700">
+                                          {prices.length} preço(s) registrado(s)
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                          Média: <span className="font-semibold text-[#78BE20]">R$ {avg.toFixed(2)}</span>
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </CollapsibleContent>
+                        </div>
+                      </Collapsible>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Página: KPI Preços Registrados ─── */}
+      {activePage === 'kpi_registros' && (
+        <div className="space-y-6">
+          <Button variant="outline" size="sm" onClick={() => setActivePage('pesquisa')} className="gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para Pesquisa
+          </Button>
+          <Card className="shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-blue-50/50 to-transparent">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-blue-50">
+                  <Target className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl text-[#001022]">Preços Registrados</CardTitle>
+                  <CardDescription>
+                    <span className="font-semibold text-blue-600">{totalRegistros}</span> preço(s) registrado(s) — separados por grupo de serviço
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {kpiGroupedData.allGroupNames.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-8">Nenhum preço registrado.</p>
+              ) : (
+                <div className="space-y-4">
+                  {kpiGroupedData.allGroupNames.map((groupName) => {
+                    const groupResearches = kpiGroupedData.researchesByGroup[groupName] || [];
+                    const totalGroupPrices = groupResearches.reduce((acc, r) => acc + r.precosConcorrentes.length, 0);
+                    if (totalGroupPrices === 0) return null;
+                    const displayName = groupName === UNGROUPED_KEY ? 'Sem Grupo' : groupName;
+                    return (
+                      <Collapsible key={groupName} defaultOpen>
+                        <div className="border rounded-xl overflow-hidden shadow-sm">
+                          <CollapsibleTrigger asChild>
+                            <button className="flex items-center justify-between w-full px-5 py-4 bg-blue-50/30 hover:bg-blue-50/60 transition-colors text-left group border-l-4 border-l-blue-500">
+                              <div className="flex items-center gap-3">
+                                <FolderOpen className="w-5 h-5 text-blue-600" />
+                                <span className="font-semibold text-lg text-gray-900">{displayName}</span>
+                                <Badge variant="outline" className="text-sm px-3 py-1 font-semibold border-blue-300 text-blue-600 bg-white">
+                                  {totalGroupPrices} preço(s)
+                                </Badge>
+                              </div>
+                              <ChevronDown className="w-5 h-5 text-blue-600 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                            </button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="divide-y divide-gray-100">
+                              {groupResearches.map((research) => (
+                                <div key={research.codigoAvulso} className="px-5 py-3 hover:bg-gray-50/50">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div>
+                                      <p className="font-medium text-[#001022]">{research.descricao}</p>
+                                      <p className="text-xs text-gray-500">Código: <span className="font-mono">{research.codigoAvulso}</span></p>
+                                    </div>
+                                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200">
+                                      {research.precosConcorrentes.length} preço(s)
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {research.precosConcorrentes.map((comp) => (
+                                      <div key={comp.id} className="text-xs bg-white border border-gray-200 rounded-lg px-3 py-1.5 flex items-center gap-2">
+                                        <span className="text-gray-600">{comp.concorrente}:</span>
+                                        <span className="font-semibold text-green-700">R$ {comp.preco.toFixed(2)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </div>
+                      </Collapsible>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Página: KPI Preço Médio Geral ─── */}
+      {activePage === 'kpi_media' && (
+        <div className="space-y-6">
+          <Button variant="outline" size="sm" onClick={() => setActivePage('pesquisa')} className="gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para Pesquisa
+          </Button>
+          <Card className="shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-emerald-50/50 to-transparent">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-emerald-50">
+                  <DollarSign className="w-6 h-6 text-emerald-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl text-[#001022]">Preço Médio Geral</CardTitle>
+                  <CardDescription>
+                    Média geral: <span className="font-semibold text-emerald-600">{mediaGeral > 0 ? `R$ ${mediaGeral.toFixed(2)}` : '—'}</span> — separado por grupo de serviço
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {kpiGroupedData.allGroupNames.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-8">Nenhum dado de preço disponível.</p>
+              ) : (
+                <div className="space-y-4">
+                  {kpiGroupedData.allGroupNames.map((groupName) => {
+                    const groupResearches = kpiGroupedData.researchesByGroup[groupName] || [];
+                    const allGroupPrices = groupResearches.flatMap(r => r.precosConcorrentes.map(c => c.preco));
+                    if (allGroupPrices.length === 0) return null;
+                    const groupAvg = allGroupPrices.reduce((a, b) => a + b, 0) / allGroupPrices.length;
+                    const groupMin = Math.min(...allGroupPrices);
+                    const groupMax = Math.max(...allGroupPrices);
+                    const displayName = groupName === UNGROUPED_KEY ? 'Sem Grupo' : groupName;
+                    return (
+                      <Collapsible key={groupName} defaultOpen>
+                        <div className="border rounded-xl overflow-hidden shadow-sm">
+                          <CollapsibleTrigger asChild>
+                            <button className="flex items-center justify-between w-full px-5 py-4 bg-emerald-50/30 hover:bg-emerald-50/60 transition-colors text-left group border-l-4 border-l-emerald-500">
+                              <div className="flex items-center gap-3">
+                                <FolderOpen className="w-5 h-5 text-emerald-600" />
+                                <span className="font-semibold text-lg text-gray-900">{displayName}</span>
+                                <Badge variant="outline" className="text-sm px-3 py-1 font-semibold border-emerald-300 text-emerald-600 bg-white">
+                                  Média: R$ {groupAvg.toFixed(2)}
+                                </Badge>
+                              </div>
+                              <ChevronDown className="w-5 h-5 text-emerald-600 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                            </button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="p-5">
+                              {/* Group summary */}
+                              <div className="grid grid-cols-3 gap-4 mb-4">
+                                <div className="bg-emerald-50 rounded-lg p-3 text-center">
+                                  <p className="text-xs text-gray-500">Menor Preço</p>
+                                  <p className="text-lg font-bold text-emerald-700">R$ {groupMin.toFixed(2)}</p>
+                                </div>
+                                <div className="bg-blue-50 rounded-lg p-3 text-center">
+                                  <p className="text-xs text-gray-500">Preço Médio</p>
+                                  <p className="text-lg font-bold text-blue-700">R$ {groupAvg.toFixed(2)}</p>
+                                </div>
+                                <div className="bg-red-50 rounded-lg p-3 text-center">
+                                  <p className="text-xs text-gray-500">Maior Preço</p>
+                                  <p className="text-lg font-bold text-red-700">R$ {groupMax.toFixed(2)}</p>
+                                </div>
+                              </div>
+                              {/* Per-service breakdown */}
+                              <div className="divide-y divide-gray-100 border rounded-lg overflow-hidden">
+                                {groupResearches.map((research) => {
+                                  const prices = research.precosConcorrentes.map(c => c.preco);
+                                  if (prices.length === 0) return null;
+                                  const svcAvg = prices.reduce((a, b) => a + b, 0) / prices.length;
+                                  return (
+                                    <div key={research.codigoAvulso} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50/50">
+                                      <div>
+                                        <p className="font-medium text-sm text-[#001022]">{research.descricao}</p>
+                                        <p className="text-xs text-gray-500">
+                                          Código: <span className="font-mono">{research.codigoAvulso}</span> · {prices.length} preço(s)
+                                        </p>
+                                      </div>
+                                      <span className="font-bold text-emerald-700">R$ {svcAvg.toFixed(2)}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </CollapsibleContent>
+                        </div>
+                      </Collapsible>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

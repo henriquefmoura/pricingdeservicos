@@ -94,7 +94,8 @@ export function subscribeToSupportMessages(
     return { unsubscribe: () => {} };
   }
 
-  const channel = supabase
+  const client = supabase;
+  const channel = client
     .channel('support-messages-realtime')
     .on(
       'postgres_changes',
@@ -107,7 +108,7 @@ export function subscribeToSupportMessages(
 
   return {
     unsubscribe: () => {
-      supabase.removeChannel(channel);
+      client.removeChannel(channel);
     },
   };
 }

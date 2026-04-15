@@ -134,7 +134,9 @@ function PlazaBadge({ plaza }: { plaza: string }) {
   );
 }
 
-function RoleBadge({ role }: { role: 'admin' | 'user' }) {
+function RoleBadge({ role }: { role: 'admin' | 'user' | 'master' }) {
+  const isMaster = role === 'master';
+  const isAdmin = role === 'admin';
   return (
     <span
       style={{
@@ -143,11 +145,11 @@ function RoleBadge({ role }: { role: 'admin' | 'user' }) {
         borderRadius: '9999px',
         fontSize: '11px',
         fontWeight: 600,
-        backgroundColor: role === 'admin' ? 'rgba(120, 190, 32, 0.15)' : 'rgba(59, 130, 246, 0.12)',
-        color: role === 'admin' ? '#78BE20' : '#3B82F6',
+        backgroundColor: isMaster ? 'rgba(168, 85, 247, 0.15)' : isAdmin ? 'rgba(120, 190, 32, 0.15)' : 'rgba(59, 130, 246, 0.12)',
+        color: isMaster ? '#A855F7' : isAdmin ? '#78BE20' : '#3B82F6',
       }}
     >
-      {role === 'admin' ? 'Admin' : 'Usuário'}
+      {isMaster ? 'Master' : isAdmin ? 'Admin' : 'Usuário'}
     </span>
   );
 }

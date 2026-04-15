@@ -21,7 +21,7 @@ export interface UserGovernanceMetrics {
   userId: string;
   userName: string;
   plaza: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'master';
   totalLogins: number;
   totalPricesSet: number;
   totalApprovals: number;

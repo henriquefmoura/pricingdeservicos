@@ -72,7 +72,8 @@ export function subscribeToNotifications(
     return { unsubscribe: () => {} };
   }
 
-  const channel = supabase
+  const client = supabase;
+  const channel = client
     .channel('notifications-realtime')
     .on(
       'postgres_changes',
@@ -85,7 +86,7 @@ export function subscribeToNotifications(
 
   return {
     unsubscribe: () => {
-      supabase.removeChannel(channel);
+      client.removeChannel(channel);
     },
   };
 }

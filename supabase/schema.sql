@@ -289,7 +289,7 @@ CREATE TABLE IF NOT EXISTS public.activity_logs (
   id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id    TEXT NOT NULL,
   user_name  TEXT NOT NULL,
-  user_role  TEXT NOT NULL CHECK (user_role IN ('admin', 'user')),
+  user_role  TEXT NOT NULL CHECK (user_role IN ('master', 'admin', 'user')),
   plaza      TEXT NOT NULL,
   action     TEXT NOT NULL,
   details    TEXT,

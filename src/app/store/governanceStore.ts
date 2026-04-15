@@ -10,7 +10,7 @@ import * as governanceApi from '../services/api/governanceApi';
 export interface UserActivityLog {
   userId: string;
   userName: string;
-  userRole: 'admin' | 'user';
+  userRole: 'master' | 'admin' | 'user';
   plaza: string;
   action: 'login' | 'price_set' | 'price_approved' | 'price_rejected' | 'analysis_viewed' | 'market_research';
   timestamp: Date;

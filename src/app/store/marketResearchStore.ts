@@ -233,27 +233,24 @@ export const useMarketResearchStore = create<MarketResearchState>()(
       },
 
       removeCompetitorPrice: (codigoAvulso, competitorId) => {
-        // Capture data for backend sync before state change
+        // Capture data for backend sync and history before state change
         const research = get().researches.find((r) => r.codigoAvulso === codigoAvulso);
         const removedCompetitor = research?.precosConcorrentes.find((c) => c.id === competitorId);
 
+        const historyEntry: PriceHistoryEntry | null = removedCompetitor
+          ? {
+              id: `hist-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              codigoAvulso,
+              descricao: research?.descricao || '',
+              concorrente: removedCompetitor.concorrente,
+              preco: removedCompetitor.preco,
+              acao: 'removed',
+              timestamp: new Date().toISOString(),
+              registradoPor: removedCompetitor.adicionadoPor,
+            }
+          : null;
+
         set((state) => {
-          const stateResearch = state.researches.find((r) => r.codigoAvulso === codigoAvulso);
-          const stateRemoved = stateResearch?.precosConcorrentes.find((c) => c.id === competitorId);
-
-          const historyEntry: PriceHistoryEntry | null = stateRemoved
-            ? {
-                id: `hist-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                codigoAvulso,
-                descricao: stateResearch?.descricao || '',
-                concorrente: stateRemoved.concorrente,
-                preco: stateRemoved.preco,
-                acao: 'removed',
-                timestamp: new Date().toISOString(),
-                registradoPor: stateRemoved.adicionadoPor,
-              }
-            : null;
-
           return {
             researches: state.researches
               .map((r) => {

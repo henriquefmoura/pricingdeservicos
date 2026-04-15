@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { isSupabaseConfigured } from '../lib/supabase';
+import * as pricingCodesApi from '../services/api/pricingCodesApi';
 
 export type PricingCodeTipo = 'Visita Técnica' | 'Serviço' | 'Inst + Pague -' | 'Emergencial' | 'Complementar' | 'Deslocamento';
 
@@ -40,6 +42,7 @@ export interface PricingCode {
 
 interface PricingCodesState {
   codes: PricingCode[];
+  isLoading: boolean;
   addCode: (code: Omit<PricingCode, 'id' | 'createdAt' | 'status'>) => void;
   addCodes: (codes: Omit<PricingCode, 'id' | 'createdAt' | 'status'>[]) => void;
   removeCode: (id: string) => void;
@@ -48,12 +51,60 @@ interface PricingCodesState {
   getPendingCodesCount: () => number;
   clearCodes: () => void;
   initializeMockCodes: () => void;
+  /** Load codes from Supabase (no-op when offline). */
+  syncFromBackend: () => Promise<void>;
 }
 
 export const usePricingCodesStore = create<PricingCodesState>()(
   persist(
     (set, get) => ({
       codes: [],
+      isLoading: false,
+
+      syncFromBackend: async () => {
+        if (!isSupabaseConfigured()) return;
+        set({ isLoading: true });
+        try {
+          const [dbCodes, dbPrices] = await Promise.all([
+            pricingCodesApi.fetchPricingCodes(),
+            pricingCodesApi.fetchAllPrices(),
+          ]);
+          if (dbCodes) {
+            // Build a map of code_id → prices
+            const priceMap = new Map<string, PricingCode['prices']>();
+            if (dbPrices) {
+              for (const p of dbPrices) {
+                if (!priceMap.has(p.code_id)) priceMap.set(p.code_id, {});
+                priceMap.get(p.code_id)![p.plaza] = {
+                  repasse: Number(p.repasse),
+                  venda: Number(p.venda),
+                  margem: Number(p.margem),
+                  preenchidoPor: p.preenchido_por ?? undefined,
+                  preenchidoEm: p.preenchido_em ? new Date(p.preenchido_em) : undefined,
+                };
+              }
+            }
+            const codes: PricingCode[] = dbCodes.map((c) => ({
+              id: c.id,
+              grupoServico: c.grupo_servico ?? undefined,
+              tipo: c.tipo as PricingCodeTipo,
+              descricao: c.descricao,
+              unidade: c.unidade,
+              codigoAtrelado: c.codigo_atrelado ?? undefined,
+              codigoAvulso: c.codigo_avulso ?? undefined,
+              prazo: c.prazo,
+              status: c.status as PricingCode['status'],
+              createdAt: new Date(c.created_at),
+              createdBy: c.created_by,
+              targetPlazas: c.target_plazas ?? undefined,
+              prices: priceMap.get(c.id) ?? {},
+            }));
+            set({ codes });
+          }
+        } finally {
+          set({ isLoading: false });
+        }
+      },
 
       addCode: (code) => {
         const newCode: PricingCode = {
@@ -65,6 +116,30 @@ export const usePricingCodesStore = create<PricingCodesState>()(
         set((state) => ({
           codes: [...state.codes, newCode],
         }));
+
+        // Sync to backend (fire and forget)
+        if (isSupabaseConfigured()) {
+          pricingCodesApi.insertPricingCode({
+            grupo_servico: code.grupoServico ?? null,
+            tipo: code.tipo,
+            descricao: code.descricao,
+            unidade: code.unidade,
+            codigo_atrelado: code.codigoAtrelado ?? null,
+            codigo_avulso: code.codigoAvulso ?? null,
+            prazo: code.prazo,
+            created_by: code.createdBy,
+            target_plazas: code.targetPlazas ?? null,
+          }).then((dbCode) => {
+            if (dbCode) {
+              // Replace the temporary ID with the Supabase UUID
+              set((state) => ({
+                codes: state.codes.map((c) =>
+                  c.id === newCode.id ? { ...c, id: dbCode.id, createdAt: new Date(dbCode.created_at) } : c
+                ),
+              }));
+            }
+          });
+        }
       },
 
       addCodes: (codes) => {
@@ -77,12 +152,33 @@ export const usePricingCodesStore = create<PricingCodesState>()(
         set((state) => ({
           codes: [...state.codes, ...newCodes],
         }));
+
+        if (isSupabaseConfigured()) {
+          const dbInserts = codes.map((code) => ({
+            grupo_servico: code.grupoServico ?? null,
+            tipo: code.tipo,
+            descricao: code.descricao,
+            unidade: code.unidade,
+            codigo_atrelado: code.codigoAtrelado ?? null,
+            codigo_avulso: code.codigoAvulso ?? null,
+            prazo: code.prazo,
+            created_by: code.createdBy,
+            target_plazas: code.targetPlazas ?? null,
+          }));
+          pricingCodesApi.insertPricingCodes(dbInserts).then(() => {
+            // Refresh from backend to get real IDs
+            get().syncFromBackend();
+          });
+        }
       },
 
       removeCode: (id) => {
         set((state) => ({
           codes: state.codes.filter((code) => code.id !== id),
         }));
+        if (isSupabaseConfigured()) {
+          pricingCodesApi.deletePricingCode(id);
+        }
       },
 
       updateCodePrice: (id, plaza, repasse, venda, preenchidoPor) => {
@@ -111,6 +207,14 @@ export const usePricingCodesStore = create<PricingCodesState>()(
                 updatedCode.status = 'concluido';
               } else if (filledPlazas > 0) {
                 updatedCode.status = 'em_andamento';
+              }
+
+              // Sync price to backend
+              if (isSupabaseConfigured()) {
+                pricingCodesApi.upsertPrice(id, plaza, repasse, venda, margem, preenchidoPor);
+                if (updatedCode.status !== code.status) {
+                  pricingCodesApi.updatePricingCodeStatus(id, updatedCode.status);
+                }
               }
 
               return updatedCode;

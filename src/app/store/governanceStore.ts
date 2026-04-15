@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { usePricingCodesStore } from './pricingCodesStore';
 import { useApprovalStore } from './approvalStore';
+import { isSupabaseConfigured } from '../lib/supabase';
+import * as governanceApi from '../services/api/governanceApi';
 
 // --- Interfaces ---
 
@@ -43,12 +45,15 @@ export interface PlazaGovernanceMetrics {
 
 interface GovernanceState {
   activityLogs: UserActivityLog[];
+  isLoading: boolean;
   logActivity: (log: Omit<UserActivityLog, 'timestamp'>) => void;
   getUserMetrics: () => UserGovernanceMetrics[];
   getPlazaMetrics: () => PlazaGovernanceMetrics[];
   getTopUsers: (limit: number) => UserGovernanceMetrics[];
   getActivityTimeline: (days: number) => { date: string; count: number }[];
   initializeMockData: () => void;
+  /** Load activity logs from Supabase (no-op when offline). */
+  syncFromBackend: () => Promise<void>;
 }
 
 // --- Store ---
@@ -57,6 +62,30 @@ export const useGovernanceStore = create<GovernanceState>()(
   persist(
     (set, get) => ({
       activityLogs: [],
+      isLoading: false,
+
+      syncFromBackend: async () => {
+        if (!isSupabaseConfigured()) return;
+        set({ isLoading: true });
+        try {
+          const dbLogs = await governanceApi.fetchActivityLogs();
+          if (dbLogs) {
+            set({
+              activityLogs: dbLogs.map((l) => ({
+                userId: l.user_id,
+                userName: l.user_name,
+                userRole: l.user_role as UserActivityLog['userRole'],
+                plaza: l.plaza,
+                action: l.action as UserActivityLog['action'],
+                timestamp: new Date(l.created_at),
+                details: l.details ?? undefined,
+              })),
+            });
+          }
+        } finally {
+          set({ isLoading: false });
+        }
+      },
 
       // Clear any legacy mock data; real activity is tracked via logActivity()
       initializeMockData: () => {
@@ -74,6 +103,18 @@ export const useGovernanceStore = create<GovernanceState>()(
         set((state) => ({
           activityLogs: [...state.activityLogs, entry],
         }));
+
+        // Sync to backend (fire and forget)
+        if (isSupabaseConfigured()) {
+          governanceApi.insertActivityLog({
+            user_id: log.userId,
+            user_name: log.userName,
+            user_role: log.userRole,
+            plaza: log.plaza,
+            action: log.action,
+            details: log.details ?? null,
+          });
+        }
       },
 
       getUserMetrics: () => {

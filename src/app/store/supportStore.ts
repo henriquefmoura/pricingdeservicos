@@ -1,9 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { SupportThread, SupportMessage } from '../types/notification';
+import { isSupabaseConfigured } from '../lib/supabase';
+import * as supportApi from '../services/api/supportApi';
 
 interface SupportState {
   threads: SupportThread[];
+  isLoading: boolean;
   createThread: (thread: Omit<SupportThread, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'messages'>) => string;
   addMessage: (threadId: string, message: Omit<SupportMessage, 'id' | 'threadId' | 'createdAt' | 'read'>) => void;
   closeThread: (threadId: string) => void;
@@ -13,6 +16,10 @@ interface SupportState {
   markThreadMessagesRead: (threadId: string, readerRole: 'master' | 'admin' | 'user') => void;
   getUnreadThreadCount: (role: 'master' | 'admin' | 'user', plaza?: string) => number;
   initializeMockThreads: () => void;
+  /** Load threads from Supabase (no-op when offline). */
+  syncFromBackend: () => Promise<void>;
+  /** Start realtime subscription for new messages. Returns unsubscribe fn. */
+  subscribeRealtime: () => { unsubscribe: () => void };
 }
 
 function generateId(prefix: string): string {
@@ -201,6 +208,70 @@ export const useSupportStore = create<SupportState>()(
   persist(
     (set, get) => ({
       threads: [],
+      isLoading: false,
+
+      syncFromBackend: async () => {
+        if (!isSupabaseConfigured()) return;
+        set({ isLoading: true });
+        try {
+          const dbThreads = await supportApi.fetchSupportThreads();
+          if (dbThreads) {
+            set({
+              threads: dbThreads.map((t) => ({
+                id: t.id,
+                subject: t.subject,
+                fromUserId: t.from_user_id,
+                fromUserName: t.from_user_name,
+                fromUserRole: t.from_user_role as SupportThread['fromUserRole'],
+                toRole: t.to_role as SupportThread['toRole'],
+                plaza: t.plaza ?? undefined,
+                status: t.status as SupportThread['status'],
+                createdAt: new Date(t.created_at),
+                updatedAt: new Date(t.updated_at),
+                messages: (t.messages ?? []).map((m) => ({
+                  id: m.id,
+                  threadId: m.thread_id,
+                  fromUserId: m.from_user_id,
+                  fromUserName: m.from_user_name,
+                  fromUserRole: m.from_user_role as SupportMessage['fromUserRole'],
+                  toRole: m.to_role as SupportMessage['toRole'],
+                  toPlaza: m.to_plaza ?? undefined,
+                  message: m.message,
+                  createdAt: new Date(m.created_at),
+                  read: m.read,
+                })),
+              })),
+            });
+          }
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      subscribeRealtime: () => {
+        return supportApi.subscribeToSupportMessages((dbMsg) => {
+          const msg: SupportMessage = {
+            id: dbMsg.id,
+            threadId: dbMsg.thread_id,
+            fromUserId: dbMsg.from_user_id,
+            fromUserName: dbMsg.from_user_name,
+            fromUserRole: dbMsg.from_user_role as SupportMessage['fromUserRole'],
+            toRole: dbMsg.to_role as SupportMessage['toRole'],
+            toPlaza: dbMsg.to_plaza ?? undefined,
+            message: dbMsg.message,
+            createdAt: new Date(dbMsg.created_at),
+            read: dbMsg.read,
+          };
+          set((state) => ({
+            threads: state.threads.map((t) => {
+              if (t.id !== msg.threadId) return t;
+              // Only add if not already present
+              if (t.messages.some((m) => m.id === msg.id)) return t;
+              return { ...t, messages: [...t.messages, msg], updatedAt: new Date() };
+            }),
+          }));
+        });
+      },
 
       createThread: (thread) => {
         const id = generateId('thread');
@@ -216,6 +287,26 @@ export const useSupportStore = create<SupportState>()(
         set((state) => ({
           threads: [newThread, ...state.threads],
         }));
+
+        if (isSupabaseConfigured()) {
+          supportApi.insertSupportThread({
+            subject: thread.subject,
+            from_user_id: thread.fromUserId,
+            from_user_name: thread.fromUserName,
+            from_user_role: thread.fromUserRole,
+            to_role: thread.toRole,
+            plaza: thread.plaza ?? null,
+          }).then((dbThread) => {
+            if (dbThread) {
+              set((state) => ({
+                threads: state.threads.map((t) =>
+                  t.id === id ? { ...t, id: dbThread.id } : t
+                ),
+              }));
+            }
+          });
+        }
+
         return id;
       },
 
@@ -234,6 +325,19 @@ export const useSupportStore = create<SupportState>()(
               : t
           ),
         }));
+
+        if (isSupabaseConfigured()) {
+          supportApi.insertSupportMessage({
+            thread_id: threadId,
+            from_user_id: message.fromUserId,
+            from_user_name: message.fromUserName,
+            from_user_role: message.fromUserRole,
+            to_role: message.toRole,
+            to_plaza: message.toPlaza ?? null,
+            message: message.message,
+            read: false,
+          });
+        }
       },
 
       closeThread: (threadId) => {
@@ -242,12 +346,18 @@ export const useSupportStore = create<SupportState>()(
             t.id === threadId ? { ...t, status: 'closed', updatedAt: new Date() } : t
           ),
         }));
+        if (isSupabaseConfigured()) {
+          supportApi.updateThreadStatus(threadId, 'closed');
+        }
       },
 
       deleteThread: (threadId) => {
         set((state) => ({
           threads: state.threads.filter((t) => t.id !== threadId),
         }));
+        if (isSupabaseConfigured()) {
+          supportApi.deleteSupportThread(threadId);
+        }
       },
 
       getThreadsForRole: (role, plaza) => {
@@ -296,6 +406,9 @@ export const useSupportStore = create<SupportState>()(
             };
           }),
         }));
+        if (isSupabaseConfigured()) {
+          supportApi.markMessagesRead(threadId, readerRole);
+        }
       },
 
       getUnreadThreadCount: (role, plaza) => {

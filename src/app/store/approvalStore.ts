@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { isSupabaseConfigured } from '../lib/supabase';
+import * as approvalsApi from '../services/api/approvalsApi';
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
@@ -50,6 +52,7 @@ interface ApprovalState {
   approvals: PriceApproval[];
   // Log de comparação: preço sugerido vs preço ajustado após rejeição (para ML)
   adjustmentLog: PriceAdjustmentRecord[];
+  isLoading: boolean;
   addApproval: (approval: Omit<PriceApproval, 'id' | 'status' | 'requestedAt'>) => void;
   approvePrice: (id: string, reviewedBy: string, comments?: string) => void;
   rejectPrice: (id: string, reviewedBy: string, comments?: string) => void;
@@ -60,6 +63,8 @@ interface ApprovalState {
   initializeMockData: () => void;
   // Aplica preço ajustado após rejeição e registra no log para ML
   applyRejectedPrice: (id: string, newRepasse: number, newVenda: number, adjustedBy?: string) => void;
+  /** Load approvals from Supabase (no-op when offline). */
+  syncFromBackend: () => Promise<void>;
 }
 
 
@@ -69,6 +74,66 @@ export const useApprovalStore = create<ApprovalState>()(
     (set, get) => ({
       approvals: [],
       adjustmentLog: [],
+      isLoading: false,
+
+      syncFromBackend: async () => {
+        if (!isSupabaseConfigured()) return;
+        set({ isLoading: true });
+        try {
+          const [dbApprovals, dbLog] = await Promise.all([
+            approvalsApi.fetchApprovals(),
+            approvalsApi.fetchAdjustmentLog(),
+          ]);
+          if (dbApprovals) {
+            set({
+              approvals: dbApprovals.map((a) => ({
+                id: a.id,
+                codigo: a.codigo,
+                descricao: a.descricao,
+                grupo: a.grupo,
+                plaza: a.plaza,
+                currentRepasse: Number(a.current_repasse),
+                currentVenda: Number(a.current_venda),
+                currentMargem: Number(a.current_margem),
+                proposedRepasse: Number(a.proposed_repasse),
+                proposedVenda: Number(a.proposed_venda),
+                proposedMargem: Number(a.proposed_margem),
+                variation: Number(a.variation),
+                isNewService: a.is_new_service,
+                status: a.status as ApprovalStatus,
+                requestedBy: a.requested_by,
+                requestedAt: new Date(a.requested_at),
+                reviewedBy: a.reviewed_by ?? undefined,
+                reviewedAt: a.reviewed_at ? new Date(a.reviewed_at) : undefined,
+                comments: a.comments ?? undefined,
+              })),
+            });
+          }
+          if (dbLog) {
+            set({
+              adjustmentLog: dbLog.map((l) => ({
+                id: l.id,
+                approvalId: l.approval_id,
+                codigo: l.codigo,
+                descricao: l.descricao,
+                grupo: l.grupo,
+                plaza: l.plaza,
+                suggestedRepasse: Number(l.suggested_repasse),
+                suggestedVenda: Number(l.suggested_venda),
+                suggestedMargem: Number(l.suggested_margem),
+                adjustedRepasse: Number(l.adjusted_repasse),
+                adjustedVenda: Number(l.adjusted_venda),
+                adjustedMargem: Number(l.adjusted_margem),
+                variationPercent: Number(l.variation_percent),
+                adjustedBy: l.adjusted_by,
+                adjustedAt: new Date(l.adjusted_at),
+              })),
+            });
+          }
+        } finally {
+          set({ isLoading: false });
+        }
+      },
 
       initializeMockData: () => {
         // Clear any legacy mock approvals; real approvals are created via addApproval()
@@ -90,6 +155,35 @@ export const useApprovalStore = create<ApprovalState>()(
         set((state) => ({
           approvals: [...state.approvals, newApproval],
         }));
+
+        if (isSupabaseConfigured()) {
+          approvalsApi.insertApproval({
+            codigo: approval.codigo,
+            descricao: approval.descricao,
+            grupo: approval.grupo,
+            plaza: approval.plaza,
+            current_repasse: approval.currentRepasse,
+            current_venda: approval.currentVenda,
+            current_margem: approval.currentMargem,
+            proposed_repasse: approval.proposedRepasse,
+            proposed_venda: approval.proposedVenda,
+            proposed_margem: approval.proposedMargem,
+            variation: approval.variation,
+            is_new_service: approval.isNewService,
+            requested_by: approval.requestedBy,
+            reviewed_by: null,
+            reviewed_at: null,
+            comments: null,
+          }).then((dbApproval) => {
+            if (dbApproval) {
+              set((state) => ({
+                approvals: state.approvals.map((a) =>
+                  a.id === newApproval.id ? { ...a, id: dbApproval.id } : a
+                ),
+              }));
+            }
+          });
+        }
       },
 
       approvePrice: (id, reviewedBy, comments) => {
@@ -106,6 +200,9 @@ export const useApprovalStore = create<ApprovalState>()(
               : approval
           ),
         }));
+        if (isSupabaseConfigured()) {
+          approvalsApi.updateApprovalStatus(id, 'approved', reviewedBy, comments);
+        }
       },
 
       rejectPrice: (id, reviewedBy, comments) => {
@@ -122,6 +219,9 @@ export const useApprovalStore = create<ApprovalState>()(
               : approval
           ),
         }));
+        if (isSupabaseConfigured()) {
+          approvalsApi.updateApprovalStatus(id, 'rejected', reviewedBy, comments);
+        }
       },
 
       getPendingApprovals: (plaza) => {
@@ -201,6 +301,33 @@ export const useApprovalStore = create<ApprovalState>()(
             };
           }),
         }));
+
+        // Sync to backend
+        if (isSupabaseConfigured()) {
+          const finalVariation =
+            approval.currentVenda === 0
+              ? 0
+              : ((newVenda - approval.currentVenda) / approval.currentVenda) * 100;
+          approvalsApi.updateApprovalAfterAdjustment(
+            id, newRepasse, newVenda, adjustedMargem, finalVariation,
+          );
+          approvalsApi.insertAdjustmentLog({
+            approval_id: id,
+            codigo: approval.codigo,
+            descricao: approval.descricao,
+            grupo: approval.grupo,
+            plaza: approval.plaza,
+            suggested_repasse: approval.proposedRepasse,
+            suggested_venda: approval.proposedVenda,
+            suggested_margem: approval.proposedMargem,
+            adjusted_repasse: newRepasse,
+            adjusted_venda: newVenda,
+            adjusted_margem: adjustedMargem,
+            variation_percent: variationPercent,
+            adjusted_by: adjustedBy || approval.reviewedBy || 'Usuário',
+            adjusted_at: new Date().toISOString(),
+          });
+        }
       },
     }),
     {

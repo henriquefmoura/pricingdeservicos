@@ -26,11 +26,11 @@ export function Login() {
     }
   }, [isAuthenticated, user, navigate]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const success = login(email, password);
+    const success = await login(email, password);
     
     if (success) {
       // Redireciona baseado no role do usuário

@@ -1,9 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Notification, NotificationType, NotificationPriority } from '../types/notification';
+import { isSupabaseConfigured } from '../lib/supabase';
+import * as notificationsApi from '../services/api/notificationsApi';
 
 interface NotificationState {
   notifications: Notification[];
+  isLoading: boolean;
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: (role: 'master' | 'admin' | 'user', plaza?: string) => void;
@@ -11,6 +14,10 @@ interface NotificationState {
   getUnreadCount: (role: 'master' | 'admin' | 'user', plaza?: string) => number;
   deleteNotification: (id: string) => void;
   initializeMockNotifications: () => void;
+  /** Load notifications from Supabase (no-op when offline). */
+  syncFromBackend: () => Promise<void>;
+  /** Start realtime subscription for new notifications. Returns unsubscribe fn. */
+  subscribeRealtime: () => { unsubscribe: () => void };
 }
 
 function generateId(): string {
@@ -161,6 +168,63 @@ export const useNotificationStore = create<NotificationState>()(
   persist(
     (set, get) => ({
       notifications: [],
+      isLoading: false,
+
+      syncFromBackend: async () => {
+        if (!isSupabaseConfigured()) return;
+        set({ isLoading: true });
+        try {
+          const dbNotifications = await notificationsApi.fetchNotifications();
+          if (dbNotifications) {
+            set({
+              notifications: dbNotifications.map((n) => ({
+                id: n.id,
+                type: n.type as Notification['type'],
+                title: n.title,
+                message: n.message,
+                fromUserId: n.from_user_id,
+                fromUserName: n.from_user_name,
+                fromUserRole: n.from_user_role as Notification['fromUserRole'],
+                toRole: n.to_role as Notification['toRole'],
+                toPlaza: n.to_plaza ?? undefined,
+                plaza: n.plaza ?? undefined,
+                priority: n.priority as Notification['priority'],
+                read: n.read,
+                createdAt: new Date(n.created_at),
+                metadata: n.metadata ?? undefined,
+              })),
+            });
+          }
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      subscribeRealtime: () => {
+        return notificationsApi.subscribeToNotifications((dbNotif) => {
+          const n: Notification = {
+            id: dbNotif.id,
+            type: dbNotif.type as Notification['type'],
+            title: dbNotif.title,
+            message: dbNotif.message,
+            fromUserId: dbNotif.from_user_id,
+            fromUserName: dbNotif.from_user_name,
+            fromUserRole: dbNotif.from_user_role as Notification['fromUserRole'],
+            toRole: dbNotif.to_role as Notification['toRole'],
+            toPlaza: dbNotif.to_plaza ?? undefined,
+            plaza: dbNotif.plaza ?? undefined,
+            priority: dbNotif.priority as Notification['priority'],
+            read: dbNotif.read,
+            createdAt: new Date(dbNotif.created_at),
+            metadata: dbNotif.metadata ?? undefined,
+          };
+          // Only add if we don't already have it
+          const existing = get().notifications.find((ex) => ex.id === n.id);
+          if (!existing) {
+            set((state) => ({ notifications: [n, ...state.notifications] }));
+          }
+        });
+      },
 
       addNotification: (notification) => {
         const newNotification: Notification = {
@@ -172,6 +236,31 @@ export const useNotificationStore = create<NotificationState>()(
         set((state) => ({
           notifications: [newNotification, ...state.notifications],
         }));
+
+        if (isSupabaseConfigured()) {
+          notificationsApi.insertNotification({
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            from_user_id: notification.fromUserId,
+            from_user_name: notification.fromUserName,
+            from_user_role: notification.fromUserRole,
+            to_role: notification.toRole,
+            to_plaza: notification.toPlaza ?? null,
+            plaza: notification.plaza ?? null,
+            priority: notification.priority,
+            read: false,
+            metadata: notification.metadata ?? null,
+          }).then((dbNotif) => {
+            if (dbNotif) {
+              set((state) => ({
+                notifications: state.notifications.map((n) =>
+                  n.id === newNotification.id ? { ...n, id: dbNotif.id } : n
+                ),
+              }));
+            }
+          });
+        }
       },
 
       markAsRead: (id) => {
@@ -180,6 +269,9 @@ export const useNotificationStore = create<NotificationState>()(
             n.id === id ? { ...n, read: true } : n
           ),
         }));
+        if (isSupabaseConfigured()) {
+          notificationsApi.markNotificationRead(id);
+        }
       },
 
       markAllAsRead: (role, plaza) => {
@@ -193,6 +285,9 @@ export const useNotificationStore = create<NotificationState>()(
             return n;
           }),
         }));
+        if (isSupabaseConfigured()) {
+          notificationsApi.markAllNotificationsRead(role, plaza);
+        }
       },
 
       getNotificationsForRole: (role, plaza) => {
@@ -217,6 +312,9 @@ export const useNotificationStore = create<NotificationState>()(
         set((state) => ({
           notifications: state.notifications.filter((n) => n.id !== id),
         }));
+        if (isSupabaseConfigured()) {
+          notificationsApi.deleteNotification(id);
+        }
       },
 
       initializeMockNotifications: () => {

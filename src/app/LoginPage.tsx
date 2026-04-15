@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router';
 import { Eye, EyeOff, User } from 'lucide-react';
 import { Input } from './components/Input';
 import { useAuthStore } from './store/authStore';
+import { isSupabaseConfigured } from './lib/supabase';
 
-// Credenciais de teste
+// Credenciais de teste (only shown when Supabase is NOT configured)
 const testCredentials = [
   { role: 'Master', email: 'master@empresa.com', password: 'master123', name: 'João Silva (Master)' },
   { role: 'Admin SP', email: 'admin.sp@empresa.com', password: 'admin123', name: 'Maria Santos (Admin SP)' },
@@ -35,14 +36,13 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, user, navigate]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
     
-    // Simular delay de autenticação
-    setTimeout(() => {
-      const success = login(email, password);
+    try {
+      const success = await login(email, password);
       
       if (success) {
         // Redireciona baseado no role do usuário
@@ -58,7 +58,10 @@ export default function LoginPage() {
         setError('Email ou senha incorretos');
         setIsLoading(false);
       }
-    }, 800);
+    } catch {
+      setError('Erro ao conectar. Tente novamente.');
+      setIsLoading(false);
+    }
   };
 
   const handleQuickLogin = (credential: typeof testCredentials[0]) => {
@@ -416,7 +419,8 @@ export default function LoginPage() {
               {isLoading ? 'Entrando...' : 'Entrar'}
             </button>
 
-            {/* Test Credentials Card */}
+            {/* Test Credentials Card – only visible in offline/dev mode */}
+            {!isSupabaseConfigured() && (
             <div
               style={{
                 marginTop: '24px',
@@ -483,6 +487,7 @@ export default function LoginPage() {
                 ))}
               </div>
             </div>
+            )}
 
             {/* Help Text */}
             <p

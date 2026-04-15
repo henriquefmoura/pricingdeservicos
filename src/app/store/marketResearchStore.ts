@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { isSupabaseConfigured } from '../lib/supabase';
+import * as marketResearchApi from '../services/api/marketResearchApi';
 
 export type PricingStrategy = 'below_market' | 'match_market' | 'above_market';
 
@@ -35,6 +37,7 @@ interface MarketResearchState {
   researches: MarketResearch[];
   strategy: PricingStrategy;
   priceHistory: PriceHistoryEntry[];
+  isLoading: boolean;
   addCompetitorPrice: (
     codigoAvulso: string,
     descricao: string,
@@ -51,6 +54,8 @@ interface MarketResearchState {
   getPriceHistoryByCode: (codigoAvulso: string) => PriceHistoryEntry[];
   getAllPriceHistory: () => PriceHistoryEntry[];
   exportData: () => { researches: MarketResearch[]; priceHistory: PriceHistoryEntry[]; strategy: PricingStrategy; exportedAt: string };
+  /** Load from Supabase (no-op when offline). */
+  syncFromBackend: () => Promise<void>;
 }
 
 export const useMarketResearchStore = create<MarketResearchState>()(
@@ -59,6 +64,50 @@ export const useMarketResearchStore = create<MarketResearchState>()(
       researches: [],
       strategy: 'match_market',
       priceHistory: [],
+      isLoading: false,
+
+      syncFromBackend: async () => {
+        if (!isSupabaseConfigured()) return;
+        set({ isLoading: true });
+        try {
+          const [dbResearches, dbHistory] = await Promise.all([
+            marketResearchApi.fetchResearches(),
+            marketResearchApi.fetchPriceHistory(),
+          ]);
+          if (dbResearches) {
+            set({
+              researches: dbResearches.map((r) => ({
+                codigoAvulso: r.codigo_avulso,
+                descricao: r.descricao,
+                precosConcorrentes: (r.competitor_prices ?? []).map((c) => ({
+                  id: c.id,
+                  concorrente: c.concorrente,
+                  preco: Number(c.preco),
+                  adicionadoEm: c.adicionado_em,
+                  adicionadoPor: c.adicionado_por,
+                })),
+              })),
+            });
+          }
+          if (dbHistory) {
+            set({
+              priceHistory: dbHistory.map((h) => ({
+                id: h.id,
+                codigoAvulso: h.codigo_avulso,
+                descricao: h.descricao,
+                concorrente: h.concorrente,
+                preco: Number(h.preco),
+                precoAnterior: h.preco_anterior ? Number(h.preco_anterior) : undefined,
+                acao: h.acao as PriceHistoryAction,
+                timestamp: h.timestamp,
+                registradoPor: h.registrado_por,
+              })),
+            });
+          }
+        } finally {
+          set({ isLoading: false });
+        }
+      },
 
       addCompetitorPrice: (codigoAvulso, descricao, concorrente, preco, adicionadoPor) => {
         const now = new Date().toISOString();
@@ -154,27 +203,54 @@ export const useMarketResearchStore = create<MarketResearchState>()(
             };
           }
         });
+
+        // Sync to backend
+        if (isSupabaseConfigured()) {
+          const existingResearch = get().researches.find((r) => r.codigoAvulso === codigoAvulso);
+          const existingComp = existingResearch?.precosConcorrentes.find(
+            (c) => c.concorrente.toLowerCase() === concorrente.toLowerCase()
+          );
+          // Upsert the research record
+          marketResearchApi.upsertResearch(codigoAvulso, descricao).then((dbResearch) => {
+            if (dbResearch && existingComp) {
+              marketResearchApi.updateCompetitorPrice(existingComp.id, preco, adicionadoPor);
+            } else if (dbResearch) {
+              marketResearchApi.insertCompetitorPrice(dbResearch.id, concorrente, preco, adicionadoPor);
+            }
+          });
+          // Log history
+          marketResearchApi.insertPriceHistory({
+            codigo_avulso: codigoAvulso,
+            descricao,
+            concorrente,
+            preco,
+            preco_anterior: null,
+            acao: 'added',
+            timestamp: now,
+            registrado_por: adicionadoPor,
+          });
+        }
       },
 
       removeCompetitorPrice: (codigoAvulso, competitorId) => {
+        // Capture data for backend sync and history before state change
+        const research = get().researches.find((r) => r.codigoAvulso === codigoAvulso);
+        const removedCompetitor = research?.precosConcorrentes.find((c) => c.id === competitorId);
+
+        const historyEntry: PriceHistoryEntry | null = removedCompetitor
+          ? {
+              id: `hist-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              codigoAvulso,
+              descricao: research?.descricao || '',
+              concorrente: removedCompetitor.concorrente,
+              preco: removedCompetitor.preco,
+              acao: 'removed',
+              timestamp: new Date().toISOString(),
+              registradoPor: removedCompetitor.adicionadoPor,
+            }
+          : null;
+
         set((state) => {
-          // Encontrar o concorrente sendo removido para registrar no histórico
-          const research = state.researches.find((r) => r.codigoAvulso === codigoAvulso);
-          const removedCompetitor = research?.precosConcorrentes.find((c) => c.id === competitorId);
-
-          const historyEntry: PriceHistoryEntry | null = removedCompetitor
-            ? {
-                id: `hist-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                codigoAvulso,
-                descricao: research?.descricao || '',
-                concorrente: removedCompetitor.concorrente,
-                preco: removedCompetitor.preco,
-                acao: 'removed',
-                timestamp: new Date().toISOString(),
-                registradoPor: removedCompetitor.adicionadoPor,
-              }
-            : null;
-
           return {
             researches: state.researches
               .map((r) => {
@@ -199,6 +275,21 @@ export const useMarketResearchStore = create<MarketResearchState>()(
               : state.priceHistory,
           };
         });
+
+        // Sync to backend
+        if (isSupabaseConfigured() && removedCompetitor) {
+          marketResearchApi.deleteCompetitorPrice(competitorId);
+          marketResearchApi.insertPriceHistory({
+            codigo_avulso: codigoAvulso,
+            descricao: research?.descricao || '',
+            concorrente: removedCompetitor.concorrente,
+            preco: removedCompetitor.preco,
+            preco_anterior: null,
+            acao: 'removed',
+            timestamp: new Date().toISOString(),
+            registrado_por: removedCompetitor.adicionadoPor,
+          });
+        }
       },
 
       getResearchByCode: (codigoAvulso) => {

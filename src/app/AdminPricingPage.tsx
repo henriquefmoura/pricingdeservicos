@@ -5,7 +5,7 @@ import { AISuggestionCard, Card } from './components/Card';
 import { CurrencyInput, Input } from './components/Input';
 import { ServiceTypeBadge, ServiceType } from './components/ServiceTypeBadge';
 import { StatusBadge, BadgeStatus } from './components/StatusBadge';
-import { Search, Sparkles, Send, Save, Lightbulb, TrendingUp, CheckCircle2, AlertCircle, AlertTriangle, BarChart2, ChevronDown, FolderOpen } from 'lucide-react';
+import { Search, Sparkles, Send, Save, Lightbulb, TrendingUp, CheckCircle2, AlertCircle, AlertTriangle, BarChart2, ChevronDown, FolderOpen, Info } from 'lucide-react';
 import { useAuthStore } from './store/authStore';
 import { usePricingCodesStore, PricingCode, UNGROUPED_KEY } from './store/pricingCodesStore';
 import { useMarketResearchStore } from './store/marketResearchStore';
@@ -13,6 +13,7 @@ import { useApprovalStore } from './store/approvalStore';
 import { useCorrelationStore } from './store/correlationStore';
 import { useReplicationConfigStore } from './store/replicationConfigStore';
 import { toast } from 'sonner';
+import { calculateMargemComImpostos, getPlazaIss, FIXED_TAX, getTotalTaxPercent } from './data/plazasData';
 
 interface PriceInput {
   repasse: string;
@@ -94,7 +95,7 @@ export default function AdminPricingPage() {
       return;
     }
     const price = code.prices?.[user.plaza];
-    const margem = price ? ((price.venda - price.repasse) / price.venda) * 100 : 0;
+    const margem = price ? calculateMargemComImpostos(price.venda, price.repasse, user.plaza) : 0;
     const codeLabel = code.codigoAvulso || code.codigoAtrelado || '-';
     const subject = `Erro no preenchimento — ${codeLabel} · ${code.descricao}`;
     const messageBody = [
@@ -151,7 +152,7 @@ export default function AdminPricingPage() {
     const repasse = parseFloat(input.repasse);
     const venda = parseFloat(input.venda);
     if (isNaN(repasse) || isNaN(venda) || venda === 0) return null;
-    return ((venda - repasse) / venda) * 100;
+    return calculateMargemComImpostos(venda, repasse, user?.plaza || '');
   };
 
   // Group codes by grupoServico
@@ -206,7 +207,7 @@ export default function AdminPricingPage() {
       return;
     }
 
-    const margem = ((venda - repasse) / venda) * 100;
+    const margem = calculateMargemComImpostos(venda, repasse, user.plaza);
 
     // Save directly to admin's plaza
     updateCodePrice(code.id, user.plaza, repasse, venda, user.name);
@@ -225,7 +226,7 @@ export default function AdminPricingPage() {
         const currentPrice = code.prices?.[plaza];
         const currentVenda = currentPrice?.venda || 0;
         const currentRepasse = currentPrice?.repasse || 0;
-        const currentMargem = currentPrice ? ((currentPrice.venda - currentPrice.repasse) / currentPrice.venda) * 100 : 0;
+        const currentMargem = currentPrice ? calculateMargemComImpostos(currentPrice.venda, currentPrice.repasse, plaza) : 0;
         const variation = currentVenda === 0 ? 0 : ((venda - currentVenda) / currentVenda) * 100;
 
         addApproval({
@@ -477,7 +478,7 @@ export default function AdminPricingPage() {
                                       const s = getMarginStyle(margem);
                                       return (
                                         <div style={{ padding: '7px 12px', borderRadius: '100px', backgroundColor: s.bg, whiteSpace: 'nowrap' }}>
-                                          <span style={{ fontSize: '12px', fontWeight: 700, color: s.text }}>Margem: {margem.toFixed(1)}%</span>
+                                          <span style={{ fontSize: '12px', fontWeight: 700, color: s.text }}>Margem líquida: {margem.toFixed(1)}%</span>
                                         </div>
                                       );
                                     })()}
@@ -518,7 +519,24 @@ export default function AdminPricingPage() {
                                 </button>
                               </div>
 
-                              {/* Margin alert */}
+                               {/* Tax info */}
+                              {user?.plaza && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                                  <Info size={12} style={{ color: '#9CA3AF' }} />
+                                  <span style={{ fontSize: '11px', color: '#9CA3AF' }}>Impostos na margem:</span>
+                                  <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: '4px', backgroundColor: '#F3F4F6', color: '#4B5563', fontWeight: 600 }}>
+                                    ISS ({user.plaza}): {(getPlazaIss(user.plaza) * 100).toFixed(0)}%
+                                  </span>
+                                  <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: '4px', backgroundColor: '#F3F4F6', color: '#4B5563', fontWeight: 600 }}>
+                                    Fixo: {(FIXED_TAX * 100).toFixed(2)}%
+                                  </span>
+                                  <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: '4px', backgroundColor: '#FFF7ED', color: '#C2410C', fontWeight: 700 }}>
+                                    Total: {getTotalTaxPercent(user.plaza).toFixed(2)}%
+                                  </span>
+                                </div>
+                              )}
+
+                               {/* Margin alert */}
                               {margem !== null && (
                                 <div>
                                   {margem < 10 && (
@@ -635,7 +653,7 @@ export default function AdminPricingPage() {
                     const renderPricedCard = (code: PricingCode) => {
                       const priceData = user?.plaza ? code.prices?.[user.plaza] : null;
                       const tipoStyles = getServiceTypeStyles(code.tipo);
-                      const margem = priceData ? ((priceData.venda - priceData.repasse) / priceData.venda) * 100 : 0;
+                      const margem = priceData ? calculateMargemComImpostos(priceData.venda, priceData.repasse, user?.plaza || '') : 0;
                       const getMarginStyle = (m: number) => m > 30 ? { bg: '#D1FAE5', text: '#065F46' } : m >= 15 ? { bg: '#FEF3C7', text: '#92400E' } : { bg: '#FEE2E2', text: '#991B1B' };
                       const marginStyle = getMarginStyle(margem);
 
@@ -687,8 +705,15 @@ export default function AdminPricingPage() {
                                     <span style={{ fontSize: '11px', color: '#6B7280', fontWeight: 600 }}>Venda</span>
                                     <span style={{ fontSize: '18px', fontWeight: 700, color: '#001022' }}>R$ {priceData.venda.toFixed(2)}</span>
                                   </div>
-                                  <div style={{ padding: '7px 12px', borderRadius: '100px', backgroundColor: marginStyle.bg }}>
-                                    <span style={{ fontSize: '12px', fontWeight: 700, color: marginStyle.text }}>Margem: {margem.toFixed(1)}%</span>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <div style={{ padding: '7px 12px', borderRadius: '100px', backgroundColor: marginStyle.bg }}>
+                                      <span style={{ fontSize: '12px', fontWeight: 700, color: marginStyle.text }}>Margem líquida: {margem.toFixed(1)}%</span>
+                                    </div>
+                                    {user?.plaza && (
+                                      <span style={{ fontSize: '10px', color: '#9CA3AF', textAlign: 'center' }}>
+                                        ISS {(getPlazaIss(user.plaza) * 100).toFixed(0)}% + Fixo {(FIXED_TAX * 100).toFixed(2)}%
+                                      </span>
+                                    )}
                                   </div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
                                     <CheckCircle2 size={16} style={{ color: '#16A34A' }} />

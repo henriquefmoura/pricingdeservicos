@@ -264,8 +264,9 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
     const venda = parseFloat(input.venda);
 
     if (isNaN(repasse) || isNaN(venda) || venda === 0) return null;
+    if (!user?.plaza) return null;
 
-    return calculateMargemComImpostos(venda, repasse, user?.plaza || '');
+    return calculateMargemComImpostos(venda, repasse, user.plaza);
   };
 
   // Helper para agrupar códigos por grupoServico
@@ -305,8 +306,8 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
     };
     const repasse = toNum(input?.repasse);
     const venda = toNum(input?.venda);
-    const margem = repasse != null && venda != null && venda > 0
-      ? calculateMargemComImpostos(venda, repasse, user?.plaza || '')
+    const margem = repasse != null && venda != null && venda > 0 && user?.plaza
+      ? calculateMargemComImpostos(venda, repasse, user.plaza)
       : undefined;
 
     updateCalculatorSnapshot({

@@ -152,7 +152,8 @@ export default function AdminPricingPage() {
     const repasse = parseFloat(input.repasse);
     const venda = parseFloat(input.venda);
     if (isNaN(repasse) || isNaN(venda) || venda === 0) return null;
-    return calculateMargemComImpostos(venda, repasse, user?.plaza || '');
+    if (!user?.plaza) return null;
+    return calculateMargemComImpostos(venda, repasse, user.plaza);
   };
 
   // Group codes by grupoServico

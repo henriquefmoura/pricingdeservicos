@@ -50,7 +50,13 @@ export function getPlazaIss(plaza: string): number {
   const found = PLAZAS_DATA.find(
     (p) => p.nome === plaza || p.sigla === plaza
   );
-  return found?.iss ?? 0.05; // fallback para 5% se praça desconhecida
+  if (!found) {
+    if (plaza) {
+      console.warn(`[plazasData] Praça não encontrada: "${plaza}". Usando fallback ISS de 5%.`);
+    }
+    return 0.05; // fallback para 5% se praça desconhecida
+  }
+  return found.iss;
 }
 
 /**

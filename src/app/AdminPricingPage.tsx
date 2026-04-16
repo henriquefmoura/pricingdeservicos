@@ -228,9 +228,11 @@ export default function AdminPricingPage() {
         const currentVenda = currentPrice?.venda || 0;
         const currentRepasse = currentPrice?.repasse || 0;
         const currentMargem = currentPrice ? calculateMargemComImpostos(currentPrice.venda, currentPrice.repasse, plaza) : 0;
+        const proposedMargem = calculateMargemComImpostos(venda, repasse, plaza);
         const variation = currentVenda === 0 ? 0 : ((venda - currentVenda) / currentVenda) * 100;
 
         addApproval({
+          codeId: code.id,
           codigo: code.codigoAvulso || code.codigoAtrelado || '-',
           descricao: code.descricao,
           grupo: code.tipo,
@@ -240,7 +242,7 @@ export default function AdminPricingPage() {
           currentMargem: currentMargem,
           proposedRepasse: repasse,
           proposedVenda: venda,
-          proposedMargem: margem,
+          proposedMargem: proposedMargem,
           variation: variation,
           isNewService: currentVenda === 0,
           requestedBy: `Admin ${user.plaza}`,

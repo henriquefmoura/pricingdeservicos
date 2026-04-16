@@ -276,6 +276,7 @@ export function PricingGovernanceDashboard() {
           userMetrics={userMetrics}
           plazaMetrics={plazaMetrics}
           activityLogs={activityLogs}
+          codes={codes}
         />
       )}
 

@@ -563,7 +563,7 @@ export default function AdminPricingPage() {
                                   {margem > 35 && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D' }}>
                                       <AlertTriangle size={15} style={{ color: '#D97706', flexShrink: 0 }} />
-                                      <span style={{ fontSize: '12px', color: '#92400E' }}>Atenção: Margem acima de 35%. Revise o repasse — o valor pode estar alto demais.</span>
+                                      <span style={{ fontSize: '12px', color: '#92400E' }}><strong>Atenção:</strong> Margem acima de 35%. Revise o repasse — o valor pode estar alto demais.</span>
                                     </div>
                                   )}
                                 </div>

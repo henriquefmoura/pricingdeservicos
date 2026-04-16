@@ -33,6 +33,10 @@ const typeStyles: Record<ServiceType, { bg: string; text: string }> = {
     bg: '#F3F4F6',
     text: '#374151',
   },
+  'Reforma': {
+    bg: '#EDE9FE',
+    text: '#5B21B6',
+  },
 };
 
 export function ServiceTypeBadge({ type, className = '' }: ServiceTypeBadgeProps) {

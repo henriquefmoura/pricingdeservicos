@@ -13,7 +13,8 @@ export type PricingCodeTipo =
   | 'Inst + Pague -'
   | 'Emergencial'
   | 'Complementar'
-  | 'Deslocamento';
+  | 'Deslocamento'
+  | 'Reforma';
 
 export type PricingCodeStatus = 'pendente' | 'em_andamento' | 'concluido';
 

@@ -112,25 +112,26 @@ export function MarketResearchForm() {
   // Track which service cards are expanded for adding competitors
   const [expandedServices, setExpandedServices] = useState<Record<string, boolean>>({});
   const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
+  const [expandedHistoryGroups, setExpandedHistoryGroups] = useState<Record<string, boolean>>({});
   const [showFullHistory, setShowFullHistory] = useState(true);
-  // Filter for the services list
+  // Filter for the services list (by grupo de serviço)
   const [serviceFilter, setServiceFilter] = useState('');
 
-  // Search state for the price history tab
-  const [historySearchLM, setHistorySearchLM] = useState('');
+  // Search state for the price history tab (by grupo de serviço)
+  const [historySearchGroup, setHistorySearchGroup] = useState('');
   const [historySearchPrestador, setHistorySearchPrestador] = useState('');
 
   // Dropdown state for autocomplete
-  const [showLMDropdown, setShowLMDropdown] = useState(false);
+  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const [showPrestadorDropdown, setShowPrestadorDropdown] = useState(false);
-  const lmDropdownRef = useRef<HTMLDivElement>(null);
+  const groupDropdownRef = useRef<HTMLDivElement>(null);
   const prestadorDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (lmDropdownRef.current && !lmDropdownRef.current.contains(event.target as Node)) {
-        setShowLMDropdown(false);
+      if (groupDropdownRef.current && !groupDropdownRef.current.contains(event.target as Node)) {
+        setShowGroupDropdown(false);
       }
       if (prestadorDropdownRef.current && !prestadorDropdownRef.current.contains(event.target as Node)) {
         setShowPrestadorDropdown(false);
@@ -140,27 +141,19 @@ export function MarketResearchForm() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Build unique service options (name + code) from researches, sorted alphabetically by name, max 10
-  const lmSuggestions = useMemo(() => {
-    const serviceMap = new Map<string, { code: string; name: string }>();
-    researches.forEach(r => serviceMap.set(r.codigoAvulso, { code: r.codigoAvulso, name: r.descricao }));
-    // Also add codes from store that may not have researches yet
+  // Build unique group names from codes (only types allowed in market research), sorted alphabetically, max 10
+  const groupSuggestions = useMemo(() => {
+    const groupSet = new Set<string>();
     codes.forEach(c => {
-      const codeKey = c.codigoAvulso || c.codigoAtrelado || '';
-      if (codeKey && !serviceMap.has(codeKey)) {
-        serviceMap.set(codeKey, { code: codeKey, name: c.descricao });
+      if ((c.tipo === 'Serviço' || c.tipo === 'Reforma') && c.grupoServico) {
+        groupSet.add(c.grupoServico);
       }
     });
-    const allServices = Array.from(serviceMap.values());
-    // Sort alphabetically by name
-    allServices.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-    // Filter by current input (match code or name)
-    const term = historySearchLM.trim().toLowerCase();
-    if (!term) return allServices.slice(0, 10);
-    return allServices
-      .filter(s => s.name.toLowerCase().includes(term) || s.code.toLowerCase().includes(term))
-      .slice(0, 10);
-  }, [researches, codes, historySearchLM]);
+    const groups = Array.from(groupSet).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const term = historySearchGroup.trim().toLowerCase();
+    if (!term) return groups.slice(0, 10);
+    return groups.filter(g => g.toLowerCase().includes(term)).slice(0, 10);
+  }, [codes, historySearchGroup]);
 
   // Build unique provider/company names from all researches, sorted alphabetically, max 10
   const prestadorSuggestions = useMemo(() => {
@@ -175,9 +168,9 @@ export function MarketResearchForm() {
   }, [researches, historySearchPrestador]);
 
   // Handlers for selecting from dropdown
-  const handleSelectLM = useCallback((name: string) => {
-    setHistorySearchLM(name);
-    setShowLMDropdown(false);
+  const handleSelectGroup = useCallback((group: string) => {
+    setHistorySearchGroup(group);
+    setShowGroupDropdown(false);
   }, []);
 
   const handleSelectPrestador = useCallback((name: string) => {
@@ -200,23 +193,52 @@ export function MarketResearchForm() {
     });
   }, [researches, getPriceHistoryByCode, getSuggestedPrice]);
 
+  // Build code→group lookup map for history filtering
+  const codeToGroupMap = useMemo(() => {
+    const map = new Map<string, string>();
+    codes.forEach(c => {
+      const codeKey = c.codigoAvulso || c.codigoAtrelado || '';
+      if (codeKey) map.set(codeKey, c.grupoServico || UNGROUPED_KEY);
+    });
+    return map;
+  }, [codes]);
+
   // Filter history chart data based on search terms
-  const hasHistorySearch = historySearchLM.trim() !== '' || historySearchPrestador.trim() !== '';
+  const hasHistorySearch = historySearchGroup.trim() !== '' || historySearchPrestador.trim() !== '';
   const filteredHistoryChartData = useMemo(() => {
     if (!hasHistorySearch) return [];
-    const lmTerm = historySearchLM.trim().toLowerCase();
+    const groupTerm = historySearchGroup.trim().toLowerCase();
     const prestadorTerm = historySearchPrestador.trim().toLowerCase();
     return historyChartData.filter(({ research }) => {
-      const matchesLM = lmTerm === '' || research.codigoAvulso.toLowerCase().includes(lmTerm) || research.descricao.toLowerCase().includes(lmTerm);
+      const serviceGroup = codeToGroupMap.get(research.codigoAvulso) || UNGROUPED_KEY;
+      const displayGroup = serviceGroup === UNGROUPED_KEY ? 'sem grupo' : serviceGroup.toLowerCase();
+      const matchesGroup = groupTerm === '' || displayGroup.includes(groupTerm);
       const matchesPrestador = prestadorTerm === '' || research.precosConcorrentes.some(c => c.concorrente.toLowerCase().includes(prestadorTerm));
-      return matchesLM && matchesPrestador;
+      return matchesGroup && matchesPrestador;
     });
-  }, [historyChartData, hasHistorySearch, historySearchLM, historySearchPrestador]);
+  }, [historyChartData, hasHistorySearch, historySearchGroup, historySearchPrestador, codeToGroupMap]);
 
-  // Build the full list of services from pricingCodesStore
+  // Group filtered history chart data by service group
+  const filteredHistoryGrouped = useMemo(() => {
+    const grouped: Record<string, typeof filteredHistoryChartData> = {};
+    filteredHistoryChartData.forEach(item => {
+      const group = codeToGroupMap.get(item.research.codigoAvulso) || UNGROUPED_KEY;
+      if (!grouped[group]) grouped[group] = [];
+      grouped[group].push(item);
+    });
+    const groupNames = Object.keys(grouped).sort((a, b) => {
+      if (a === UNGROUPED_KEY) return 1;
+      if (b === UNGROUPED_KEY) return -1;
+      return a.localeCompare(b, 'pt-BR');
+    });
+    return { grouped, groupNames };
+  }, [filteredHistoryChartData, codeToGroupMap]);
+
+  // Build the full list of services from pricingCodesStore — only 'Serviço' and 'Reforma' tipos
   const allServices = useMemo(() => {
     const serviceMap = new Map<string, { code: string; name: string; unidade: string; tipo: string; grupoServico?: string }>();
     codes.forEach(c => {
+      if (c.tipo !== 'Serviço' && c.tipo !== 'Reforma') return;
       const codeKey = c.codigoAvulso || c.codigoAtrelado || '';
       if (codeKey) {
         serviceMap.set(codeKey, { code: codeKey, name: c.descricao, unidade: c.unidade, tipo: c.tipo, grupoServico: c.grupoServico });
@@ -227,13 +249,14 @@ export function MarketResearchForm() {
     return list;
   }, [codes]);
 
-  // Filter services by the search input
+  // Filter services by grupo de serviço name
   const filteredServices = useMemo(() => {
     const term = serviceFilter.trim().toLowerCase();
     if (!term) return allServices;
-    return allServices.filter(s =>
-      s.name.toLowerCase().includes(term) || s.code.toLowerCase().includes(term)
-    );
+    return allServices.filter(s => {
+      const group = (s.grupoServico || '').toLowerCase();
+      return group.includes(term) || (term === 'sem grupo' && !s.grupoServico);
+    });
   }, [allServices, serviceFilter]);
 
   // Group filtered services by grupoServico (same pattern as AdminPricingInterface)
@@ -505,7 +528,7 @@ export function MarketResearchForm() {
               <div className="relative">
                 <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                 <Input
-                  placeholder="Filtrar por código ou descrição..."
+                  placeholder="Filtrar por grupo de serviço..."
                   value={serviceFilter}
                   onChange={(e) => setServiceFilter(e.target.value)}
                   className="pl-9"
@@ -1225,33 +1248,33 @@ export function MarketResearchForm() {
           <Card className="border border-[#78BE20]/20 shadow-sm bg-gradient-to-r from-[#78BE20]/[0.03] to-transparent">
             <CardContent className="py-5">
               <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1" ref={lmDropdownRef}>
-                  <Label htmlFor="history-search-lm" className="text-xs text-gray-600 mb-1 block">
-                    Buscar por LM (código ou descrição)
+                <div className="flex-1" ref={groupDropdownRef}>
+                  <Label htmlFor="history-search-group" className="text-xs text-gray-600 mb-1 block">
+                    Buscar por Grupo de Serviço
                   </Label>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                    <FolderOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                     <Input
-                      id="history-search-lm"
-                      placeholder="Ex: 50041154 ou Renovação"
-                      value={historySearchLM}
-                      onChange={(e) => { setHistorySearchLM(e.target.value); setShowLMDropdown(true); }}
-                      onFocus={() => setShowLMDropdown(true)}
+                      id="history-search-group"
+                      placeholder="Ex: Elétrica, Hidráulica..."
+                      value={historySearchGroup}
+                      onChange={(e) => { setHistorySearchGroup(e.target.value); setShowGroupDropdown(true); }}
+                      onFocus={() => setShowGroupDropdown(true)}
                       autoComplete="off"
                       className="pl-9"
                     />
-                    {showLMDropdown && lmSuggestions.length > 0 && (
+                    {showGroupDropdown && groupSuggestions.length > 0 && (
                       <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-[280px] overflow-y-auto">
-                        {lmSuggestions.map((s) => (
+                        {groupSuggestions.map((g) => (
                           <button
-                            key={s.code}
+                            key={g}
                             type="button"
                             className="w-full text-left px-3 py-2 text-sm hover:bg-[#78BE20]/10 cursor-pointer flex items-center gap-2 border-b border-gray-50 last:border-0"
                             onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => handleSelectLM(s.name)}
+                            onClick={() => handleSelectGroup(g)}
                           >
-                            <span className="font-medium text-gray-900 truncate">{s.name}</span>
-                            <span className="text-xs text-gray-400 whitespace-nowrap ml-auto">{s.code}</span>
+                            <FolderOpen className="w-3.5 h-3.5 text-[#78BE20]" />
+                            <span className="font-medium text-gray-900 truncate">{g}</span>
                           </button>
                         ))}
                       </div>
@@ -1295,7 +1318,7 @@ export function MarketResearchForm() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => { setHistorySearchLM(''); setHistorySearchPrestador(''); setShowLMDropdown(false); setShowPrestadorDropdown(false); }}
+                      onClick={() => { setHistorySearchGroup(''); setHistorySearchPrestador(''); setShowGroupDropdown(false); setShowPrestadorDropdown(false); }}
                       className="text-xs"
                     >
                       Limpar busca
@@ -1305,7 +1328,7 @@ export function MarketResearchForm() {
               </div>
               {hasHistorySearch && (
                 <p className="text-xs text-gray-500 mt-2">
-                  {filteredHistoryChartData.length} resultado(s) encontrado(s)
+                  {filteredHistoryChartData.length} serviço(s) encontrado(s) em {filteredHistoryGrouped.groupNames.length} grupo(s)
                 </p>
               )}
             </CardContent>
@@ -1322,7 +1345,7 @@ export function MarketResearchForm() {
                     Busque para visualizar o histórico
                   </h3>
                   <p className="text-sm text-gray-500 max-w-sm mx-auto">
-                    Utilize os campos acima para buscar por código LM, descrição do serviço ou prestador/empresa
+                    Utilize os campos acima para buscar por grupo de serviço ou prestador/empresa
                   </p>
                 </div>
               </CardContent>
@@ -1369,32 +1392,57 @@ export function MarketResearchForm() {
               </CardContent>
             </Card>
           ) : (
-            filteredHistoryChartData.map(({ research, points, competitors, suggestedPrice, avgPrice }) => (
-              <Card key={research.codigoAvulso} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden border-t-[3px] border-t-[#78BE20]">
-                <CardHeader className="bg-gradient-to-r from-[#78BE20]/[0.03] to-transparent">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <BarChart2 className="w-5 h-5 text-[#78BE20]" />
-                        {research.descricao}
-                      </CardTitle>
-                      <CardDescription className="mt-1">Código: <span className="font-mono">{research.codigoAvulso}</span></CardDescription>
-                    </div>
-                    <div className="flex gap-2 flex-wrap justify-end">
-                      {avgPrice !== null && (
-                        <Badge variant="outline" className="bg-[#001022]/5 text-[#001022] border-[#001022]/20 font-medium">
-                          Média atual: R$ {avgPrice.toFixed(2)}
+            <div className="space-y-4">
+              {filteredHistoryGrouped.groupNames.map((groupName) => {
+                const groupItems = filteredHistoryGrouped.grouped[groupName];
+                const isUngrouped = groupName === UNGROUPED_KEY;
+                const displayGroupName = isUngrouped ? 'Sem Grupo' : groupName;
+                const isGroupExpanded = expandedHistoryGroups[groupName] !== false; // default open
+
+                return (
+                  <div key={groupName} className="border-2 border-[#001022]/20 rounded-2xl overflow-hidden shadow-sm">
+                    <button
+                      className="flex items-center justify-between w-full px-6 py-4 bg-[#001022]/5 hover:bg-[#001022]/10 transition-colors text-left group border-l-4 border-l-[#78BE20]"
+                      onClick={() => setExpandedHistoryGroups(prev => ({ ...prev, [groupName]: !isGroupExpanded }))}
+                      aria-label={`Grupo ${displayGroupName}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <FolderOpen className="w-6 h-6 text-[#78BE20]" />
+                        <span className="font-bold text-xl text-gray-900">{displayGroupName}</span>
+                        <Badge variant="outline" className="text-sm px-3 py-1 font-semibold border-[#78BE20]/40 text-[#78BE20] bg-white">
+                          {groupItems.length} serviço(s) precificado(s)
                         </Badge>
-                      )}
-                      {suggestedPrice !== null && (
-                        <Badge className="bg-[#78BE20] text-white border-0 font-bold shadow-sm">
-                          Sugerido: R$ {suggestedPrice.toFixed(2)}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
+                      </div>
+                      <ChevronDown className={`w-6 h-6 text-[#78BE20] transition-transform ${isGroupExpanded ? '' : '-rotate-90'}`} />
+                    </button>
+                    {isGroupExpanded && (
+                      <div className="space-y-4 p-4">
+                        {groupItems.map(({ research, points, competitors, suggestedPrice, avgPrice }) => (
+                          <Card key={research.codigoAvulso} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden border-t-[3px] border-t-[#78BE20]">
+                            <CardHeader className="bg-gradient-to-r from-[#78BE20]/[0.03] to-transparent">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <CardTitle className="flex items-center gap-2 text-base">
+                                    <BarChart2 className="w-5 h-5 text-[#78BE20]" />
+                                    {research.descricao}
+                                  </CardTitle>
+                                  <CardDescription className="mt-1">Código: <span className="font-mono">{research.codigoAvulso}</span></CardDescription>
+                                </div>
+                                <div className="flex gap-2 flex-wrap justify-end">
+                                  {avgPrice !== null && (
+                                    <Badge variant="outline" className="bg-[#001022]/5 text-[#001022] border-[#001022]/20 font-medium">
+                                      Média atual: R$ {avgPrice.toFixed(2)}
+                                    </Badge>
+                                  )}
+                                  {suggestedPrice !== null && (
+                                    <Badge className="bg-[#78BE20] text-white border-0 font-bold shadow-sm">
+                                      Sugerido: R$ {suggestedPrice.toFixed(2)}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
                   {points.length < 2 ? (
                     <div className="text-center py-10 text-sm text-gray-500">
                       <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -1516,8 +1564,14 @@ export function MarketResearchForm() {
                   })()}
                 </CardContent>
               </Card>
-            ))
-          )}
+            ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    )}
 
 
         </div>

@@ -4,7 +4,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import * as pricingCodesApi from '../services/api/pricingCodesApi';
 import { ALL_PLAZAS as PLAZAS_LIST, calculateMargemComImpostos } from '../data/plazasData';
 
-export type PricingCodeTipo = 'Visita Técnica' | 'Serviço' | 'Inst + Pague -' | 'Emergencial' | 'Complementar' | 'Deslocamento';
+export type PricingCodeTipo = 'Visita Técnica' | 'Serviço' | 'Inst + Pague -' | 'Emergencial' | 'Complementar' | 'Deslocamento' | 'Reforma';
 
 // Chave para códigos sem grupo de serviço
 export const UNGROUPED_KEY = '__sem_grupo__';

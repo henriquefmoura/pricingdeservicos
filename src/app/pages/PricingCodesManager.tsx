@@ -96,6 +96,7 @@ export function PricingCodesManager() {
     if (cleaned.includes('emergencial') || cleaned.includes('express')) return 'Emergencial';
     if (cleaned.includes('complementar')) return 'Complementar';
     if (cleaned.includes('deslocamento') || cleaned.includes('desloc')) return 'Deslocamento';
+    if (cleaned.includes('reforma')) return 'Reforma';
     if (cleaned.includes('servi')) return 'Serviço';
     return 'Serviço'; // default
   };
@@ -220,6 +221,8 @@ export function PricingCodesManager() {
         return 'bg-gray-100 text-gray-800 border-gray-300';
       case 'Deslocamento':
         return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'Reforma':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
       default:
         return 'bg-gray-100 text-gray-700 border-gray-300';
     }
@@ -346,6 +349,7 @@ export function PricingCodesManager() {
                           <SelectContent>
                             <SelectItem value="Visita Técnica">Visita Técnica</SelectItem>
                             <SelectItem value="Serviço">Serviço</SelectItem>
+                            <SelectItem value="Reforma">Reforma</SelectItem>
                             <SelectItem value="Inst + Pague -">Inst + Pague -</SelectItem>
                             <SelectItem value="Emergencial">Emergencial</SelectItem>
                             <SelectItem value="Complementar">Complementar</SelectItem>

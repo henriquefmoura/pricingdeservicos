@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { isSupabaseConfigured } from '../lib/supabase';
 import * as approvalsApi from '../services/api/approvalsApi';
+import { calculateMargemComImpostos } from '../data/plazasData';
+import { usePricingCodesStore } from './pricingCodesStore';
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
@@ -28,6 +30,7 @@ export interface PriceAdjustmentRecord {
 
 export interface PriceApproval {
   id: string;
+  codeId?: string; // Internal ID in pricingCodesStore (used to write price on approval)
   codigo: string;
   descricao: string; // Descrição do serviço
   grupo: string;
@@ -67,7 +70,28 @@ interface ApprovalState {
   syncFromBackend: () => Promise<void>;
 }
 
-
+/** Resolves the internal pricingCodesStore ID from an approval record and writes the confirmed price. */
+function applyPriceToPricingStore(
+  approval: PriceApproval,
+  repasse: number,
+  venda: number,
+  filledBy: string,
+) {
+  const pricingStore = usePricingCodesStore.getState();
+  let resolvedCodeId = approval.codeId;
+  if (!resolvedCodeId) {
+    const match = pricingStore.codes.find(
+      (c) =>
+        c.codigoAvulso === approval.codigo ||
+        c.codigoAtrelado === approval.codigo ||
+        c.descricao === approval.descricao,
+    );
+    resolvedCodeId = match?.id;
+  }
+  if (resolvedCodeId) {
+    pricingStore.updateCodePrice(resolvedCodeId, approval.plaza, repasse, venda, filledBy);
+  }
+}
 
 export const useApprovalStore = create<ApprovalState>()(
   persist(
@@ -187,19 +211,27 @@ export const useApprovalStore = create<ApprovalState>()(
       },
 
       approvePrice: (id, reviewedBy, comments) => {
+        const approval = get().approvals.find((a) => a.id === id);
+
         set((state) => ({
-          approvals: state.approvals.map((approval) =>
-            approval.id === id
+          approvals: state.approvals.map((a) =>
+            a.id === id
               ? {
-                  ...approval,
+                  ...a,
                   status: 'approved' as ApprovalStatus,
                   reviewedBy,
                   reviewedAt: new Date(),
                   comments,
                 }
-              : approval
+              : a
           ),
         }));
+
+        // Write the confirmed price into pricingCodesStore for the target plaza
+        if (approval) {
+          applyPriceToPricingStore(approval, approval.proposedRepasse, approval.proposedVenda, reviewedBy);
+        }
+
         if (isSupabaseConfigured()) {
           approvalsApi.updateApprovalStatus(id, 'approved', reviewedBy, comments);
         }
@@ -256,7 +288,7 @@ export const useApprovalStore = create<ApprovalState>()(
         const approval = get().approvals.find((a) => a.id === id);
         if (!approval) return;
 
-        const adjustedMargem = newVenda > 0 ? ((newVenda - newRepasse) / newVenda) * 100 : 0;
+        const adjustedMargem = calculateMargemComImpostos(newVenda, newRepasse, approval.plaza);
         const variationPercent =
           approval.proposedVenda > 0
             ? ((newVenda - approval.proposedVenda) / approval.proposedVenda) * 100
@@ -301,6 +333,9 @@ export const useApprovalStore = create<ApprovalState>()(
             };
           }),
         }));
+
+        // Write the adjusted price into pricingCodesStore for the target plaza
+        applyPriceToPricingStore(approval, newRepasse, newVenda, adjustedBy || approval.reviewedBy || 'Usuário');
 
         // Sync to backend
         if (isSupabaseConfigured()) {

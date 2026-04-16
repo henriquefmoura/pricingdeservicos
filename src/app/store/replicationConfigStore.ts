@@ -28,24 +28,46 @@ interface ReplicationConfigState {
 export const useReplicationConfigStore = create<ReplicationConfigState>()(
   persist(
     (set, get) => ({
-      // Estado inicial com configuração mock dos 3 grupos
+      // Estado inicial com configuração dos 3 grupos usando nomes reais das praças
       rules: [
         {
           id: 'rule-1',
-          replicatorPlaza: 'SP',
-          targetPlazas: ['RJ', 'MG', 'ES', 'PR', 'SC', 'RS', 'DF', 'GO', 'MT'],
+          replicatorPlaza: 'Praça São Paulo',
+          targetPlazas: [
+            'Praça RJ',
+            'Praça BH',
+            'Praça Uberlândia',
+            'Praça Vitória',
+            'Praça Brasília',
+            'Praça Goiânia',
+            'Praça Campo Grande',
+            'Praça Curitiba',
+            'Praça Londrina',
+            'Praça São José',
+            'Praça Joinville',
+            'Praça Porto Alegre',
+            'Praça São Leopoldo',
+          ],
           isActive: true,
         },
         {
           id: 'rule-2',
-          replicatorPlaza: 'BA',
-          targetPlazas: ['SE', 'AL', 'PE', 'PB', 'RN', 'CE', 'PI', 'MA'],
+          replicatorPlaza: 'Praça Salvador',
+          targetPlazas: ['Praça Fortaleza', 'Praça Maceió', 'Praça Natal'],
           isActive: true,
         },
         {
           id: 'rule-3',
-          replicatorPlaza: 'AM',
-          targetPlazas: ['PA', 'AC', 'RO', 'RR', 'AP', 'TO', 'MS', 'RJ-Norte'],
+          replicatorPlaza: 'Praça ABC',
+          targetPlazas: [
+            'Praça Santos',
+            'Praça Ribeirão Preto',
+            'Praça Campinas',
+            'Praça Sorocaba',
+            'Praça São José do Rio Preto',
+            'Praça São José dos Campos/Taubaté',
+            'Praça Jundiaí',
+          ],
           isActive: true,
         },
       ],
@@ -117,7 +139,7 @@ export const useReplicationConfigStore = create<ReplicationConfigState>()(
       },
     }),
     {
-      name: 'replication-config-storage',
+      name: 'replication-config-storage-v2',
     }
   )
 );

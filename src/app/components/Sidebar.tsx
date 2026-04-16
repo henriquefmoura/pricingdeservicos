@@ -83,6 +83,7 @@ const getNavItemsForRole = (role: UserRole): { group?: string; items: NavItemCon
           group: 'Aprovações',
           items: [
             { id: 'Dashboard', label: 'Validar Preços', icon: CheckCircle },
+            { id: 'PesquisaMercado', label: 'Pesquisa de Mercado', icon: Search },
           ],
         },
         {

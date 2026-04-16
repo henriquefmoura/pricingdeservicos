@@ -63,7 +63,7 @@ export function getPlazaIss(plaza: string): number {
  * Calcula a margem real de um serviço, descontando ISS (variável por praça) e
  * o imposto fixo de 9,25% (FIXED_TAX) sobre o preço de venda.
  *
- * Fórmula: Margem = (Venda × (1 - ISS - FIXED_TAX) - Repasse) / Venda × 100
+ * Fórmula: Margem = (Venda - Repasse) × (1 - ISS - FIXED_TAX) / Venda × 100
  */
 export function calculateMargemComImpostos(
   venda: number,
@@ -73,7 +73,7 @@ export function calculateMargemComImpostos(
   if (venda === 0) return 0;
   const iss = getPlazaIss(plaza);
   const totalTax = iss + FIXED_TAX;
-  return ((venda * (1 - totalTax) - repasse) / venda) * 100;
+  return ((venda - repasse) * (1 - totalTax) / venda) * 100;
 }
 
 /** Retorna o total de impostos (ISS + fixo) para uma praça, em % */

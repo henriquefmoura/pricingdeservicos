@@ -599,11 +599,19 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                     </p>
                   </div>
                 )}
-                {margem !== null && margem >= 15 && (
+                {margem !== null && margem >= 15 && margem <= 35 && (
                   <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-green-800">
                       Excelente! A margem está acima de 15%, dentro do ideal.
+                    </p>
+                  </div>
+                )}
+                {margem !== null && margem > 35 && (
+                  <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-yellow-800">
+                      <strong>Atenção:</strong> Margem acima de 35%. Revise o repasse — o valor pode estar alto demais.
                     </p>
                   </div>
                 )}

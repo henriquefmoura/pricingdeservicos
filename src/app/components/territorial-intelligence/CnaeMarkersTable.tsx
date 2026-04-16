@@ -26,19 +26,36 @@ function formatCount(n: number | undefined): string {
 export function CnaeMarkersTable({ selectedCity }: Props) {
   const { cnaeInfo, city, uf, addressInfo } = selectedCity;
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<CnaeServiceCategory | null>(null);
 
-  // Filter CNAEs by keyword across code, description and category
+  // Build category groups for the filter chips
+  const categoryGroups = useMemo(() => {
+    if (!cnaeInfo) return [];
+    const counts: Partial<Record<CnaeServiceCategory, number>> = {};
+    const order: CnaeServiceCategory[] = ['eletrica', 'pintura', 'hidraulica', 'reforma', 'construcao', 'outros'];
+    for (const c of cnaeInfo) {
+      const cat = (c.serviceCategory as CnaeServiceCategory) ?? 'outros';
+      counts[cat] = (counts[cat] ?? 0) + 1;
+    }
+    return order.filter((c) => (counts[c] ?? 0) > 0).map((c) => ({ category: c, count: counts[c]! }));
+  }, [cnaeInfo]);
+
+  // Filter CNAEs by category chip and keyword across code, description and category
   const filteredCnaes = useMemo(() => {
     if (!cnaeInfo) return [];
-    if (!searchQuery.trim()) return cnaeInfo;
+    let result = cnaeInfo;
+    if (activeCategoryFilter) {
+      result = result.filter((c) => ((c.serviceCategory as CnaeServiceCategory) ?? 'outros') === activeCategoryFilter);
+    }
+    if (!searchQuery.trim()) return result;
     const lower = searchQuery.toLowerCase();
-    return cnaeInfo.filter(
+    return result.filter(
       (c) =>
         c.code.toLowerCase().includes(lower) ||
         c.description.toLowerCase().includes(lower) ||
         (c.serviceCategory ?? '').toLowerCase().includes(lower),
     );
-  }, [cnaeInfo, searchQuery]);
+  }, [cnaeInfo, searchQuery, activeCategoryFilter]);
 
   if (!cnaeInfo || cnaeInfo.length === 0) return null;
 
@@ -55,6 +72,40 @@ export function CnaeMarkersTable({ selectedCity }: Props) {
             {filteredCnaes.length} / {cnaeInfo.length} atividade{cnaeInfo.length !== 1 ? 's' : ''}
           </span>
         </div>
+
+        {/* Category filter chips */}
+        {cnaeInfo && cnaeInfo.length > 0 && categoryGroups.length > 1 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            <button
+              onClick={() => setActiveCategoryFilter(null)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+                activeCategoryFilter === null
+                  ? 'bg-gray-800 text-white border-gray-800'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+              }`}
+            >
+              Todos ({cnaeInfo.length})
+            </button>
+            {categoryGroups.map(({ category, count }) => {
+              const meta = CNAE_CATEGORY_META[category];
+              const color = CNAE_CATEGORY_COLORS[category];
+              const isActive = activeCategoryFilter === category;
+              return (
+                <button
+                  key={category}
+                  onClick={() => setActiveCategoryFilter(isActive ? null : category)}
+                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+                    isActive ? 'text-white border-transparent' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+                  }`}
+                  style={isActive ? { background: color, borderColor: color } : {}}
+                >
+                  <span>{meta.icon}</span>
+                  {meta.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Keyword search */}
         <div className="relative">

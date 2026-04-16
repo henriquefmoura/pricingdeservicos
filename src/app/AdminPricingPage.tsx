@@ -554,10 +554,16 @@ export default function AdminPricingPage() {
                                       <span style={{ fontSize: '12px', color: '#92400E' }}>Margem entre 10-15%, dentro do aceitável mas pode ser otimizada.</span>
                                     </div>
                                   )}
-                                  {margem >= 15 && (
+                                  {margem >= 15 && margem <= 35 && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#D1FAE5', border: '1px solid #86EFAC' }}>
                                       <CheckCircle2 size={15} style={{ color: '#16A34A', flexShrink: 0 }} />
                                       <span style={{ fontSize: '12px', color: '#065F46' }}>Excelente! Margem acima de 15%, dentro do ideal.</span>
+                                    </div>
+                                  )}
+                                  {margem > 35 && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D' }}>
+                                      <AlertTriangle size={15} style={{ color: '#D97706', flexShrink: 0 }} />
+                                      <span style={{ fontSize: '12px', color: '#92400E' }}>Atenção: Margem acima de 35%. Revise o repasse — o valor pode estar alto demais.</span>
                                     </div>
                                   )}
                                 </div>

@@ -15,9 +15,7 @@ export default function MarketResearchPage() {
       navigate('/login');
       return;
     }
-    if (user.role === 'user') {
-      navigate('/dashboard');
-    } else if (user.role === 'master') {
+    if (user.role === 'master') {
       navigate('/home');
     }
   }, [isAuthenticated, user, navigate]);

@@ -8,7 +8,6 @@ import { useAuthStore } from './store/authStore';
 import { useApprovalStore } from './store/approvalStore';
 import { useMarketResearchStore } from './store/marketResearchStore';
 import { SharedAnalysisPanel } from './components/shared/SharedAnalysisPanel';
-import { MarketResearchForm } from './components/MarketResearchForm';
 import { toast } from 'sonner';
 import { getPlazaIss, FIXED_TAX, getTotalTaxPercent } from './data/plazasData';
 
@@ -26,7 +25,7 @@ export default function UserDashboardPage() {
   } = useApprovalStore();
   const { initializeMockResearches } = useMarketResearchStore();
 
-  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'analysis' | 'market'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'analysis'>('pending');
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [editRepasseValue, setEditRepasseValue] = useState('');
   const [editVendaValue, setEditVendaValue] = useState('');
@@ -142,7 +141,6 @@ export default function UserDashboardPage() {
           { id: 'approved', label: 'Aprovados', count: approvedItems.length },
           { id: 'rejected', label: 'Rejeitados', count: rejectedItems.length },
           { id: 'analysis', label: 'Análise de Mercado' },
-          { id: 'market', label: 'Pesquisa de Mercado' },
         ]}
         activeTab={activeTab}
         onTabChange={(id) => setActiveTab(id as any)}
@@ -151,8 +149,6 @@ export default function UserDashboardPage() {
 
       {activeTab === 'analysis' ? (
         <SharedAnalysisPanel userPlaza={user?.plaza} userRole="user" />
-      ) : activeTab === 'market' ? (
-        <MarketResearchForm />
       ) : (
       <>
       {/* Stats Row */}

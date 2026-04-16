@@ -6,8 +6,11 @@ import { CurrencyInput } from './components/Input';
 import { Check, X, ArrowRight, Clock, CheckCircle, XCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAuthStore } from './store/authStore';
 import { useApprovalStore } from './store/approvalStore';
+import { useMarketResearchStore } from './store/marketResearchStore';
 import { SharedAnalysisPanel } from './components/shared/SharedAnalysisPanel';
+import { MarketResearchForm } from './components/MarketResearchForm';
 import { toast } from 'sonner';
+import { getPlazaIss, FIXED_TAX, getTotalTaxPercent } from './data/plazasData';
 
 export default function UserDashboardPage() {
   const navigate = useNavigate();
@@ -21,8 +24,9 @@ export default function UserDashboardPage() {
     initializeMockData,
     applyRejectedPrice,
   } = useApprovalStore();
+  const { initializeMockResearches } = useMarketResearchStore();
 
-  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'analysis'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'analysis' | 'market'>('pending');
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [editRepasseValue, setEditRepasseValue] = useState('');
   const [editVendaValue, setEditVendaValue] = useState('');
@@ -41,7 +45,8 @@ export default function UserDashboardPage() {
   // Initialize mock data
   useEffect(() => {
     initializeMockData();
-  }, [initializeMockData]);
+    initializeMockResearches();
+  }, [initializeMockData, initializeMockResearches]);
 
   // Get approvals for user's plaza
   const pendingItems = useMemo(() => {
@@ -137,6 +142,7 @@ export default function UserDashboardPage() {
           { id: 'approved', label: 'Aprovados', count: approvedItems.length },
           { id: 'rejected', label: 'Rejeitados', count: rejectedItems.length },
           { id: 'analysis', label: 'Análise de Mercado' },
+          { id: 'market', label: 'Pesquisa de Mercado' },
         ]}
         activeTab={activeTab}
         onTabChange={(id) => setActiveTab(id as any)}
@@ -145,6 +151,8 @@ export default function UserDashboardPage() {
 
       {activeTab === 'analysis' ? (
         <SharedAnalysisPanel userPlaza={user?.plaza} userRole="user" />
+      ) : activeTab === 'market' ? (
+        <MarketResearchForm />
       ) : (
       <>
       {/* Stats Row */}
@@ -350,7 +358,12 @@ export default function UserDashboardPage() {
                     </div>
                     <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#6B7280' }}>
                       <span>Repasse: R$ {item.proposedRepasse.toFixed(2)}</span>
-                      <span>Margem: {item.proposedMargem.toFixed(1)}%</span>
+                      <span>Margem líquida: {item.proposedMargem.toFixed(1)}%</span>
+                      {user?.plaza && (
+                        <span style={{ color: '#F59E0B', fontWeight: 600 }}>
+                          Impostos: {getTotalTaxPercent(user.plaza).toFixed(2)}% (ISS {(getPlazaIss(user.plaza) * 100).toFixed(0)}% + {(FIXED_TAX * 100).toFixed(2)}%)
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -372,7 +385,7 @@ export default function UserDashboardPage() {
                     <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: '#001022' }}>
                       <span>Repasse: <span style={{ fontWeight: 700 }}>R$ {item.proposedRepasse.toFixed(2)}</span></span>
                       <span>Venda: <span style={{ fontWeight: 700 }}>R$ {item.proposedVenda.toFixed(2)}</span></span>
-                      <span>Margem: <span style={{ fontWeight: 700 }}>{item.proposedMargem.toFixed(1)}%</span></span>
+                      <span>Margem líquida: <span style={{ fontWeight: 700 }}>{item.proposedMargem.toFixed(1)}%</span></span>
                     </div>
                   </div>
                 )}

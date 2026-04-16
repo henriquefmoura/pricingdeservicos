@@ -2,19 +2,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { isSupabaseConfigured } from '../lib/supabase';
 import * as pricingCodesApi from '../services/api/pricingCodesApi';
+import { ALL_PLAZAS as PLAZAS_LIST, calculateMargemComImpostos } from '../data/plazasData';
 
 export type PricingCodeTipo = 'Visita Técnica' | 'Serviço' | 'Inst + Pague -' | 'Emergencial' | 'Complementar' | 'Deslocamento';
 
 // Chave para códigos sem grupo de serviço
 export const UNGROUPED_KEY = '__sem_grupo__';
 
-// Lista de todas as 27 praças
-export const ALL_PLAZAS = [
-  'SP', 'RJ', 'MG', 'ES', 'PR', 'SC', 'RS', 
-  'DF', 'GO', 'MT', 'MS', 'BA', 'SE', 'AL', 
-  'PE', 'PB', 'RN', 'CE', 'PI', 'MA', 'AM', 
-  'PA', 'AC', 'RO', 'RR', 'AP', 'TO'
-];
+// Lista de todas as 26 praças (importada de plazasData.ts)
+export const ALL_PLAZAS = PLAZAS_LIST;
 
 export interface PricingCode {
   id: string;
@@ -185,7 +181,7 @@ export const usePricingCodesStore = create<PricingCodesState>()(
         set((state) => ({
           codes: state.codes.map((code) => {
             if (code.id === id) {
-              const margem = ((venda - repasse) / venda) * 100;
+              const margem = calculateMargemComImpostos(venda, repasse, plaza);
               const updatedCode = {
                 ...code,
                 prices: {

@@ -13,8 +13,13 @@ export const ANALYSIS_SERVICES: { id: string; name: string }[] = [
 ];
 
 export const ANALYSIS_PLAZAS: string[] = [
-  'São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Curitiba',
-  'Porto Alegre', 'Salvador', 'Recife', 'Fortaleza', 'Brasília',
+  'Praça São Paulo', 'Praça RJ', 'Praça BH', 'Praça Curitiba',
+  'Praça Porto Alegre', 'Praça Salvador', 'Praça Fortaleza', 'Praça Brasília',
+  'Praça Goiânia', 'Praça Campinas', 'Praça ABC', 'Praça Santos',
+  'Praça Ribeirão Preto', 'Praça São José do Rio Preto', 'Praça São José dos Campos/Taubaté',
+  'Praça Sorocaba', 'Praça Jundiaí', 'Praça Joinville', 'Praça Londrina',
+  'Praça São José', 'Praça Vitória', 'Praça Campo Grande', 'Praça Uberlândia',
+  'Praça São Leopoldo', 'Praça Maceió', 'Praça Natal',
 ];
 
 /**

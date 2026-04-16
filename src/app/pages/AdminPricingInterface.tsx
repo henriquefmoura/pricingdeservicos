@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Save, CheckCircle2, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, ListChecks, ChevronDown, FolderOpen } from 'lucide-react';
+import { Save, CheckCircle2, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, ListChecks, ChevronDown, FolderOpen, Info } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -25,6 +25,7 @@ import { useSupportStore } from '../store/supportStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
+import { calculateMargemComImpostos, getPlazaIss, FIXED_TAX, getTotalTaxPercent } from '../data/plazasData';
 
 interface PriceInput {
   repasse: string;
@@ -187,7 +188,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
       return;
     }
 
-    const margem = ((venda - repasse) / venda) * 100;
+    const margem = calculateMargemComImpostos(venda, repasse, user.plaza);
 
     // 1. Salvar DIRETO na praça do admin (sem aprovação)
     updateCodePrice(code.id, user.plaza, repasse, venda, user.name);
@@ -210,7 +211,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
         const currentPrice = code.prices?.[plaza];
         const currentVenda = currentPrice?.venda || 0;
         const currentRepasse = currentPrice?.repasse || 0;
-        const currentMargem = currentPrice ? ((currentPrice.venda - currentPrice.repasse) / currentPrice.venda) * 100 : 0;
+        const currentMargem = currentPrice ? calculateMargemComImpostos(currentPrice.venda, currentPrice.repasse, plaza) : 0;
         
         // Calcular variação correta: 0 para novos serviços, % para serviços existentes
         const variation = currentVenda === 0 
@@ -263,8 +264,9 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
     const venda = parseFloat(input.venda);
 
     if (isNaN(repasse) || isNaN(venda) || venda === 0) return null;
+    if (!user?.plaza) return null;
 
-    return ((venda - repasse) / venda) * 100;
+    return calculateMargemComImpostos(venda, repasse, user.plaza);
   };
 
   // Helper para agrupar códigos por grupoServico
@@ -304,8 +306,8 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
     };
     const repasse = toNum(input?.repasse);
     const venda = toNum(input?.venda);
-    const margem = repasse != null && venda != null && venda > 0
-      ? ((venda - repasse) / venda) * 100
+    const margem = repasse != null && venda != null && venda > 0 && user?.plaza
+      ? calculateMargemComImpostos(venda, repasse, user.plaza)
       : undefined;
 
     updateCalculatorSnapshot({
@@ -371,70 +373,96 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
             </div>
 
             {/* Formulário de preços */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 rounded-xl border-2 border-green-400 bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50" style={{ boxShadow: '0 2px 8px rgba(120, 190, 32, 0.15), 0 1px 3px rgba(0, 0, 0, 0.06)' }}>
-              <div className="space-y-2">
-                <Label htmlFor={`repasse-${code.id}`} className="text-sm font-bold text-gray-800">
-                  Repasse (R$) *
-                </Label>
-                <Input
-                  id={`repasse-${code.id}`}
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={priceInputs[code.id]?.repasse || ''}
-                  onChange={(e) =>
-                    handlePriceChange(code.id, 'repasse', e.target.value)
-                  }
-                  onFocus={() => setEditingCode(code.id)}
-                  className="text-right border-2 border-gray-400 focus:border-green-500 h-11 text-base font-medium"
-                />
-              </div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 rounded-xl border-2 border-green-400 bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50" style={{ boxShadow: '0 2px 8px rgba(120, 190, 32, 0.15), 0 1px 3px rgba(0, 0, 0, 0.06)' }}>
+                <div className="space-y-2">
+                  <Label htmlFor={`repasse-${code.id}`} className="text-sm font-bold text-gray-800">
+                    Repasse (R$) *
+                  </Label>
+                  <Input
+                    id={`repasse-${code.id}`}
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={priceInputs[code.id]?.repasse || ''}
+                    onChange={(e) =>
+                      handlePriceChange(code.id, 'repasse', e.target.value)
+                    }
+                    onFocus={() => setEditingCode(code.id)}
+                    className="text-right border-2 border-gray-400 focus:border-green-500 h-11 text-base font-medium"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor={`venda-${code.id}`} className="text-sm font-bold text-gray-800">
-                  Preço Venda (R$) *
-                </Label>
-                <Input
-                  id={`venda-${code.id}`}
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={priceInputs[code.id]?.venda || ''}
-                  onChange={(e) =>
-                    handlePriceChange(code.id, 'venda', e.target.value)
-                  }
-                  onFocus={() => setEditingCode(code.id)}
-                  className="text-right border-2 border-gray-400 focus:border-green-500 h-11 text-base font-medium"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`venda-${code.id}`} className="text-sm font-bold text-gray-800">
+                    Preço Venda (R$) *
+                  </Label>
+                  <Input
+                    id={`venda-${code.id}`}
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={priceInputs[code.id]?.venda || ''}
+                    onChange={(e) =>
+                      handlePriceChange(code.id, 'venda', e.target.value)
+                    }
+                    onFocus={() => setEditingCode(code.id)}
+                    className="text-right border-2 border-gray-400 focus:border-green-500 h-11 text-base font-medium"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label>Margem (%)</Label>
-                <div
-                  className={`h-10 px-3 py-2 border rounded-md text-right font-semibold flex items-center justify-end ${
-                    margem !== null
-                      ? margem >= 15
-                        ? 'bg-green-50 text-green-700 border-green-300'
-                        : margem >= 10
-                        ? 'bg-yellow-50 text-yellow-700 border-yellow-300'
-                        : 'bg-red-50 text-red-700 border-red-300'
-                      : 'bg-gray-100 text-gray-400 border-gray-200'
-                  }`}
-                >
-                  {margem !== null ? `${margem.toFixed(2)}%` : '-'}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1">
+                    Margem líquida (%)
+                    <span title={`ISS ${(getPlazaIss(user?.plaza || '') * 100).toFixed(0)}% + Fixo ${(FIXED_TAX * 100).toFixed(2)}%`}>
+                      <Info className="w-3 h-3 text-gray-400 cursor-help" />
+                    </span>
+                  </Label>
+                  <div
+                    className={`h-10 px-3 py-2 border rounded-md text-right font-semibold flex items-center justify-end ${
+                      margem !== null
+                        ? margem >= 15
+                          ? 'bg-green-50 text-green-700 border-green-300'
+                          : margem >= 10
+                          ? 'bg-yellow-50 text-yellow-700 border-yellow-300'
+                          : 'bg-red-50 text-red-700 border-red-300'
+                        : 'bg-gray-100 text-gray-400 border-gray-200'
+                    }`}
+                  >
+                    {margem !== null ? `${margem.toFixed(2)}%` : '-'}
+                  </div>
+                </div>
+
+                <div className="flex items-end">
+                  <Button
+                    onClick={() => handleSavePrice(code)}
+                    disabled={!hasInput || !hasInput.repasse || !hasInput.venda}
+                    className="w-full gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    Salvar
+                  </Button>
                 </div>
               </div>
 
-              <div className="flex items-end">
-                <Button
-                  onClick={() => handleSavePrice(code)}
-                  disabled={!hasInput || !hasInput.repasse || !hasInput.venda}
-                  className="w-full gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  Salvar
-                </Button>
-              </div>
+              {/* Detalhamento de impostos */}
+              {user?.plaza && (
+                <div className="flex flex-wrap items-center gap-3 px-1 text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Info className="w-3 h-3" />
+                    Impostos descontados na margem:
+                  </span>
+                  <Badge variant="outline" className="text-xs font-normal">
+                    ISS ({user.plaza}): {(getPlazaIss(user.plaza) * 100).toFixed(0)}%
+                  </Badge>
+                  <Badge variant="outline" className="text-xs font-normal">
+                    Fixo (PIS/COFINS): {(FIXED_TAX * 100).toFixed(2)}%
+                  </Badge>
+                  <Badge variant="outline" className="text-xs font-normal bg-orange-50 border-orange-200 text-orange-700">
+                    Total impostos: {getTotalTaxPercent(user.plaza).toFixed(2)}%
+                  </Badge>
+                </div>
+              )}
             </div>
 
             {/* Preço Sugerido baseado em Pesquisa de Mercado */}
@@ -643,7 +671,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">Margem</p>
+                  <p className="text-xs text-gray-500">Margem líquida</p>
                   <p
                     className={`font-semibold ${
                       price.margem >= 15
@@ -654,6 +682,9 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                     }`}
                   >
                     {price.margem.toFixed(2)}%
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    ISS {(getPlazaIss(plaza) * 100).toFixed(0)}% + {(FIXED_TAX * 100).toFixed(2)}%
                   </p>
                 </div>
                 <button

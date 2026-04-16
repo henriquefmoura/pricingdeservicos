@@ -62,8 +62,15 @@ export function AdminDashboard() {
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
-  // Praças disponíveis (mock)
-  const plazas = ['SP', 'RJ', 'MG', 'PR', 'SC', 'RS', 'BA', 'PE', 'CE'];
+  // Praças disponíveis
+  const plazas = [
+    'Praça BH', 'Praça Uberlândia', 'Praça Fortaleza', 'Praça Maceió', 'Praça Natal',
+    'Praça Porto Alegre', 'Praça São Leopoldo', 'Praça RJ', 'Praça Vitória', 'Praça Santos',
+    'Praça ABC', 'Praça São Paulo', 'Praça Brasília', 'Praça Goiânia', 'Praça Ribeirão Preto',
+    'Praça São José do Rio Preto', 'Praça São José dos Campos/Taubaté', 'Praça Campinas',
+    'Praça Sorocaba', 'Praça Campo Grande', 'Praça Curitiba', 'Praça Londrina',
+    'Praça São José', 'Praça Salvador', 'Praça Jundiaí', 'Praça Joinville',
+  ];
 
   // Redirecionar se não estiver autenticado
   useEffect(() => {
@@ -195,7 +202,7 @@ export function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Praças Ativas</p>
-                  <p className="text-3xl text-gray-900 mt-1">27</p>
+                  <p className="text-3xl text-gray-900 mt-1">26</p>
                 </div>
                 <div className="bg-green-100 p-3 rounded-full">
                   <TrendingUp className="w-6 h-6 text-green-600" />

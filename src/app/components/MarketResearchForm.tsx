@@ -15,8 +15,8 @@ import {
   TableRow,
 } from '../components/ui/table';
 import {
-  LineChart,
-  Line,
+  ScatterChart,
+  Scatter,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -1454,16 +1454,20 @@ export function MarketResearchForm() {
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height={280}>
-                      <LineChart data={points} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                      <ScatterChart margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                        <XAxis dataKey="x" type="category" name="Data" tick={{ fontSize: 11 }} allowDuplicatedCategory={false} />
                         <YAxis
+                          dataKey="y"
+                          type="number"
+                          name="Preço"
                           tickFormatter={(v) => `R$${v}`}
                           tick={{ fontSize: 11 }}
                           width={70}
                         />
                         <Tooltip
-                          formatter={(value: number) => [`R$ ${value.toFixed(2)}`, '']}
+                          cursor={{ strokeDasharray: '3 3' }}
+                          formatter={(value: number) => [`R$ ${value.toFixed(2)}`, 'Preço']}
                           labelFormatter={(label) => `Data: ${label}`}
                         />
                         <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -1476,18 +1480,17 @@ export function MarketResearchForm() {
                           />
                         )}
                         {competitors.map((comp, idx) => (
-                          <Line
+                          <Scatter
                             key={comp}
-                            type="monotone"
-                            dataKey={comp}
                             name={comp}
-                            stroke={CHART_COLORS[idx % CHART_COLORS.length]}
-                            strokeWidth={2}
-                            dot={{ r: 4 }}
-                            connectNulls
+                            data={points
+                              .filter((p) => p[comp] !== undefined)
+                              .map((p) => ({ x: p.date as string, y: p[comp] as number }))}
+                            fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                            shape="circle"
                           />
                         ))}
-                      </LineChart>
+                      </ScatterChart>
                     </ResponsiveContainer>
                   )}
 

@@ -108,21 +108,18 @@ export function Login() {
                 <p>Email: master@empresa.com | Senha: master123</p>
               </div>
               <div className="pt-2 border-t border-gray-300">
-                <p className="font-medium text-gray-800">Admins por Praça (Precificação):</p>
-                <p>Email: admin.sp@empresa.com | Senha: admin123 (SP)</p>
-                <p>Email: admin.rj@empresa.com | Senha: admin123 (RJ)</p>
-                <p>Email: admin.mg@empresa.com | Senha: admin123 (MG)</p>
-                <p className="text-gray-500 italic mt-1">...e outras praças (PR, SC, RS, BA, PE, CE)</p>
+                <p className="font-medium text-gray-800">Admins (Precificação — 3 praças):</p>
+                <p>Email: admin.sp@empresa.com | Senha: admin123 (São Paulo)</p>
+                <p>Email: admin.bsb@empresa.com | Senha: admin123 (Brasília)</p>
+                <p>Email: admin.sc@empresa.com | Senha: admin123 (São José)</p>
               </div>
               <div className="pt-2 border-t border-gray-300">
                 <p className="font-medium text-gray-800 mb-1">Usuários (Aprovação de Preços Replicados):</p>
-                <p>Email: usuario.sp@empresa.com | Senha: user123 (SP)</p>
-                <p>Email: usuario.rj@empresa.com | Senha: user123 (RJ)</p>
-                <p>Email: usuario.mg@empresa.com | Senha: user123 (MG) ⭐</p>
-                <p>Email: usuario.pr@empresa.com | Senha: user123 (PR) ⭐</p>
-                <p>Email: usuario.sc@empresa.com | Senha: user123 (SC) ⭐</p>
-                <p className="text-gray-500 italic mt-1">⭐ Praças que recebem replicação de SP</p>
-                <p className="text-gray-500 italic">...também RS, BA</p>
+                <p>Email: usuario.sp@empresa.com | Senha: user123 (São Paulo)</p>
+                <p>Email: usuario.rj@empresa.com | Senha: user123 (RJ) ⭐</p>
+                <p>Email: usuario.bh@empresa.com | Senha: user123 (BH) ⭐</p>
+                <p>Email: usuario.cur@empresa.com | Senha: user123 (Curitiba) ⭐</p>
+                <p className="text-gray-500 italic mt-1">⭐ Praças que recebem replicação</p>
               </div>
             </div>
           </div>

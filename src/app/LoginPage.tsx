@@ -9,8 +9,10 @@ import { isSupabaseConfigured } from './lib/supabase';
 const testCredentials = [
   { role: 'Master', email: 'master@empresa.com', password: 'master123', name: 'João Silva (Master)' },
   { role: 'Admin SP', email: 'admin.sp@empresa.com', password: 'admin123', name: 'Maria Santos (Admin SP)' },
-  { role: 'Admin RJ', email: 'admin.rj@empresa.com', password: 'admin123', name: 'Pedro Costa (Admin RJ)' },
+  { role: 'Admin Brasília', email: 'admin.bsb@empresa.com', password: 'admin123', name: 'Lucas Lima (Admin Brasília)' },
+  { role: 'Admin São José', email: 'admin.sc@empresa.com', password: 'admin123', name: 'Ana Costa (Admin São José)' },
   { role: 'Usuário SP', email: 'usuario.sp@empresa.com', password: 'user123', name: 'Carlos Oliveira (User SP)' },
+  { role: 'Usuário RJ', email: 'usuario.rj@empresa.com', password: 'user123', name: 'Pedro Souza (User RJ)' },
 ];
 
 export default function LoginPage() {

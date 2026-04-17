@@ -27,74 +27,152 @@ interface AuthState {
 
 // ─── Offline / mock users (used when Supabase is NOT configured) ────────────
 
+// ─── Admin plazas: only SP, Brasília, São José ───────────────────────────────
+// All other plazas have user-role accounts only.
 const MOCK_USERS: Record<string, { password: string; user: User }> = {
   'master@empresa.com': {
     password: 'master123',
     user: { id: '1', name: 'Master', email: 'master@empresa.com', role: 'master' },
   },
+
+  // ── Praça São Paulo (ADMIN) ──────────────────────────────────────────────
   'admin.sp@empresa.com': {
     password: 'admin123',
     user: { id: '2', name: 'Admin São Paulo', email: 'admin.sp@empresa.com', role: 'admin', plaza: 'Praça São Paulo' },
   },
-  'admin.rj@empresa.com': {
-    password: 'admin123',
-    user: { id: '3', name: 'Admin Rio de Janeiro', email: 'admin.rj@empresa.com', role: 'admin', plaza: 'Praça RJ' },
-  },
-  'admin.mg@empresa.com': {
-    password: 'admin123',
-    user: { id: '4', name: 'Admin Minas Gerais', email: 'admin.mg@empresa.com', role: 'admin', plaza: 'Praça BH' },
-  },
-  'admin.pr@empresa.com': {
-    password: 'admin123',
-    user: { id: '5', name: 'Admin Curitiba', email: 'admin.pr@empresa.com', role: 'admin', plaza: 'Praça Curitiba' },
-  },
-  'admin.sc@empresa.com': {
-    password: 'admin123',
-    user: { id: '6', name: 'Admin São José', email: 'admin.sc@empresa.com', role: 'admin', plaza: 'Praça São José' },
-  },
-  'admin.rs@empresa.com': {
-    password: 'admin123',
-    user: { id: '7', name: 'Admin Porto Alegre', email: 'admin.rs@empresa.com', role: 'admin', plaza: 'Praça Porto Alegre' },
-  },
-  'admin.ba@empresa.com': {
-    password: 'admin123',
-    user: { id: '8', name: 'Admin Salvador', email: 'admin.ba@empresa.com', role: 'admin', plaza: 'Praça Salvador' },
-  },
-  'admin.pe@empresa.com': {
-    password: 'admin123',
-    user: { id: '9', name: 'Admin Campinas', email: 'admin.pe@empresa.com', role: 'admin', plaza: 'Praça Campinas' },
-  },
-  'admin.ce@empresa.com': {
-    password: 'admin123',
-    user: { id: '10', name: 'Admin Fortaleza', email: 'admin.ce@empresa.com', role: 'admin', plaza: 'Praça Fortaleza' },
-  },
   'usuario.sp@empresa.com': {
     password: 'user123',
-    user: { id: '11', name: 'Usuário São Paulo', email: 'usuario.sp@empresa.com', role: 'user', plaza: 'Praça São Paulo' },
+    user: { id: '20', name: 'Usuário São Paulo', email: 'usuario.sp@empresa.com', role: 'user', plaza: 'Praça São Paulo' },
   },
-  'usuario.rj@empresa.com': {
-    password: 'user123',
-    user: { id: '12', name: 'Usuário Rio de Janeiro', email: 'usuario.rj@empresa.com', role: 'user', plaza: 'Praça RJ' },
+
+  // ── Praça Brasília (ADMIN) ───────────────────────────────────────────────
+  'admin.bsb@empresa.com': {
+    password: 'admin123',
+    user: { id: '7', name: 'Admin Brasília', email: 'admin.bsb@empresa.com', role: 'admin', plaza: 'Praça Brasília' },
   },
-  'usuario.mg@empresa.com': {
+  'usuario.bsb@empresa.com': {
     password: 'user123',
-    user: { id: '13', name: 'Usuário Minas Gerais', email: 'usuario.mg@empresa.com', role: 'user', plaza: 'Praça BH' },
+    user: { id: '25', name: 'Usuário Brasília', email: 'usuario.bsb@empresa.com', role: 'user', plaza: 'Praça Brasília' },
   },
-  'usuario.pr@empresa.com': {
-    password: 'user123',
-    user: { id: '14', name: 'Usuário Curitiba', email: 'usuario.pr@empresa.com', role: 'user', plaza: 'Praça Curitiba' },
+
+  // ── Praça São José (ADMIN) ───────────────────────────────────────────────
+  'admin.sc@empresa.com': {
+    password: 'admin123',
+    user: { id: '12', name: 'Admin São José', email: 'admin.sc@empresa.com', role: 'admin', plaza: 'Praça São José' },
   },
   'usuario.sc@empresa.com': {
     password: 'user123',
-    user: { id: '15', name: 'Usuário São José', email: 'usuario.sc@empresa.com', role: 'user', plaza: 'Praça São José' },
+    user: { id: '30', name: 'Usuário São José', email: 'usuario.sc@empresa.com', role: 'user', plaza: 'Praça São José' },
+  },
+
+  // ── Praças com usuário apenas (sem admin) ────────────────────────────────
+  'usuario.rj@empresa.com': {
+    password: 'user123',
+    user: { id: '21', name: 'Usuário RJ', email: 'usuario.rj@empresa.com', role: 'user', plaza: 'Praça RJ' },
+  },
+  'usuario.bh@empresa.com': {
+    password: 'user123',
+    user: { id: '22', name: 'Usuário BH', email: 'usuario.bh@empresa.com', role: 'user', plaza: 'Praça BH' },
+  },
+  'usuario.mg@empresa.com': {
+    password: 'user123',
+    user: { id: '78', name: 'Usuário BH', email: 'usuario.mg@empresa.com', role: 'user', plaza: 'Praça BH' },
+  },
+  'usuario.uber@empresa.com': {
+    password: 'user123',
+    user: { id: '23', name: 'Usuário Uberlândia', email: 'usuario.uber@empresa.com', role: 'user', plaza: 'Praça Uberlândia' },
+  },
+  'usuario.vit@empresa.com': {
+    password: 'user123',
+    user: { id: '24', name: 'Usuário Vitória', email: 'usuario.vit@empresa.com', role: 'user', plaza: 'Praça Vitória' },
+  },
+  'usuario.gyn@empresa.com': {
+    password: 'user123',
+    user: { id: '26', name: 'Usuário Goiânia', email: 'usuario.gyn@empresa.com', role: 'user', plaza: 'Praça Goiânia' },
+  },
+  'usuario.cgd@empresa.com': {
+    password: 'user123',
+    user: { id: '27', name: 'Usuário Campo Grande', email: 'usuario.cgd@empresa.com', role: 'user', plaza: 'Praça Campo Grande' },
+  },
+  'usuario.cur@empresa.com': {
+    password: 'user123',
+    user: { id: '28', name: 'Usuário Curitiba', email: 'usuario.cur@empresa.com', role: 'user', plaza: 'Praça Curitiba' },
+  },
+  'usuario.pr@empresa.com': {
+    password: 'user123',
+    user: { id: '100', name: 'Usuário Curitiba', email: 'usuario.pr@empresa.com', role: 'user', plaza: 'Praça Curitiba' },
+  },
+  'usuario.lon@empresa.com': {
+    password: 'user123',
+    user: { id: '29', name: 'Usuário Londrina', email: 'usuario.lon@empresa.com', role: 'user', plaza: 'Praça Londrina' },
+  },
+  'usuario.jv@empresa.com': {
+    password: 'user123',
+    user: { id: '31', name: 'Usuário Joinville', email: 'usuario.jv@empresa.com', role: 'user', plaza: 'Praça Joinville' },
+  },
+  'usuario.poa@empresa.com': {
+    password: 'user123',
+    user: { id: '32', name: 'Usuário Porto Alegre', email: 'usuario.poa@empresa.com', role: 'user', plaza: 'Praça Porto Alegre' },
   },
   'usuario.rs@empresa.com': {
     password: 'user123',
-    user: { id: '16', name: 'Usuário Porto Alegre', email: 'usuario.rs@empresa.com', role: 'user', plaza: 'Praça Porto Alegre' },
+    user: { id: '116', name: 'Usuário Porto Alegre', email: 'usuario.rs@empresa.com', role: 'user', plaza: 'Praça Porto Alegre' },
+  },
+  'usuario.saoleopoldo@empresa.com': {
+    password: 'user123',
+    user: { id: '33', name: 'Usuário São Leopoldo', email: 'usuario.saoleopoldo@empresa.com', role: 'user', plaza: 'Praça São Leopoldo' },
+  },
+  'usuario.ssa@empresa.com': {
+    password: 'user123',
+    user: { id: '34', name: 'Usuário Salvador', email: 'usuario.ssa@empresa.com', role: 'user', plaza: 'Praça Salvador' },
   },
   'usuario.ba@empresa.com': {
     password: 'user123',
-    user: { id: '17', name: 'Usuário Salvador', email: 'usuario.ba@empresa.com', role: 'user', plaza: 'Praça Salvador' },
+    user: { id: '129', name: 'Usuário Salvador', email: 'usuario.ba@empresa.com', role: 'user', plaza: 'Praça Salvador' },
+  },
+  'usuario.for@empresa.com': {
+    password: 'user123',
+    user: { id: '35', name: 'Usuário Fortaleza', email: 'usuario.for@empresa.com', role: 'user', plaza: 'Praça Fortaleza' },
+  },
+  'usuario.mac@empresa.com': {
+    password: 'user123',
+    user: { id: '36', name: 'Usuário Maceió', email: 'usuario.mac@empresa.com', role: 'user', plaza: 'Praça Maceió' },
+  },
+  'usuario.nat@empresa.com': {
+    password: 'user123',
+    user: { id: '37', name: 'Usuário Natal', email: 'usuario.nat@empresa.com', role: 'user', plaza: 'Praça Natal' },
+  },
+  'usuario.abc@empresa.com': {
+    password: 'user123',
+    user: { id: '50', name: 'Usuário ABC', email: 'usuario.abc@empresa.com', role: 'user', plaza: 'Praça ABC' },
+  },
+  'usuario.santos@empresa.com': {
+    password: 'user123',
+    user: { id: '51', name: 'Usuário Santos', email: 'usuario.santos@empresa.com', role: 'user', plaza: 'Praça Santos' },
+  },
+  'usuario.rib@empresa.com': {
+    password: 'user123',
+    user: { id: '52', name: 'Usuário Ribeirão Preto', email: 'usuario.rib@empresa.com', role: 'user', plaza: 'Praça Ribeirão Preto' },
+  },
+  'usuario.camp@empresa.com': {
+    password: 'user123',
+    user: { id: '53', name: 'Usuário Campinas', email: 'usuario.camp@empresa.com', role: 'user', plaza: 'Praça Campinas' },
+  },
+  'usuario.sor@empresa.com': {
+    password: 'user123',
+    user: { id: '54', name: 'Usuário Sorocaba', email: 'usuario.sor@empresa.com', role: 'user', plaza: 'Praça Sorocaba' },
+  },
+  'usuario.sjrp@empresa.com': {
+    password: 'user123',
+    user: { id: '55', name: 'Usuário São José do Rio Preto', email: 'usuario.sjrp@empresa.com', role: 'user', plaza: 'Praça São José do Rio Preto' },
+  },
+  'usuario.sjc@empresa.com': {
+    password: 'user123',
+    user: { id: '56', name: 'Usuário São José dos Campos', email: 'usuario.sjc@empresa.com', role: 'user', plaza: 'Praça São José dos Campos/Taubaté' },
+  },
+  'usuario.jd@empresa.com': {
+    password: 'user123',
+    user: { id: '57', name: 'Usuário Jundiaí', email: 'usuario.jd@empresa.com', role: 'user', plaza: 'Praça Jundiaí' },
   },
 };
 

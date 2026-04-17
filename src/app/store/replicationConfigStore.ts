@@ -28,24 +28,53 @@ interface ReplicationConfigState {
 export const useReplicationConfigStore = create<ReplicationConfigState>()(
   persist(
     (set, get) => ({
-      // Estado inicial com configuração mock dos 3 grupos
+      // Estado inicial: 3 praças admin como replicadoras
       rules: [
         {
           id: 'rule-1',
-          replicatorPlaza: 'SP',
-          targetPlazas: ['RJ', 'MG', 'ES', 'PR', 'SC', 'RS', 'DF', 'GO', 'MT'],
+          replicatorPlaza: 'Praça São Paulo',
+          // SP replica para o Sudeste, Nordeste e interior paulista
+          targetPlazas: [
+            'Praça RJ',
+            'Praça BH',
+            'Praça Uberlândia',
+            'Praça Vitória',
+            'Praça Salvador',
+            'Praça Fortaleza',
+            'Praça Maceió',
+            'Praça Natal',
+            'Praça ABC',
+            'Praça Santos',
+            'Praça Ribeirão Preto',
+            'Praça São José do Rio Preto',
+            'Praça São José dos Campos/Taubaté',
+            'Praça Campinas',
+            'Praça Sorocaba',
+            'Praça Jundiaí',
+          ],
           isActive: true,
         },
         {
           id: 'rule-2',
-          replicatorPlaza: 'BA',
-          targetPlazas: ['SE', 'AL', 'PE', 'PB', 'RN', 'CE', 'PI', 'MA'],
+          replicatorPlaza: 'Praça Brasília',
+          // Brasília replica para o Centro-Oeste
+          targetPlazas: [
+            'Praça Goiânia',
+            'Praça Campo Grande',
+          ],
           isActive: true,
         },
         {
           id: 'rule-3',
-          replicatorPlaza: 'AM',
-          targetPlazas: ['PA', 'AC', 'RO', 'RR', 'AP', 'TO', 'MS', 'RJ-Norte'],
+          replicatorPlaza: 'Praça São José',
+          // São José replica para o Sul
+          targetPlazas: [
+            'Praça Curitiba',
+            'Praça Londrina',
+            'Praça Porto Alegre',
+            'Praça São Leopoldo',
+            'Praça Joinville',
+          ],
           isActive: true,
         },
       ],
@@ -117,7 +146,7 @@ export const useReplicationConfigStore = create<ReplicationConfigState>()(
       },
     }),
     {
-      name: 'replication-config-storage',
+      name: 'replication-config-storage-v3',
     }
   )
 );

@@ -127,15 +127,56 @@ const MAX_ADJUSTMENT_RANGE = 0.5;
  * @param history Histórico de SalesDataRows (de salesDataStore.getHistory)
  * @param weights Pesos adaptativos (de mlBehaviorStore.getWeights)
  * @param currentRepasse Repasse atual (para calcular margem) — opcional
+ * @param adminReplicatedVenda Preço de venda replicado pelo admin para esta praça — opcional.
+ *   Quando fornecido, é incorporado como âncora na sugestão (35% do peso no preço base)
+ *   e adicionado como fator explicativo. Se não houver histórico mas existir preço replicado,
+ *   retorna uma sugestão de baixa confiança baseada apenas nesse valor.
  */
 export function generateMLSuggestion(
   grupoServico: string,
   plaza: string,
   history: SalesDataRow[],
   weights: MLWeights = DEFAULT_ML_WEIGHTS,
-  currentRepasse?: number
+  currentRepasse?: number,
+  adminReplicatedVenda?: number
 ): MLPriceSuggestion | null {
-  if (history.length === 0) return null;
+  const hasHistory = history.length > 0;
+
+  // When there is no plaza-specific history but an admin-replicated price exists,
+  // produce a minimal low-confidence suggestion anchored entirely to that price.
+  if (!hasHistory) {
+    if (!adminReplicatedVenda || adminReplicatedVenda <= 0) return null;
+
+    const suggestedVenda = adminReplicatedVenda;
+    const repasseBase = currentRepasse ?? suggestedVenda * DEFAULT_REPASSE_RATIO;
+    const suggestedRepasse = Math.round(repasseBase * 100) / 100;
+    const estimatedMargem =
+      suggestedVenda > 0
+        ? ((suggestedVenda - suggestedRepasse) / suggestedVenda - FIXED_TAX) * 100
+        : 0;
+
+    return {
+      grupoServico,
+      plaza,
+      suggestedVenda: Math.round(suggestedVenda * 100) / 100,
+      suggestedRepasse,
+      vendaMin: Math.round(suggestedVenda * 0.9 * 100) / 100,
+      vendaMax: Math.round(suggestedVenda * 1.1 * 100) / 100,
+      confidence: 20,
+      confidenceLevel: 'baixa',
+      estimatedMargem: Math.round(estimatedMargem * 100) / 100,
+      keyFactors: [
+        {
+          label: 'Preço replicado pelo admin',
+          impact: 'neutro',
+          description: `Sem histórico local — sugestão baseada exclusivamente no preço replicado de R$ ${suggestedVenda.toFixed(2)}`,
+        },
+      ],
+      summary: `Sem dados históricos para ${plaza}. Sugestão baseada no preço replicado pelo admin (R$ ${suggestedVenda.toFixed(2)}). Confiança baixa — valide com dados locais.`,
+      generatedAt: new Date().toISOString(),
+      historicoSemanas: 0,
+    };
+  }
 
   // ── 1. Calcula preço base a partir dos dados históricos ──────────────────
   const validPrices = history
@@ -147,8 +188,17 @@ export function generateMLSuggestion(
 
   if (validPrices.length === 0) return null;
 
-  const basePrecoVenda = mean(validPrices);
-  const basePrecoRepasse = validRepassePrices.length > 0 ? mean(validRepassePrices) : (currentRepasse ?? basePrecoVenda * DEFAULT_REPASSE_RATIO);
+  const historicalMeanVenda = mean(validPrices);
+  const basePrecoRepasse = validRepassePrices.length > 0 ? mean(validRepassePrices) : (currentRepasse ?? historicalMeanVenda * DEFAULT_REPASSE_RATIO);
+
+  // ── 1b. Se houver preço replicado pelo admin, blend como âncora (35%) ──────
+  // O preço replicado sinaliza a expectativa do admin para essa praça, por isso
+  // recebe um peso menor que o histórico local, mas não é ignorado.
+  const ADMIN_ANCHOR_WEIGHT = 0.35;
+  const basePrecoVenda =
+    adminReplicatedVenda && adminReplicatedVenda > 0
+      ? historicalMeanVenda * (1 - ADMIN_ANCHOR_WEIGHT) + adminReplicatedVenda * ADMIN_ANCHOR_WEIGHT
+      : historicalMeanVenda;
 
   // ── 2. Calcula scores de cada fator ──────────────────────────────────────
   const sHistorico   = scoreHistoricoPreco(history);
@@ -268,6 +318,23 @@ export function generateMLSuggestion(
     });
   }
 
+  // ── Fator: Preço replicado pelo admin ─────────────────────────────────────
+  if (adminReplicatedVenda && adminReplicatedVenda > 0) {
+    const delta = ((adminReplicatedVenda - historicalMeanVenda) / historicalMeanVenda) * 100;
+    const adminImpact: MLFactor['impact'] =
+      Math.abs(delta) < 5 ? 'neutro' : delta > 0 ? 'positivo' : 'negativo';
+    keyFactors.push({
+      label: 'Preço replicado pelo admin',
+      impact: adminImpact,
+      description:
+        Math.abs(delta) < 5
+          ? `Preço do admin (R$ ${adminReplicatedVenda.toFixed(2)}) próximo à média local — reforça a sugestão`
+          : delta > 0
+          ? `Preço do admin (R$ ${adminReplicatedVenda.toFixed(2)}) ${delta.toFixed(1)}% acima da média local — eleva ligeiramente a sugestão`
+          : `Preço do admin (R$ ${adminReplicatedVenda.toFixed(2)}) ${Math.abs(delta).toFixed(1)}% abaixo da média local — considera particularidades da praça`,
+    });
+  }
+
   // ── 11. Resumo ─────────────────────────────────────────────────────────────
   const trendLabel =
     adjustmentFactor > 1.05
@@ -276,8 +343,14 @@ export function generateMLSuggestion(
       ? 'abaixo da média histórica'
       : 'próximo à média histórica';
 
+  const adminPriceLine =
+    adminReplicatedVenda && adminReplicatedVenda > 0
+      ? ` Preço replicado pelo admin (R$ ${adminReplicatedVenda.toFixed(2)}) incorporado como âncora.`
+      : '';
+
   const summary = [
-    `Sugestão ${trendLabel} de R$ ${basePrecoVenda.toFixed(2)}.`,
+    `Sugestão ${trendLabel} de R$ ${historicalMeanVenda.toFixed(2)}.`,
+    adminPriceLine,
     confidence >= 70
       ? `Alta confiança com base em ${dataPoints} semana(s) de dados.`
       : confidence >= 45

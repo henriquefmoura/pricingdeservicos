@@ -270,6 +270,7 @@ export default function AdminPricingPage() {
           codigo: code.codigoAvulso || code.codigoAtrelado || '-',
           descricao: code.descricao,
           grupo: code.tipo,
+          grupoServico: code.grupoServico,
           plaza: plaza,
           currentRepasse: currentRepasse,
           currentVenda: currentVenda,

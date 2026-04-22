@@ -222,6 +222,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
           codigo: code.codigoAvulso || code.codigoAtrelado || '-',
           descricao: code.descricao,
           grupo: code.tipo,
+          grupoServico: code.grupoServico,
           plaza: plaza,
           currentRepasse: currentRepasse,
           currentVenda: currentVenda,

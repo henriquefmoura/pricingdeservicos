@@ -117,7 +117,7 @@ export const useApprovalStore = create<ApprovalState>()(
                 codigo: a.codigo,
                 descricao: a.descricao,
                 grupo: a.grupo,
-                grupoServico: (a as Record<string, unknown>).grupo_servico as string | undefined,
+                grupoServico: (a as unknown as Record<string, unknown>).grupo_servico as string | undefined,
                 plaza: a.plaza,
                 currentRepasse: Number(a.current_repasse),
                 currentVenda: Number(a.current_venda),

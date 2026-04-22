@@ -11,6 +11,7 @@ import { useReplicationConfigStore } from './store/replicationConfigStore';
 import { useMarketResearchStore, PriceHistoryEntry } from './store/marketResearchStore';
 import { GoogleSheetsConfig } from './components/GoogleSheetsConfig';
 import { ReplicationConfig } from './components/ReplicationConfig';
+import { SalesDataUpload } from './components/master/SalesDataUpload';
 import { ServiceData } from './types/pricing';
 import { toast } from 'sonner';
 
@@ -508,6 +509,11 @@ export default function MasterHomePage() {
             )}
           </Card>
         )}
+
+        {/* ML Sales Data Upload */}
+        <Card style={{ border: '1.5px solid #86EFAC' }}>
+          <SalesDataUpload masterName={user?.name ?? 'Master'} />
+        </Card>
 
         {/* Quick Info Cards - Horizontal Row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>

@@ -189,7 +189,8 @@ export function generateMLSuggestion(
   if (validPrices.length === 0) return null;
 
   const historicalMeanVenda = mean(validPrices);
-  const basePrecoRepasse = validRepassePrices.length > 0 ? mean(validRepassePrices) : (currentRepasse ?? historicalMeanVenda * DEFAULT_REPASSE_RATIO);
+  const repasseFallback = currentRepasse ?? historicalMeanVenda * DEFAULT_REPASSE_RATIO;
+  const basePrecoRepasse = validRepassePrices.length > 0 ? mean(validRepassePrices) : repasseFallback;
 
   // ── 1b. Se houver preço replicado pelo admin, blend como âncora (35%) ──────
   // O preço replicado sinaliza a expectativa do admin para essa praça, por isso
@@ -319,7 +320,7 @@ export function generateMLSuggestion(
   }
 
   // ── Fator: Preço replicado pelo admin ─────────────────────────────────────
-  if (adminReplicatedVenda && adminReplicatedVenda > 0) {
+  if (adminReplicatedVenda && adminReplicatedVenda > 0 && historicalMeanVenda > 0) {
     const delta = ((adminReplicatedVenda - historicalMeanVenda) / historicalMeanVenda) * 100;
     const adminImpact: MLFactor['impact'] =
       Math.abs(delta) < 5 ? 'neutro' : delta > 0 ? 'positivo' : 'negativo';

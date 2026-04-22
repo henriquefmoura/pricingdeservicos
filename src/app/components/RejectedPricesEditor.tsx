@@ -98,7 +98,7 @@ export function RejectedPricesEditor() {
         repasse,
         approval.proposedVenda,
       );
-      if (mlSugg) {
+      if (mlSugg && mlSugg.suggestedVenda > 0) {
         const wasOverridden =
           Math.abs(venda - mlSugg.suggestedVenda) / mlSugg.suggestedVenda > ML_OVERRIDE_THRESHOLD;
         logMLBehavior({

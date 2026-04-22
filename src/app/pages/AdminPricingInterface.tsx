@@ -20,6 +20,9 @@ import { useMarketResearchStore } from '../store/marketResearchStore';
 import { useApprovalStore } from '../store/approvalStore';
 import { useCorrelationStore } from '../store/correlationStore';
 import { useReplicationConfigStore } from '../store/replicationConfigStore';
+import { useSalesDataStore } from '../store/salesDataStore';
+import { useMLBehaviorStore } from '../store/mlBehaviorStore';
+import { generateMLSuggestion } from '../services/mlPricingSuggestionService';
 import { updateCalculatorSnapshot } from '../services/pricingMentorAIService';
 import { useSupportStore } from '../store/supportStore';
 import { useNotificationStore } from '../store/notificationStore';
@@ -44,6 +47,8 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
   const { addApproval } = useApprovalStore();
   const { getSimilarPlazas, initializeMockData } = useCorrelationStore();
   const { getTargetPlazasForReplicator, isPlazaReplicator } = useReplicationConfigStore();
+  const { getHistory: getSalesHistory } = useSalesDataStore();
+  const { getWeights: getMLWeights } = useMLBehaviorStore();
   const { createThread, addMessage } = useSupportStore();
   const { addNotification } = useNotificationStore();
   const [priceInputs, setPriceInputs] = useState<Record<string, PriceInput>>({});
@@ -212,12 +217,35 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
         const currentVenda = currentPrice?.venda || 0;
         const currentRepasse = currentPrice?.repasse || 0;
         const currentMargem = currentPrice ? calculateMargemComImpostos(currentPrice.venda, currentPrice.repasse, plaza) : 0;
-        
+
+        // Compute ML-adjusted price for this specific target plaza.
+        // The admin price is the anchor (35% weight); the plaza's own
+        // historical sales data drives the remaining 65%.
+        let proposedVenda = venda;
+        let proposedRepasse = repasse;
+        if (code.grupoServico) {
+          const plazaHistory = getSalesHistory(code.grupoServico, plaza);
+          const plazaWeights = getMLWeights(code.grupoServico, plaza);
+          const mlSugg = generateMLSuggestion(
+            code.grupoServico,
+            plaza,
+            plazaHistory,
+            plazaWeights,
+            repasse,
+            venda,
+          );
+          if (mlSugg) {
+            proposedVenda = mlSugg.suggestedVenda;
+            proposedRepasse = mlSugg.suggestedRepasse;
+          }
+        }
+
+        const proposedMargem = calculateMargemComImpostos(proposedVenda, proposedRepasse, plaza);
         // Calcular variação correta: 0 para novos serviços, % para serviços existentes
-        const variation = currentVenda === 0 
-          ? 0 
-          : ((venda - currentVenda) / currentVenda) * 100;
-        
+        const variation = currentVenda === 0
+          ? 0
+          : ((proposedVenda - currentVenda) / currentVenda) * 100;
+
         addApproval({
           codigo: code.codigoAvulso || code.codigoAtrelado || '-',
           descricao: code.descricao,
@@ -227,9 +255,9 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
           currentRepasse: currentRepasse,
           currentVenda: currentVenda,
           currentMargem: currentMargem,
-          proposedRepasse: repasse,
-          proposedVenda: venda,
-          proposedMargem: margem,
+          proposedRepasse: proposedRepasse,
+          proposedVenda: proposedVenda,
+          proposedMargem: proposedMargem,
           variation: variation,
           isNewService: currentVenda === 0,
           requestedBy: `Admin ${user.plaza}`,

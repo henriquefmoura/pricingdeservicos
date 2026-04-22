@@ -350,7 +350,7 @@ export function generateMLSuggestion(
       : '';
 
   const summary = [
-    `Sugestão ${trendLabel} de R$ ${historicalMeanVenda.toFixed(2)}.`,
+    `Sugestão ${trendLabel} de R$ ${basePrecoVenda.toFixed(2)}.`,
     adminPriceLine,
     confidence >= 70
       ? `Alta confiança com base em ${dataPoints} semana(s) de dados.`

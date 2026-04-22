@@ -103,9 +103,10 @@ function parseRows(rawRows: Record<string, unknown>[]): { rows: SalesDataRow[]; 
     } else {
       // Se vier como número serial do Excel, converte
       if (typeof row.semana === 'number') {
-        const excelEpoch = new Date(1900, 0, 0);
+        // Excel epoch: Dec 30, 1899 (accounts for Excel's leap year bug treating 1900 as leap)
+        const excelEpoch = new Date(1899, 11, 30);
         const msPerDay = 86400000;
-        const date = new Date(excelEpoch.getTime() + (row.semana - 1) * msPerDay);
+        const date = new Date(excelEpoch.getTime() + row.semana * msPerDay);
         row.semana = date.toISOString().split('T')[0];
       } else {
         row.semana = String(row.semana);

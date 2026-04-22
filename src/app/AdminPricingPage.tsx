@@ -218,6 +218,8 @@ export default function AdminPricingPage() {
 
     // ML behavior log: did the admin override the ML suggestion?
     if (code.grupoServico) {
+      // Differences under ML_OVERRIDE_THRESHOLD (3%) are considered acceptance of the suggestion
+      const ML_OVERRIDE_THRESHOLD = 0.03;
       const mlHistory = getSalesHistory(code.grupoServico, user.plaza);
       const mlWeights = getMLWeights(code.grupoServico, user.plaza);
       const mlSugg = mlHistory.length > 0
@@ -225,7 +227,7 @@ export default function AdminPricingPage() {
         : null;
       if (mlSugg) {
         const wasOverridden =
-          Math.abs(venda - mlSugg.suggestedVenda) / mlSugg.suggestedVenda > 0.03;
+          Math.abs(venda - mlSugg.suggestedVenda) / mlSugg.suggestedVenda > ML_OVERRIDE_THRESHOLD;
         logMLBehavior({
           userId: user.id,
           userName: user.name,

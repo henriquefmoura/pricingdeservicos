@@ -1,7 +1,12 @@
 -- ============================================================================
 -- ML Pricing Schema — Tabelas para o sistema de sugestão de preço por ML
 -- ============================================================================
--- Execute este arquivo no seu projeto Supabase após o schema.sql principal.
+-- Execute este arquivo no seu projeto Supabase APÓS o schema.sql principal.
+--
+-- PREREQUISITES: Este arquivo depende das funções e tabelas criadas em schema.sql:
+--   • auth.user_role()  — função que retorna o papel do usuário a partir do JWT
+--   • auth.user_plaza() — função que retorna a praça do usuário a partir do JWT
+--   • public.pricing_codes — tabela de códigos de precificação
 -- ============================================================================
 
 -- ─── 1. Snapshots de dados de vendas (upload semanal do master) ──────────────

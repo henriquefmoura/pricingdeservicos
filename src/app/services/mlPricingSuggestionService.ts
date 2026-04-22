@@ -106,7 +106,18 @@ function scoreCapacidadeCompra(rows: SalesDataRow[]): number {
   return mean(levels) / 5;
 }
 
-// ─── Função principal ─────────────────────────────────────────────────────────
+import { FIXED_TAX } from '../data/plazasData';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+/** Default ratio used to estimate repasse from venda when no repasse history exists */
+const DEFAULT_REPASSE_RATIO = 0.6;
+
+/** Baseline score — scores above this increase prices, below decrease them */
+const BASELINE_SCORE = 0.5;
+
+/** Maximum price adjustment factor relative to baseline price (±25%) */
+const MAX_ADJUSTMENT_RANGE = 0.5;
 
 /**
  * Gera uma sugestão de preço ML para um grupo de serviço × praça.
@@ -137,7 +148,7 @@ export function generateMLSuggestion(
   if (validPrices.length === 0) return null;
 
   const basePrecoVenda = mean(validPrices);
-  const basePrecoRepasse = validRepassePrices.length > 0 ? mean(validRepassePrices) : (currentRepasse ?? basePrecoVenda * 0.6);
+  const basePrecoRepasse = validRepassePrices.length > 0 ? mean(validRepassePrices) : (currentRepasse ?? basePrecoVenda * DEFAULT_REPASSE_RATIO);
 
   // ── 2. Calcula scores de cada fator ──────────────────────────────────────
   const sHistorico   = scoreHistoricoPreco(history);
@@ -166,9 +177,9 @@ export function generateMLSuggestion(
     totalWeight;
 
   // ── 4. Ajuste de preço baseado no score ──────────────────────────────────
-  // Score 0.5 → preço base; score > 0.5 → aumenta; score < 0.5 → diminui
-  // Faixa de ajuste: ±25% do preço base
-  const adjustmentFactor = 1 + (compositeScore - 0.5) * 0.5;
+  // Score acima de BASELINE_SCORE aumenta o preço, abaixo diminui.
+  // Um score de 1.0 aumenta em até MAX_ADJUSTMENT_RANGE/2 (25%); 0.0 diminui 25%.
+  const adjustmentFactor = 1 + (compositeScore - BASELINE_SCORE) * MAX_ADJUSTMENT_RANGE;
   let suggestedVenda = basePrecoVenda * adjustmentFactor;
 
   // ── 5. Aplica bias de correção aprendido ──────────────────────────────────
@@ -184,7 +195,6 @@ export function generateMLSuggestion(
   const suggestedRepasse = Math.round(suggestedVenda * repasseRatio * 100) / 100;
 
   // ── 8. Estima margem ─────────────────────────────────────────────────────
-  const FIXED_TAX = 0.0925;
   const estimatedMargem =
     suggestedVenda > 0
       ? ((suggestedVenda - suggestedRepasse) / suggestedVenda - FIXED_TAX) * 100

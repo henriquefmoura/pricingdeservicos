@@ -14,6 +14,9 @@ import { generateMLSuggestion } from '../services/mlPricingSuggestionService';
 import { MLPriceSuggestionCard } from './MLPriceSuggestion';
 import { toast } from 'sonner';
 
+/** Differences below this threshold (3%) are treated as acceptance of the ML suggestion */
+const ML_OVERRIDE_THRESHOLD = 0.03;
+
 interface PriceEdit {
   repasse: string;
   venda: string;
@@ -87,7 +90,6 @@ export function RejectedPricesEditor() {
 
     // ML behavior log: track whether user accepted or overrode the ML suggestion
     if (approval.grupoServico) {
-      const ML_OVERRIDE_THRESHOLD = 0.03;
       const mlHistory = getSalesHistory(approval.grupoServico, approval.plaza);
       const mlWeights = getMLWeights(approval.grupoServico, approval.plaza);
       const mlSugg = generateMLSuggestion(

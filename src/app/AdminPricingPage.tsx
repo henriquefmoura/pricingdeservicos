@@ -257,18 +257,27 @@ export default function AdminPricingPage() {
     }
 
     if (targetPlazas.length > 0) {
+      // Compute market research mean once per code (same for all target plazas).
+      const codeKey = code.codigoAvulso || code.codigoAtrelado;
+      const marketResearch = codeKey ? getResearchByCode(codeKey) : undefined;
+      const marketMean =
+        marketResearch && marketResearch.precosConcorrentes.length > 0
+          ? marketResearch.precosConcorrentes.reduce((s, c) => s + c.preco, 0) /
+            marketResearch.precosConcorrentes.length
+          : undefined;
+
       targetPlazas.forEach((plaza) => {
         const currentPrice = code.prices?.[plaza];
         const currentVenda = currentPrice?.venda || 0;
         const currentRepasse = currentPrice?.repasse || 0;
         const currentMargem = currentPrice ? calculateMargemComImpostos(currentPrice.venda, currentPrice.repasse, plaza) : 0;
 
-        // Compute ML-adjusted price for this specific target plaza.
-        // The admin price is used as the anchor (35% weight); the plaza's own
-        // historical sales data drives the remaining 65%, capturing local
-        // market particularities (conversion rate, competition, purchasing power…).
-        // If no historical data exists, generateMLSuggestion returns a fallback
-        // anchored entirely to the admin price.
+        // Compute ML-adjusted suggested price for this target plaza.
+        // Anchors used (in priority order):
+        //   1. Admin price (60%) — plazas are correlated, this is the strongest signal.
+        //   2. Market research mean (20%) — real competitor prices for this service.
+        //   3. Local historical mean (20-40%) — captures local demand dynamics.
+        // Falls back to the raw admin price when generateMLSuggestion returns null.
         let proposedVenda = venda;
         let proposedRepasse = repasse;
         if (code.grupoServico) {
@@ -281,6 +290,7 @@ export default function AdminPricingPage() {
             plazaWeights,
             repasse,
             venda,
+            marketMean,
           );
           if (mlSugg) {
             proposedVenda = mlSugg.suggestedVenda;

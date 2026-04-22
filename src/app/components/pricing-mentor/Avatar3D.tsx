@@ -293,7 +293,7 @@ export function Avatar3D({
         >
           <img
             src={AVATAR_IMAGE_URL}
-            alt="PedroII jr — assistente de precificação Leroy Merlin"
+            alt="PedroII jr — assistente de precificação de serviços e reformas"
             width={displaySize * 0.92}
             height={displaySize * 0.92}
             style={{

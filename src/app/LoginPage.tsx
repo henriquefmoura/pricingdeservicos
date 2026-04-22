@@ -102,7 +102,7 @@ export default function LoginPage() {
                   width: '40px',
                   height: '40px',
                   borderRadius: '8px',
-                  backgroundColor: '#78BE20',
+                  backgroundColor: '#2563EB',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -117,7 +117,7 @@ export default function LoginPage() {
                     letterSpacing: '-0.5px',
                   }}
                 >
-                  LM
+                  PS
                 </span>
               </div>
               <div>
@@ -130,19 +130,19 @@ export default function LoginPage() {
                     letterSpacing: '-0.3px',
                   }}
                 >
-                  LEROY MERLIN
+                  PRICING DE SERVIÇOS
                 </div>
                 <div
                   style={{
                     fontSize: '13px',
                     fontWeight: 600,
-                    color: '#78BE20',
+                    color: '#2563EB',
                     lineHeight: 1.1,
                     letterSpacing: '0.3px',
                     textTransform: 'uppercase',
                   }}
                 >
-                  Instalações e Reformas
+                  Calculadora de Pricing
                 </div>
               </div>
             </div>
@@ -284,7 +284,7 @@ export default function LoginPage() {
               letterSpacing: '0.5px',
             }}
           >
-            Leroy Merlin Instalações & Reformas
+            Calculadora de Pricing de Serviços e Reformas
           </p>
         </div>
       </div>
@@ -351,7 +351,7 @@ export default function LoginPage() {
             <Input
               type="email"
               label="Email"
-              placeholder="seu.email@leroymerlin.com.br"
+              placeholder="seu.email@empresa.com.br"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}

@@ -12,7 +12,7 @@ import type {
   CnaeContext,
 } from '../types/pricingAnalysis';
 import type { CompetitorAnalysisResult } from '../types/competitor';
-import type { LeroyStore } from '../types/territorial';
+import type { CompanyStore } from '../types/territorial';
 import type { ServiceClimateSensitivity } from '../types/pricingClimate';
 import type { WeatherSummary } from '../types/weather';
 import type { TerritorialInsightSummary } from '../types/territorial';
@@ -23,7 +23,7 @@ import {
   loadWeatherData,
   loadTerritorialData,
   buildCompetitorContext,
-  buildLeroyContext,
+  buildCompanyContext,
   buildCnaeContext,
 } from '../services/core/pricingIntelligenceHub';
 import { runPricingAnalysisEngine } from '../services/pricingAnalysisEngine';
@@ -55,7 +55,7 @@ export interface UsePricingAnalysisReturn {
   unified: PricingUnifiedContext | null;
   competitorContext: CompetitorContext;
   cnaeContext: CnaeContext | null;
-  leroyStores: LeroyStore[];
+  companyStores: CompanyStore[];
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -86,7 +86,7 @@ export function usePricingAnalysis(
   const [unified, setUnified] = useState<PricingUnifiedContext | null>(null);
   const [competitorCtx, setCompetitorCtx] = useState<CompetitorContext>({ enabled: false });
   const [cnaeCtx, setCnaeCtx] = useState<CnaeContext | null>(null);
-  const [leroyStores, setLeroyStores] = useState<LeroyStore[]>([]);
+  const [companyStores, setCompanyStores] = useState<CompanyStore[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,8 +139,8 @@ export function usePricingAnalysis(
         .then(setCnaeCtx)
         .catch(() => setCnaeCtx({ enabled: false }));
 
-      // Leroy stores
-      setLeroyStores(buildLeroyContext(pracaName));
+      // Company stores
+      setCompanyStores(buildCompanyContext(pracaName));
 
       if (!weatherData) {
         setError('Dados climáticos indisponíveis. Análise parcial baseada em dados territoriais.');
@@ -152,7 +152,7 @@ export function usePricingAnalysis(
       setWeather(null);
       const territorialData = await loadTerritorialData(pracaName, serviceId);
       setTerritorial(territorialData);
-      setLeroyStores(buildLeroyContext(pracaName));
+      setCompanyStores(buildCompanyContext(pracaName));
       setError('Dados climáticos indisponíveis. Análise parcial baseada em dados territoriais.');
     } finally {
       setLoading(false);
@@ -231,7 +231,7 @@ export function usePricingAnalysis(
           offerPressure: result.marketContext.offerPressure,
         },
         competitor: compCtx,
-        leroyStoresNearby: leroyStores,
+        companyStoresNearby: companyStores,
         recommendation: result.recommendation,
         executiveSummary: result.executiveSummary,
         alerts: result.alerts,
@@ -258,7 +258,7 @@ export function usePricingAnalysis(
     sensitivity,
     competitorResult,
     cnaeCtx,
-    leroyStores,
+    companyStores,
   ]);
 
   // ----------------------------------------
@@ -277,7 +277,7 @@ export function usePricingAnalysis(
     unified,
     competitorContext: competitorCtx,
     cnaeContext: cnaeCtx,
-    leroyStores,
+    companyStores,
     loading,
     error,
     refresh,

@@ -179,13 +179,13 @@ export function PricingMentorWidget() {
         </div>
       </div>
 
-      {/* CTA — "Pedir ajuda para o Pedro do Instala" — positioned to the left of the avatar */}
+      {/* CTA — "Pedir ajuda para o Pedro" — positioned to the left of the avatar */}
       {!isOpen && !prefs.isMinimized && (
         <a
-          href="https://wa.me/5511976019360?text=Ol%C3%A1%20Pedro%20II%2C%20preciso%20de%20ajuda%20no%20Instala."
+          href="https://wa.me/5511976019360?text=Ol%C3%A1%20Pedro%20II%2C%20preciso%20de%20ajuda%20com%20a%20calculadora%20de%20pricing."
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Pedir ajuda para o Pedro do Instala via WhatsApp"
+          aria-label="Pedir ajuda para o Pedro via WhatsApp"
           title="Fale diretamente com o especialista Pedro II"
           style={{
             position: 'fixed',
@@ -209,7 +209,7 @@ export function PricingMentorWidget() {
             whiteSpace: 'nowrap',
           }}
         >
-          💬 Pedir ajuda para o Pedro do Instala
+          💬 Pedir ajuda para o Pedro
         </a>
       )}
     </>

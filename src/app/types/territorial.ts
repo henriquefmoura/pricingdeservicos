@@ -236,10 +236,10 @@ export interface TerritorialCnaeInsight {
 }
 
 // ----------------------------------------
-// Leroy Merlin Store
+// Company Store
 // ----------------------------------------
 
-export interface LeroyStore {
+export interface CompanyStore {
   id: string;
   name: string;
   city: string;

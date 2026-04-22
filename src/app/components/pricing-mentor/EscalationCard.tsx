@@ -2,11 +2,11 @@ import { MessageCircle, Mail, X } from 'lucide-react';
 
 /** WhatsApp link with pre-filled message */
 const WHATSAPP_URL =
-  'https://wa.me/5511976019360?text=Ol%C3%A1%20Pedro%20II%2C%20preciso%20de%20ajuda%20no%20Instala.';
+  'https://wa.me/5511976019360?text=Ol%C3%A1%20Pedro%20II%2C%20preciso%20de%20ajuda%20com%20a%20calculadora%20de%20pricing.';
 
 /** mailto link with subject and body */
 const MAILTO_URL =
-  'mailto:peprado@leroymerlin.com.br?subject=Ajuda%20com%20Instala&body=Ol%C3%A1%20Pedro%20II%2C%0APreciso%20de%20ajuda%20com%20o%20Instala.%20Poderia%20me%20apoiar%3F';
+  'mailto:suporte@empresa.com.br?subject=Ajuda%20com%20Calculadora%20de%20Pricing&body=Ol%C3%A1%20Pedro%20II%2C%0APreciso%20de%20ajuda%20com%20a%20calculadora%20de%20pricing.%20Poderia%20me%20apoiar%3F';
 
 interface EscalationCardProps {
   onDismiss: () => void;

@@ -10,8 +10,8 @@ import 'leaflet/dist/leaflet.css';
 import { fetchBrazilStatesGeoJSON, fetchMunicipiosGeoJSON } from '../../services/ibgeMapService';
 import type { GeoJSONFeatureCollection } from '../../services/ibgeMapService';
 import { generateMeiDensityForMunicipalities, generateProfessionalMarkers } from '../../services/companySupplyService';
-import type { LeroyStore, CnaeProfessionalMarker, TerritorialInsightSummary, TerritorialCnaeInfo } from '../../types/territorial';
-import { getLeroyStoresByUF, LEROY_MERLIN_STORES } from '../../data/leroyStores';
+import type { CompanyStore, CnaeProfessionalMarker, TerritorialInsightSummary, TerritorialCnaeInfo } from '../../types/territorial';
+import { getStoresByUF, COMPANY_STORES } from '../../data/companyStores';
 import { Store, Users, Briefcase, MapPin, Maximize2, Minimize2 } from 'lucide-react';
 import { getCnaeColor, CNAE_CATEGORY_META, CNAE_CODE_CATEGORY, CNAE_CATEGORY_COLORS } from '../../utils/serviceCnaeMappings';
 import type { CnaeServiceCategory } from '../../types/territorial';
@@ -29,7 +29,7 @@ interface Props {
   pinnedCities?: TerritorialInsightSummary[];
   onCityClick?: (ibgeCode: string, name: string) => void;
   onStateClick?: (ufCode: string) => void;
-  showLeroyStores?: boolean;
+  showCompanyStores?: boolean;
 }
 
 // ----------------------------------------
@@ -137,17 +137,17 @@ function getCnaeMarkerIcon(cnae: string): L.DivIcon {
   return icon;
 }
 
-const leroyIcon = new L.DivIcon({
-  className: 'leroy-marker',
+const storeIcon = new L.DivIcon({
+  className: 'company-store-marker',
   html: `<div style="
     width: 32px; height: 32px;
-    background: #78BE20;
+    background: #2563EB;
     border: 3px solid #fff;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     font-size: 14px; font-weight: bold; color: #fff;
-  ">LM</div>`,
+  ">🏪</div>`,
   iconSize: [32, 32],
   iconAnchor: [16, 16],
   popupAnchor: [0, -16],
@@ -190,14 +190,14 @@ export function TerritorialMap({
   pinnedCities = [],
   onCityClick,
   onStateClick,
-  showLeroyStores = true,
+  showCompanyStores = true,
 }: Props) {
   const [statesGeo, setStatesGeo] = useState<GeoJSONFeatureCollection | null>(null);
   const [munGeo, setMunGeo] = useState<GeoJSONFeatureCollection | null>(null);
   const [center, setCenter] = useState<[number, number]>([-14.235, -51.925]);
   const [zoom, setZoom] = useState(4);
   const [layerToggles, setLayerToggles] = useState({
-    leroy: true,
+    company: true,
     meiDensity: false,
     cnaeProfessionals: false,
     pinnedCities: true,
@@ -205,10 +205,10 @@ export function TerritorialMap({
   const [mapExpanded, setMapExpanded] = useState(false);
   const geoKeyRef = useRef(0);
 
-  // Leroy stores for current view
-  const visibleStores: LeroyStore[] = selectedUF
-    ? getLeroyStoresByUF(selectedUF)
-    : LEROY_MERLIN_STORES;
+  // Company stores for current view
+  const visibleStores: CompanyStore[] = selectedUF
+    ? getStoresByUF(selectedUF)
+    : COMPANY_STORES;
 
   // MEI density data from municipalities GeoJSON
   const meiDensityData = useMemo<Record<string, number>>(() => {
@@ -392,16 +392,16 @@ export function TerritorialMap({
       {/* Layer controls */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1">
         <button
-          onClick={() => setLayerToggles((p) => ({ ...p, leroy: !p.leroy }))}
+          onClick={() => setLayerToggles((p) => ({ ...p, company: !p.company }))}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg shadow-md transition-colors ${
-            layerToggles.leroy
-              ? 'bg-[#78BE20] text-white'
+            layerToggles.company
+              ? 'bg-blue-600 text-white'
               : 'bg-white text-gray-600 border border-gray-200'
           }`}
-          title="Lojas Leroy Merlin"
+          title="Lojas da Empresa"
         >
           <Store size={12} />
-          Leroy
+          Lojas
         </button>
         {munGeo && (
           <button
@@ -544,12 +544,12 @@ export function TerritorialMap({
           );
         })()}
 
-        {/* Leroy Merlin stores layer */}
-        {showLeroyStores && layerToggles.leroy && visibleStores.map((store) => (
-          <Marker key={store.id} position={[store.lat, store.lon]} icon={leroyIcon}>
+        {/* Company stores layer */}
+        {showCompanyStores && layerToggles.company && visibleStores.map((store) => (
+          <Marker key={store.id} position={[store.lat, store.lon]} icon={storeIcon}>
             <Popup>
               <div className="text-sm">
-                <p className="font-bold text-[#78BE20]">{store.name}</p>
+                <p className="font-bold text-blue-600">{store.name}</p>
                 <p className="text-gray-600">{store.city} - {store.uf}</p>
               </div>
             </Popup>

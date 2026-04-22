@@ -8,7 +8,14 @@ import { Label } from '../components/ui/label';
 import { useApprovalStore, PriceApproval } from '../store/approvalStore';
 import { usePricingCodesStore } from '../store/pricingCodesStore';
 import { useAuthStore } from '../store/authStore';
+import { useSalesDataStore } from '../store/salesDataStore';
+import { useMLBehaviorStore } from '../store/mlBehaviorStore';
+import { generateMLSuggestion } from '../services/mlPricingSuggestionService';
+import { MLPriceSuggestionCard } from './MLPriceSuggestion';
 import { toast } from 'sonner';
+
+/** Differences below this threshold (3%) are treated as acceptance of the ML suggestion */
+const ML_OVERRIDE_THRESHOLD = 0.03;
 
 interface PriceEdit {
   repasse: string;
@@ -19,6 +26,8 @@ export function RejectedPricesEditor() {
   const { user } = useAuthStore();
   const { getRejectedApprovals, applyRejectedPrice } = useApprovalStore();
   const { codes, updateCodePrice } = usePricingCodesStore();
+  const { getHistory: getSalesHistory } = useSalesDataStore();
+  const { getWeights: getMLWeights, logBehavior: logMLBehavior } = useMLBehaviorStore();
   const [editingPrices, setEditingPrices] = useState<Record<string, PriceEdit>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -79,6 +88,37 @@ export function RejectedPricesEditor() {
       return;
     }
 
+    // ML behavior log: track whether user accepted or overrode the ML suggestion
+    if (approval.grupoServico) {
+      const mlHistory = getSalesHistory(approval.grupoServico, approval.plaza);
+      const mlWeights = getMLWeights(approval.grupoServico, approval.plaza);
+      const mlSugg = generateMLSuggestion(
+        approval.grupoServico,
+        approval.plaza,
+        mlHistory,
+        mlWeights,
+        repasse,
+        approval.proposedVenda,
+      );
+      if (mlSugg && mlSugg.suggestedVenda > 0) {
+        const wasOverridden =
+          Math.abs(venda - mlSugg.suggestedVenda) / mlSugg.suggestedVenda > ML_OVERRIDE_THRESHOLD;
+        logMLBehavior({
+          userId: user.id,
+          userName: user.name,
+          plaza: approval.plaza,
+          grupoServico: approval.grupoServico,
+          codeId: approval.codeId ?? approval.id,
+          action: wasOverridden ? 'suggestion_overridden' : 'suggestion_used',
+          suggestedVenda: mlSugg.suggestedVenda,
+          suggestedRepasse: mlSugg.suggestedRepasse,
+          actualVenda: venda,
+          actualRepasse: repasse,
+          vendaDeltaPercent: ((venda - mlSugg.suggestedVenda) / mlSugg.suggestedVenda) * 100,
+        });
+      }
+    }
+
     // Encontrar o código correspondente
     const code = codes.find((c) => c.codigoAvulso === approval.codigo || c.codigoAtrelado === approval.codigo);
     if (!code) {
@@ -115,6 +155,23 @@ export function RejectedPricesEditor() {
     if (isNaN(repasse) || isNaN(venda) || venda === 0) return null;
 
     return ((venda - repasse) / venda) * 100;
+  };
+
+  /** Gera sugestão ML para uma aprovação rejeitada, incorporando o preço do admin como âncora. */
+  const getMLSuggestion = (approval: PriceApproval) => {
+    if (!approval.grupoServico) return null;
+    const mlHistory = getSalesHistory(approval.grupoServico, approval.plaza);
+    const mlWeights = getMLWeights(approval.grupoServico, approval.plaza);
+    const currentInput = editingPrices[approval.id];
+    const currentRepasse = currentInput?.repasse ? parseFloat(currentInput.repasse) : undefined;
+    return generateMLSuggestion(
+      approval.grupoServico,
+      approval.plaza,
+      mlHistory,
+      mlWeights,
+      currentRepasse,
+      approval.proposedVenda,
+    );
   };
 
   if (rejectedApprovals.length === 0) {
@@ -212,10 +269,32 @@ export function RejectedPricesEditor() {
 
                   {/* Formulário de Edição */}
                   {isEditing ? (
-                    <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                      <p className="text-sm font-semibold text-blue-900 mb-3">
+                    <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg space-y-4">
+                      <p className="text-sm font-semibold text-blue-900">
                         Defina o novo preço para sua praça
                       </p>
+
+                      {/* ML Suggestion Card — incorpora preço replicado + dados locais da praça */}
+                      {(() => {
+                        const mlSugg = getMLSuggestion(approval);
+                        if (!mlSugg) return null;
+                        return (
+                          <MLPriceSuggestionCard
+                            suggestion={mlSugg}
+                            onUseVenda={(v) =>
+                              handlePriceChange(approval.id, 'venda', v.toFixed(2))
+                            }
+                            onUseRepasse={(r) =>
+                              handlePriceChange(approval.id, 'repasse', r.toFixed(2))
+                            }
+                            onUseBoth={(v, r) => {
+                              handlePriceChange(approval.id, 'venda', v.toFixed(2));
+                              handlePriceChange(approval.id, 'repasse', r.toFixed(2));
+                            }}
+                          />
+                        );
+                      })()}
+
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor={`repasse-${approval.id}`}>

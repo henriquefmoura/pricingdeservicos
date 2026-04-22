@@ -34,6 +34,8 @@ export interface PriceApproval {
   codigo: string;
   descricao: string; // Descrição do serviço
   grupo: string;
+  /** Grupo de serviço (ex: "Chuveiro/Torneira Elétrica") — usado para sugestão ML */
+  grupoServico?: string;
   plaza: string;
   currentRepasse: number;
   currentVenda: number;
@@ -115,6 +117,7 @@ export const useApprovalStore = create<ApprovalState>()(
                 codigo: a.codigo,
                 descricao: a.descricao,
                 grupo: a.grupo,
+                grupoServico: (a as unknown as Record<string, unknown>).grupo_servico as string | undefined,
                 plaza: a.plaza,
                 currentRepasse: Number(a.current_repasse),
                 currentVenda: Number(a.current_venda),

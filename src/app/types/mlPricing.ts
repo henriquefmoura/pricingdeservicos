@@ -137,11 +137,16 @@ export interface MLWeights {
 }
 
 export const DEFAULT_ML_WEIGHTS: MLWeights = {
-  wHistoricoPreco:   0.35,
-  wConversao:        0.20,
-  wAdesao:           0.15,
-  wPrestadores:      0.10,
-  wConcorrentes:     0.10,
+  // Histórico de preços tem peso menor: o preço do admin (âncora de praça
+  // correlacionada) já captura o nível de preço do mercado local.
+  wHistoricoPreco:   0.10,
+  // Conversão e adesão são os melhores sinais de demanda — recebem mais peso.
+  wConversao:        0.28,
+  wAdesao:           0.28,
+  // Pressão competitiva (prestadores + concorrentes)
+  wPrestadores:      0.12,
+  wConcorrentes:     0.12,
+  // Poder de compra regional
   wCapacidadeCompra: 0.10,
   biasCorrecao:      0,
   nSamples:          0,

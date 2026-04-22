@@ -257,25 +257,62 @@ export default function AdminPricingPage() {
     }
 
     if (targetPlazas.length > 0) {
+      // Compute market research mean once per code (same for all target plazas).
+      const codeKey = code.codigoAvulso || code.codigoAtrelado;
+      const marketResearch = codeKey ? getResearchByCode(codeKey) : undefined;
+      const marketMean =
+        marketResearch && marketResearch.precosConcorrentes.length > 0
+          ? marketResearch.precosConcorrentes.reduce((s, c) => s + c.preco, 0) /
+            marketResearch.precosConcorrentes.length
+          : undefined;
+
       targetPlazas.forEach((plaza) => {
         const currentPrice = code.prices?.[plaza];
         const currentVenda = currentPrice?.venda || 0;
         const currentRepasse = currentPrice?.repasse || 0;
         const currentMargem = currentPrice ? calculateMargemComImpostos(currentPrice.venda, currentPrice.repasse, plaza) : 0;
-        const proposedMargem = calculateMargemComImpostos(venda, repasse, plaza);
-        const variation = currentVenda === 0 ? 0 : ((venda - currentVenda) / currentVenda) * 100;
+
+        // Compute ML-adjusted suggested price for this target plaza.
+        // Anchors used (in priority order):
+        //   1. Admin price (60%) — plazas are correlated, this is the strongest signal.
+        //   2. Market research mean (20%) — real competitor prices for this service.
+        //   3. Local historical mean (20-40%) — captures local demand dynamics.
+        // Falls back to the raw admin price when generateMLSuggestion returns null.
+        let proposedVenda = venda;
+        let proposedRepasse = repasse;
+        if (code.grupoServico) {
+          const plazaHistory = getSalesHistory(code.grupoServico, plaza);
+          const plazaWeights = getMLWeights(code.grupoServico, plaza);
+          const mlSugg = generateMLSuggestion(
+            code.grupoServico,
+            plaza,
+            plazaHistory,
+            plazaWeights,
+            repasse,
+            venda,
+            marketMean,
+          );
+          if (mlSugg) {
+            proposedVenda = mlSugg.suggestedVenda;
+            proposedRepasse = mlSugg.suggestedRepasse;
+          }
+        }
+
+        const proposedMargem = calculateMargemComImpostos(proposedVenda, proposedRepasse, plaza);
+        const variation = currentVenda === 0 ? 0 : ((proposedVenda - currentVenda) / currentVenda) * 100;
 
         addApproval({
           codeId: code.id,
           codigo: code.codigoAvulso || code.codigoAtrelado || '-',
           descricao: code.descricao,
           grupo: code.tipo,
+          grupoServico: code.grupoServico,
           plaza: plaza,
           currentRepasse: currentRepasse,
           currentVenda: currentVenda,
           currentMargem: currentMargem,
-          proposedRepasse: repasse,
-          proposedVenda: venda,
+          proposedRepasse: proposedRepasse,
+          proposedVenda: proposedVenda,
           proposedMargem: proposedMargem,
           variation: variation,
           isNewService: currentVenda === 0,

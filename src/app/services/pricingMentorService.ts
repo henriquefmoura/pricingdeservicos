@@ -183,8 +183,8 @@ export const QUICK_ACTIONS: QuickAction[] = [
 // ─── Response Generator ───────────────────────────────────────────────────────
 
 const GREETING_RESPONSES = [
-  'E aí, parceiro! 👋 Sou o **PedroII jr**, seu assistente de precificação dentro da plataforma Leroy Merlin.\n\nTô aqui pra te ajudar a:\n🎯 Precificar seus serviços certinho\n💰 Entender sua margem de lucro\n🔍 Evitar prejuízo\n🚀 Melhorar sua competitividade\n\nBora trabalhar juntos? O que precisa?',
-  'Opa! 😊 Sou o **PedroII jr**, seu parceiro de precificação aqui na Leroy Merlin.\n\nPode me perguntar sobre preços, margem, custos, estratégia — qualquer dúvida de negócio. Tô aqui pra te ajudar a ganhar mais e tomar decisões melhores!\n\nVamos nessa?',
+  'E aí, parceiro! 👋 Sou o **PedroII jr**, seu assistente de precificação dentro da plataforma de Serviços e Reformas.\n\nTô aqui pra te ajudar a:\n🎯 Precificar seus serviços certinho\n💰 Entender sua margem de lucro\n🔍 Evitar prejuízo\n🚀 Melhorar sua competitividade\n\nBora trabalhar juntos? O que precisa?',
+  'Opa! 😊 Sou o **PedroII jr**, seu parceiro de precificação na Calculadora de Pricing.\n\nPode me perguntar sobre preços, margem, custos, estratégia — qualquer dúvida de negócio. Tô aqui pra te ajudar a ganhar mais e tomar decisões melhores!\n\nVamos nessa?',
   'Fala, mestre! 🎯 Sou o **PedroII jr** e vou te ajudar a acertar nos preços.\n\nPosso responder sobre precificação, margem, custos, concorrência e muito mais.\n\n💡 Dica: usa os botões rápidos abaixo ou me pergunta qualquer coisa!',
 ];
 

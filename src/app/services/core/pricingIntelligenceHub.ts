@@ -6,7 +6,7 @@
 // devem consumir ESSA camada ao invés de buscar dados isoladamente.
 
 import type { WeatherSummary } from '../../types/weather';
-import type { TerritorialInsightSummary, LeroyStore } from '../../types/territorial';
+import type { TerritorialInsightSummary, CompanyStore } from '../../types/territorial';
 import type { ServiceClimateSensitivity } from '../../types/pricingClimate';
 import type {
   PricingAnalysisInput,
@@ -22,7 +22,7 @@ import { runPricingAnalysisEngine } from '../pricingAnalysisEngine';
 import { getMockTerritorialData, fetchTerritorialForPraca } from '../territorialAnalysisService';
 import { getSensitivityByServiceId, findSensitivityByName } from '../serviceSensitivityService';
 import { mapServiceToCnae } from '../ibge/cnaeService';
-import { getLeroyStoresByCity } from '../../data/leroyStores';
+import { getStoresByCity } from '../../data/companyStores';
 import { analysisCache, buildCacheKey } from '../../utils/pricingAnalysisCache';
 import { getCnaeCodesForService } from '../../utils/serviceCnaeMappings';
 
@@ -74,7 +74,7 @@ export interface PricingHubOutput {
   sensitivity: ServiceClimateSensitivity;
   cnaeContext: CnaeContext;
   competitorContext: CompetitorContext;
-  leroyStores: LeroyStore[];
+  companyStores: CompanyStore[];
 }
 
 // ----------------------------------------
@@ -216,11 +216,11 @@ function normalizedPriceToSourceRef(p: NormalizedPrice) {
 }
 
 // ----------------------------------------
-// Build Leroy Context
+// Build Company Context
 // ----------------------------------------
 
-export function buildLeroyContext(pracaName: string): LeroyStore[] {
-  return getLeroyStoresByCity(pracaName);
+export function buildCompanyContext(pracaName: string): CompanyStore[] {
+  return getStoresByCity(pracaName);
 }
 
 // ----------------------------------------
@@ -265,8 +265,8 @@ export async function runPricingIntelligenceHub(
   // 5. Build competitor context
   const competitorContext = buildCompetitorContext(competitorResult);
 
-  // 6. Leroy stores nearby
-  const leroyStores = buildLeroyContext(pracaName);
+  // 6. Company stores nearby
+  const companyStores = buildCompanyContext(pracaName);
 
   // 7. Run analysis engine
   const analysisInput: PricingAnalysisInput = {
@@ -301,7 +301,7 @@ export async function runPricingIntelligenceHub(
       offerPressure: context.marketContext.offerPressure,
     },
     competitor: competitorContext,
-    leroyStoresNearby: leroyStores,
+    companyStoresNearby: companyStores,
     recommendation: context.recommendation,
     executiveSummary: context.executiveSummary,
     alerts: context.alerts,
@@ -315,7 +315,7 @@ export async function runPricingIntelligenceHub(
     sensitivity,
     cnaeContext,
     competitorContext,
-    leroyStores,
+    companyStores,
   };
 }
 

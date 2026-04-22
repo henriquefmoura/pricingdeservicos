@@ -18,7 +18,7 @@ export function Logo({ variant = 'full', className = '', style }: LogoProps) {
           width: '40px',
           height: '40px',
           borderRadius: '8px',
-          backgroundColor: '#78BE20',
+          backgroundColor: '#2563EB',
           flexShrink: 0,
           ...style,
         }}
@@ -31,7 +31,7 @@ export function Logo({ variant = 'full', className = '', style }: LogoProps) {
             letterSpacing: '-0.5px',
           }}
         >
-          LM
+          PS
         </span>
       </div>
     );
@@ -53,7 +53,7 @@ export function Logo({ variant = 'full', className = '', style }: LogoProps) {
             width: '32px',
             height: '32px',
             borderRadius: '6px',
-            backgroundColor: '#78BE20',
+            backgroundColor: '#2563EB',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -68,7 +68,7 @@ export function Logo({ variant = 'full', className = '', style }: LogoProps) {
               letterSpacing: '-0.5px',
             }}
           >
-            LM
+            PS
           </span>
         </div>
         <div>
@@ -81,19 +81,19 @@ export function Logo({ variant = 'full', className = '', style }: LogoProps) {
               letterSpacing: '-0.3px',
             }}
           >
-            LEROY MERLIN
+            PRICING DE SERVIÇOS
           </div>
           <div
             style={{
               fontSize: '11px',
               fontWeight: 600,
-              color: '#78BE20',
+              color: '#2563EB',
               lineHeight: 1.1,
               letterSpacing: '0.3px',
               textTransform: 'uppercase',
             }}
           >
-            Instalações e Reformas
+            Serviços e Reformas
           </div>
         </div>
       </div>

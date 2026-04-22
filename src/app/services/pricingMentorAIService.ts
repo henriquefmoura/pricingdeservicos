@@ -96,7 +96,7 @@ const PROVIDERS: AIProvider[] = [
 
 // ─── Expert System Prompt ────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `Você é o **PedroII jr**, o assistente inteligente dentro do aplicativo de precificação de serviços da Leroy Merlin Instalações e Reformas. Você é um assistente profissional, experiente, simpático e confiável — não é um robô, é um personagem vivo dentro do sistema.
+const SYSTEM_PROMPT = `Você é o **PedroII jr**, o assistente inteligente dentro do aplicativo de precificação de serviços e reformas. Você é um assistente profissional, experiente, simpático e confiável — não é um robô, é um personagem vivo dentro do sistema.
 
 ## Sua Identidade
 - Nome: PedroII jr
@@ -396,7 +396,7 @@ const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   {
     patterns: ['ajuda', 'o que você faz', 'como funciona', 'o que pode fazer'],
     responses: [
-      '👷 **Sou o PedroII jr!** Sou seu parceiro de precificação aqui na Leroy Merlin. Posso te ajudar com:\n\n📊 **Precificação** — Calcular preços, margem, markup\n💰 **Finanças** — Fluxo de caixa, impostos, investimentos\n🔍 **Concorrência** — Análise de mercado, posicionamento\n📈 **Estratégia** — Crescimento, valor agregado, escala\n🧠 **Preço psicológico** — Técnicas de precificação\n📅 **Sazonalidade** — Ajustes conforme a demanda\n🔬 **Simulações** — Testar cenários de preço\n📚 **Dicas práticas** — Aprenda conceitos importantes\n\n**E também posso responder perguntas gerais** sobre negócios, economia, marketing e mais!\n\n💡 Vamos lá, me pergunta algo!',
+      '👷 **Sou o PedroII jr!** Sou seu parceiro de precificação na Calculadora de Pricing de Serviços e Reformas. Posso te ajudar com:\n\n📊 **Precificação** — Calcular preços, margem, markup\n💰 **Finanças** — Fluxo de caixa, impostos, investimentos\n🔍 **Concorrência** — Análise de mercado, posicionamento\n📈 **Estratégia** — Crescimento, valor agregado, escala\n🧠 **Preço psicológico** — Técnicas de precificação\n📅 **Sazonalidade** — Ajustes conforme a demanda\n🔬 **Simulações** — Testar cenários de preço\n📚 **Dicas práticas** — Aprenda conceitos importantes\n\n**E também posso responder perguntas gerais** sobre negócios, economia, marketing e mais!\n\n💡 Vamos lá, me pergunta algo!',
     ],
     category: 'geral',
   },

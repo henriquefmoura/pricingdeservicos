@@ -4,8 +4,8 @@ import type { MentorExpression } from '../../types/pricingMentor';
 /** Visual state driving avatar animations */
 export type AvatarState = 'idle' | 'hover' | 'speaking' | 'thinking';
 
-/** PedroII jr character avatar image URL */
-const LEO_INSTALA_IMAGE_URL =
+/** Pricing mentor character avatar image URL */
+const MENTOR_AVATAR_IMAGE_URL =
   'https://github.com/user-attachments/assets/90d11ce9-76b3-4fdb-9b43-da346a800180';
 
 interface PricingMentorAvatarProps {
@@ -21,7 +21,7 @@ interface PricingMentorAvatarProps {
 let avatarInstanceCounter = 0;
 
 /**
- * PedroII jr — assistente de precificação Leroy Merlin.
+ * PedroII jr — assistente de precificação de serviços e reformas.
  *
  * Uses a character image with animated container effects that respond
  * to expressions and avatar states (idle, hover, speaking, thinking).
@@ -98,8 +98,8 @@ export function PricingMentorAvatar({
         }}
       >
         <img
-          src={LEO_INSTALA_IMAGE_URL}
-          alt="PedroII jr — assistente de precificação Leroy Merlin"
+          src={MENTOR_AVATAR_IMAGE_URL}
+          alt="PedroII jr — assistente de precificação de serviços e reformas"
           width={size * 0.88}
           height={size * 0.88}
           style={{

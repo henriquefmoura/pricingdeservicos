@@ -209,7 +209,7 @@ export interface PricingUnifiedContext {
   } | null;
   competitor: CompetitorContext | null;
 
-  leroyStoresNearby: import('../types/territorial').LeroyStore[];
+  companyStoresNearby: import('../types/territorial').CompanyStore[];
 
   recommendation: PricingAnalysisDecisionContext['recommendation'] | null;
   executiveSummary: string;

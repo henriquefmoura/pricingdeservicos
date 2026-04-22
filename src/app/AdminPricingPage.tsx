@@ -12,6 +12,10 @@ import { useMarketResearchStore } from './store/marketResearchStore';
 import { useApprovalStore } from './store/approvalStore';
 import { useCorrelationStore } from './store/correlationStore';
 import { useReplicationConfigStore } from './store/replicationConfigStore';
+import { useSalesDataStore } from './store/salesDataStore';
+import { useMLBehaviorStore } from './store/mlBehaviorStore';
+import { generateMLSuggestion } from './services/mlPricingSuggestionService';
+import { MLPriceSuggestionCard } from './components/MLPriceSuggestion';
 import { toast } from 'sonner';
 import { calculateMargemComImpostos, getPlazaIss, FIXED_TAX, getTotalTaxPercent } from './data/plazasData';
 
@@ -28,6 +32,8 @@ export default function AdminPricingPage() {
   const { addApproval } = useApprovalStore();
   const { getSimilarPlazas, initializeMockData: initCorrelation } = useCorrelationStore();
   const { getTargetPlazasForReplicator, isPlazaReplicator } = useReplicationConfigStore();
+  const { getHistory: getSalesHistory } = useSalesDataStore();
+  const { getWeights: getMLWeights, logBehavior: logMLBehavior } = useMLBehaviorStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [priceInputs, setPriceInputs] = useState<Record<string, PriceInput>>({});
@@ -210,6 +216,34 @@ export default function AdminPricingPage() {
 
     const margem = calculateMargemComImpostos(venda, repasse, user.plaza);
 
+    // ML behavior log: did the admin override the ML suggestion?
+    if (code.grupoServico) {
+      // Differences under ML_OVERRIDE_THRESHOLD (3%) are considered acceptance of the suggestion
+      const ML_OVERRIDE_THRESHOLD = 0.03;
+      const mlHistory = getSalesHistory(code.grupoServico, user.plaza);
+      const mlWeights = getMLWeights(code.grupoServico, user.plaza);
+      const mlSugg = mlHistory.length > 0
+        ? generateMLSuggestion(code.grupoServico, user.plaza, mlHistory, mlWeights, repasse)
+        : null;
+      if (mlSugg) {
+        const wasOverridden =
+          Math.abs(venda - mlSugg.suggestedVenda) / mlSugg.suggestedVenda > ML_OVERRIDE_THRESHOLD;
+        logMLBehavior({
+          userId: user.id,
+          userName: user.name,
+          plaza: user.plaza,
+          grupoServico: code.grupoServico,
+          codeId: code.id,
+          action: wasOverridden ? 'suggestion_overridden' : 'suggestion_used',
+          suggestedVenda: mlSugg.suggestedVenda,
+          suggestedRepasse: mlSugg.suggestedRepasse,
+          actualVenda: venda,
+          actualRepasse: repasse,
+          vendaDeltaPercent: ((venda - mlSugg.suggestedVenda) / mlSugg.suggestedVenda) * 100,
+        });
+      }
+    }
+
     // Save directly to admin's plaza
     updateCodePrice(code.id, user.plaza, repasse, venda, user.name);
 
@@ -378,6 +412,23 @@ export default function AdminPricingPage() {
                       const suggestedPrice = getSuggestedPrice(codeRef, prestadorPrices);
                       const tipoStyles = getServiceTypeStyles(code.tipo);
 
+                      // ML suggestion
+                      const mlHistory = user?.plaza && code.grupoServico
+                        ? getSalesHistory(code.grupoServico, user.plaza)
+                        : [];
+                      const mlWeights = user?.plaza && code.grupoServico
+                        ? getMLWeights(code.grupoServico, user.plaza)
+                        : undefined;
+                      const mlSuggestion = mlHistory.length > 0 && user?.plaza && code.grupoServico
+                        ? generateMLSuggestion(
+                            code.grupoServico,
+                            user.plaza,
+                            mlHistory,
+                            mlWeights,
+                            priceInputs[code.id]?.repasse ? parseFloat(priceInputs[code.id].repasse) : undefined
+                          )
+                        : null;
+
                       return (
                         <div
                           key={code.id}
@@ -419,7 +470,7 @@ export default function AdminPricingPage() {
                                 <p style={{ fontSize: '15px', fontWeight: 600, color: '#001022', margin: 0 }}>{code.descricao}</p>
                               </div>
 
-                              {/* AI Suggestion */}
+                              {/* AI Suggestion (competitor-based) */}
                               {suggestedPrice && (
                                 <AISuggestionCard>
                                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
@@ -427,7 +478,7 @@ export default function AdminPricingPage() {
                                       <Sparkles size={17} style={{ color: '#001022' }} />
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                      <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', marginBottom: '2px' }}>Sugestão de IA</p>
+                                      <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', marginBottom: '2px' }}>Sugestão por concorrentes</p>
                                       <p style={{ fontSize: '18px', fontWeight: 700, color: '#001022', marginBottom: '8px' }}>R$ {suggestedPrice.toFixed(2)}</p>
                                       <button
                                         onClick={() => {
@@ -442,6 +493,41 @@ export default function AdminPricingPage() {
                                     </div>
                                   </div>
                                 </AISuggestionCard>
+                              )}
+
+                              {/* ML Price Suggestion */}
+                              {mlSuggestion && user?.plaza && code.grupoServico && (
+                                <MLPriceSuggestionCard
+                                  suggestion={mlSuggestion}
+                                  onUseVenda={(venda) => {
+                                    setPriceInputs((prev) => ({ ...prev, [code.id]: { ...prev[code.id], venda: venda.toFixed(2) } }));
+                                    toast.success('Preço de venda ML aplicado');
+                                  }}
+                                  onUseRepasse={(repasse) => {
+                                    setPriceInputs((prev) => ({ ...prev, [code.id]: { ...prev[code.id], repasse: repasse.toFixed(2) } }));
+                                    toast.success('Repasse ML aplicado');
+                                  }}
+                                  onUseBoth={(venda, repasse) => {
+                                    setPriceInputs((prev) => ({
+                                      ...prev,
+                                      [code.id]: { repasse: repasse.toFixed(2), venda: venda.toFixed(2) },
+                                    }));
+                                    toast.success('Preços ML aplicados (repasse + venda)');
+                                  }}
+                                  onAccepted={() => {
+                                    if (!user?.plaza || !code.grupoServico) return;
+                                    logMLBehavior({
+                                      userId: user.id,
+                                      userName: user.name,
+                                      plaza: user.plaza,
+                                      grupoServico: code.grupoServico,
+                                      codeId: code.id,
+                                      action: 'suggestion_used',
+                                      suggestedVenda: mlSuggestion.suggestedVenda,
+                                      suggestedRepasse: mlSuggestion.suggestedRepasse,
+                                    });
+                                  }}
+                                />
                               )}
 
                               {/* Competitor prices */}

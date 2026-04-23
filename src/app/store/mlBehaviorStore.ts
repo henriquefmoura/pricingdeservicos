@@ -8,6 +8,7 @@ import { persist } from 'zustand/middleware';
 import type { MLBehaviorLog, MLBehaviorAction, MLWeights } from '../types/mlPricing';
 import { DEFAULT_ML_WEIGHTS } from '../types/mlPricing';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import type { DbMlBehaviorLog, DbMlWeights } from '../lib/database.types';
 
 // Chave usada no mapa de pesos: "grupoServico::plaza"
 function weightsKey(grupoServico: string, plaza: string): string {
@@ -147,7 +148,7 @@ export const useMLBehaviorStore = create<MLBehaviorState>()(
 
           if (weightsError) throw weightsError;
 
-          const logs: MLBehaviorLog[] = (dbLogs ?? []).map((l) => ({
+          const logs: MLBehaviorLog[] = ((dbLogs as DbMlBehaviorLog[] | null) ?? []).map((l) => ({
             id: l.id,
             timestamp: l.timestamp,
             userId: l.user_id,
@@ -164,7 +165,7 @@ export const useMLBehaviorStore = create<MLBehaviorState>()(
           }));
 
           const weights: Record<string, MLWeights> = {};
-          for (const w of dbWeights ?? []) {
+          for (const w of (dbWeights as DbMlWeights[] | null) ?? []) {
             const key = weightsKey(w.grupo_servico, w.plaza);
             weights[key] = {
               wHistoricoPreco: Number(w.w_historico_preco),

@@ -6,6 +6,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { SalesSnapshot, SalesDataRow } from '../types/mlPricing';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import type { DbMlSalesSnapshot, DbMlSalesRow } from '../lib/database.types';
 
 interface SalesDataState {
   snapshots: SalesSnapshot[];
@@ -90,13 +91,14 @@ export const useSalesDataStore = create<SalesDataState>()(
             .order('semana_referencia', { ascending: true });
 
           if (snapshotError) throw snapshotError;
-          if (!snapshotRows || snapshotRows.length === 0) {
+          const typedSnapshots = snapshotRows as DbMlSalesSnapshot[] | null;
+          if (!typedSnapshots || typedSnapshots.length === 0) {
             set({ isLoading: false });
             return;
           }
 
           // Fetch all sales rows for these snapshots
-          const snapshotIds = snapshotRows.map((s) => s.id);
+          const snapshotIds = typedSnapshots.map((s) => s.id);
           const { data: salesRows, error: rowsError } = await supabase!
             .from('ml_sales_rows')
             .select('*')
@@ -105,7 +107,7 @@ export const useSalesDataStore = create<SalesDataState>()(
           if (rowsError) throw rowsError;
 
           const rowsBySnapshot: Record<string, SalesDataRow[]> = {};
-          for (const row of salesRows ?? []) {
+          for (const row of (salesRows as DbMlSalesRow[] | null) ?? []) {
             if (!rowsBySnapshot[row.snapshot_id]) rowsBySnapshot[row.snapshot_id] = [];
             rowsBySnapshot[row.snapshot_id].push({
               grupoServico: row.grupo_servico,
@@ -126,7 +128,7 @@ export const useSalesDataStore = create<SalesDataState>()(
             });
           }
 
-          const snapshots: SalesSnapshot[] = snapshotRows.map((s) => ({
+          const snapshots: SalesSnapshot[] = typedSnapshots.map((s) => ({
             id: s.id,
             uploadedAt: s.uploaded_at,
             uploadedBy: s.uploaded_by,

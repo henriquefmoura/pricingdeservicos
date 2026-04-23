@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ParameterPlaza } from '../types/pricing';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import type { DbPlazaCorrelation } from '../lib/database.types';
 
 interface CorrelationState {
   parameterPlazas: ParameterPlaza[];
@@ -99,9 +100,10 @@ export const useCorrelationStore = create<CorrelationState>()(
             .order('score', { ascending: false });
 
           if (error) throw error;
-          if (!data || data.length === 0) return;
+          const rows = data as DbPlazaCorrelation[] | null;
+          if (!rows || rows.length === 0) return;
 
-          const parameterPlazas: ParameterPlaza[] = data.map((row) => ({
+          const parameterPlazas: ParameterPlaza[] = rows.map((row) => ({
             name: row.plaza_name,
             score: Number(row.score),
             dependentPlazas: Array.isArray(row.dependent_plazas) ? row.dependent_plazas : [],

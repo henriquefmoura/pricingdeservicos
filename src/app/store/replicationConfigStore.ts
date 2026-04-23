@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import type { DbReplicationRule } from '../lib/database.types';
 
 export interface ReplicationRule {
   id: string;
@@ -159,9 +160,10 @@ export const useReplicationConfigStore = create<ReplicationConfigState>()(
             .order('created_at', { ascending: true });
 
           if (error) throw error;
-          if (!data || data.length === 0) return;
+          const rows = data as DbReplicationRule[] | null;
+          if (!rows || rows.length === 0) return;
 
-          const rules: ReplicationRule[] = data.map((r) => ({
+          const rules: ReplicationRule[] = rows.map((r) => ({
             id: r.id,
             replicatorPlaza: r.replicator_plaza,
             targetPlazas: r.target_plazas ?? [],

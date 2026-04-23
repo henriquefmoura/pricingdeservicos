@@ -416,11 +416,27 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.pricing_prices;
 -- NOTE: In production, create users via Supabase Auth (Dashboard or CLI).
 -- The users table is populated automatically via a trigger on auth.users.
 -- The seed below is for reference / local development only.
+--
+-- ════════════════════════════════════════════════════════════════════════════
+-- COMO ADICIONAR NOVOS USUÁRIOS MANUALMENTE:
+--
+-- 1. Crie o usuário no Supabase Auth (Dashboard > Authentication > Users)
+--    com e-mail e senha desejados.
+--
+-- 2. Depois execute o INSERT abaixo (ajustando os valores) para registrar
+--    o papel (role) e a praça do usuário na tabela public.users:
+--
+--   INSERT INTO public.users (id, email, name, role, plaza) VALUES
+--     ('<UUID do auth.users>', 'email@empresa.com', 'Nome', 'user', 'Praça NOME');
+--
+--   Papéis disponíveis: 'master' | 'admin' | 'user'
+--   Plaza: NULL para master, nome da praça para admin e user.
+-- ════════════════════════════════════════════════════════════════════════════
 
+-- Seed com apenas os usuários ativos:
 -- INSERT INTO public.users (email, name, role, plaza) VALUES
---   ('master@empresa.com', 'Master', 'master', NULL),
---   ('admin.sp@empresa.com', 'Admin São Paulo', 'admin', 'SP'),
---   ('admin.rj@empresa.com', 'Admin Rio de Janeiro', 'admin', 'RJ'),
---   ('admin.mg@empresa.com', 'Admin Minas Gerais', 'admin', 'MG'),
---   ('usuario.sp@empresa.com', 'Usuário SP', 'user', 'SP'),
---   ('usuario.rj@empresa.com', 'Usuário RJ', 'user', 'RJ');
+--   ('master@empresa.com',    'Master',          'master', NULL),
+--   ('admin.sp@empresa.com',  'Admin São Paulo',  'admin',  'Praça São Paulo'),
+--   ('usuario.rj@empresa.com','Usuário RJ',       'user',   'Praça RJ');
+--
+-- Adicione novos usuários acima, seguindo o mesmo padrão.

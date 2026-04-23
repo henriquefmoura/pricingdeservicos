@@ -440,3 +440,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.pricing_prices;
 --   ('usuario.rj@empresa.com','Usuário RJ',       'user',   'Praça RJ');
 --
 -- Adicione novos usuários acima, seguindo o mesmo padrão.
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- EXTENSÕES DE AUTENTICAÇÃO:
+--
+-- Após executar este arquivo, execute também supabase/auth_extensions.sql,
+-- que contém:
+--   • Hook custom_access_token – injeta user_role e user_plaza no JWT (Etapa 4)
+--   • Trigger on_auth_user_created – espelha auth.users → public.users (Etapa 5)
+-- ════════════════════════════════════════════════════════════════════════════

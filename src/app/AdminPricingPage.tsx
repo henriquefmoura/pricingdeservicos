@@ -214,6 +214,16 @@ export default function AdminPricingPage() {
       return;
     }
 
+    // Bloquear salvamento sem pesquisa de mercado
+    const codeKeyForResearch = code.codigoAvulso || code.codigoAtrelado;
+    const existingResearch = codeKeyForResearch ? getResearchByCode(codeKeyForResearch) : undefined;
+    if (!existingResearch || existingResearch.precosConcorrentes.length === 0) {
+      toast.error('Pesquisa de mercado necessária', {
+        description: 'Realize uma pesquisa de mercado para este serviço antes de salvar o preço. Acesse a página de Pesquisa de Mercado.',
+      });
+      return;
+    }
+
     const margem = calculateMargemComImpostos(venda, repasse, user.plaza);
 
     // ML behavior log: did the admin override the ML suggestion?
@@ -586,8 +596,29 @@ export default function AdminPricingPage() {
                             {/* RIGHT: pricing inputs + alerts */}
                             <div style={{ flex: '2 1 340px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
+                              {/* Warning: no market research */}
+                              {(!research || research.precosConcorrentes.length === 0) && (
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px 14px', borderRadius: '10px', backgroundColor: '#FFF7ED', border: '2px solid #FB923C' }}>
+                                  <AlertTriangle size={18} style={{ color: '#EA580C', flexShrink: 0, marginTop: '1px' }} />
+                                  <div>
+                                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#9A3412', margin: '0 0 4px' }}>
+                                      Pesquisa de mercado obrigatória
+                                    </p>
+                                    <p style={{ fontSize: '12px', color: '#C2410C', margin: '0 0 8px' }}>
+                                      É necessário cadastrar os preços dos concorrentes antes de precificar este serviço.{' '}
+                                      <button
+                                        onClick={() => navigate('/market-research')}
+                                        style={{ background: 'none', border: 'none', padding: 0, color: '#9A3412', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', fontSize: '12px' }}
+                                      >
+                                        Ir para Pesquisa de Mercado →
+                                      </button>
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+
                               {/* Inputs row */}
-                              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap', padding: '18px 20px', background: 'linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 50%, #F0FDFA 100%)', borderRadius: '12px', border: '2px solid #78BE20', boxShadow: '0 2px 8px rgba(120, 190, 32, 0.15), 0 1px 3px rgba(0, 0, 0, 0.06)' }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap', padding: '18px 20px', background: (!research || research.precosConcorrentes.length === 0) ? 'linear-gradient(135deg, #FFF7ED 0%, #FEF3C7 100%)' : 'linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 50%, #F0FDFA 100%)', borderRadius: '12px', border: `2px solid ${(!research || research.precosConcorrentes.length === 0) ? '#FB923C' : '#78BE20'}`, boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', opacity: (!research || research.precosConcorrentes.length === 0) ? 0.6 : 1 }}>
                                 <div style={{ flex: '1 1 120px' }}>
                                   <CurrencyInput
                                     label="Repasse (R$)"

@@ -193,6 +193,16 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
       return;
     }
 
+    // Bloquear salvamento sem pesquisa de mercado
+    const codeKeyForResearch = code.codigoAvulso || code.codigoAtrelado;
+    const existingResearch = codeKeyForResearch ? getResearchByCode(codeKeyForResearch) : undefined;
+    if (!existingResearch || existingResearch.precosConcorrentes.length === 0) {
+      toast.error('Pesquisa de mercado necessária', {
+        description: 'Realize uma pesquisa de mercado para este serviço antes de salvar o preço. Acesse a página de Pesquisa de Mercado.',
+      });
+      return;
+    }
+
     const margem = calculateMargemComImpostos(venda, repasse, user.plaza);
 
     // 1. Salvar DIRETO na praça do admin (sem aprovação)
@@ -374,6 +384,9 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
     const margem = calculateMargem(code.id);
     const isEditing = editingCode === code.id;
     const hasInput = priceInputs[code.id];
+    const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
+    const research = getResearchByCode(codeRef);
+    const hasMarketResearch = !!(research && research.precosConcorrentes.length > 0);
 
     return (
       <Card key={code.id} className="border-2">
@@ -414,9 +427,31 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
               </div>
             </div>
 
+            {/* Aviso: pesquisa de mercado obrigatória */}
+            {!hasMarketResearch && (
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-orange-50 border-2 border-orange-400">
+                <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-orange-900 mb-1">
+                    Pesquisa de mercado obrigatória
+                  </p>
+                  <p className="text-xs text-orange-800">
+                    Cadastre os preços dos concorrentes antes de precificar este serviço.{' '}
+                    <button
+                      type="button"
+                      onClick={() => navigate('/market-research')}
+                      className="font-bold underline text-orange-900 hover:text-orange-700 cursor-pointer bg-transparent border-none p-0"
+                    >
+                      Ir para Pesquisa de Mercado →
+                    </button>
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Formulário de preços */}
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 rounded-xl border-2 border-green-400 bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50" style={{ boxShadow: '0 2px 8px rgba(120, 190, 32, 0.15), 0 1px 3px rgba(0, 0, 0, 0.06)' }}>
+            <div className={`space-y-3 ${!hasMarketResearch ? 'opacity-60 pointer-events-none' : ''}`}>
+              <div className={`grid grid-cols-1 md:grid-cols-4 gap-4 p-5 rounded-xl border-2 ${hasMarketResearch ? 'border-green-400 bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50' : 'border-orange-300 bg-orange-50'}`} style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06)' }}>
                 <div className="space-y-2">
                   <Label htmlFor={`repasse-${code.id}`} className="text-sm font-bold text-gray-800">
                     Repasse (R$) *
@@ -509,8 +544,6 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
 
             {/* Preço Sugerido baseado em Pesquisa de Mercado */}
             {(() => {
-              const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
-              const research = getResearchByCode(codeRef);
               const prestadorPrices = code.prices
                 ? Object.values(code.prices).map((p) => p.venda)
                 : [];

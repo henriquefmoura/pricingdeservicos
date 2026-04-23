@@ -7,6 +7,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useApprovalStore, PriceApproval } from '../store/approvalStore';
 import { usePricingCodesStore } from '../store/pricingCodesStore';
+import { calculateMargemComImpostos } from '../data/plazasData';
 import { useAuthStore } from '../store/authStore';
 import { useSalesDataStore } from '../store/salesDataStore';
 import { useMLBehaviorStore } from '../store/mlBehaviorStore';
@@ -145,7 +146,7 @@ export function RejectedPricesEditor() {
     });
   };
 
-  const calculateMargem = (id: string) => {
+  const calculateMargem = (id: string, plaza: string) => {
     const input = editingPrices[id];
     if (!input || !input.repasse || !input.venda) return null;
 
@@ -154,7 +155,7 @@ export function RejectedPricesEditor() {
 
     if (isNaN(repasse) || isNaN(venda) || venda === 0) return null;
 
-    return ((venda - repasse) / venda) * 100;
+    return calculateMargemComImpostos(venda, repasse, plaza);
   };
 
   /** Gera sugestão ML para uma aprovação rejeitada, incorporando o preço do admin como âncora. */
@@ -210,7 +211,7 @@ export function RejectedPricesEditor() {
         {rejectedApprovals.map((approval) => {
           const isEditing = editingId === approval.id;
           const hasInput = editingPrices[approval.id];
-          const margem = isEditing ? calculateMargem(approval.id) : approval.proposedMargem;
+          const margem = isEditing ? calculateMargem(approval.id, approval.plaza) : approval.proposedMargem;
 
           return (
             <Card key={approval.id} className="border-2 border-orange-200">

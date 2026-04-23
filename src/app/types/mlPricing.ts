@@ -48,6 +48,7 @@ export interface SalesSnapshot {
   uploadedAt: string;       // ISO 8601
   uploadedBy: string;       // nome do master
   semanaReferencia: string; // ISO 8601 da semana
+  rowCount?: number;
   rows: SalesDataRow[];
 }
 
@@ -101,7 +102,7 @@ export interface MLBehaviorLog {
   userName: string;
   plaza: string;
   grupoServico: string;
-  codeId: string;
+  codeId?: string;
   action: MLBehaviorAction;
   /** Preço sugerido pelo ML */
   suggestedVenda: number;

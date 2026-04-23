@@ -222,6 +222,65 @@ export interface DbPlazaCorrelation {
   }[];
 }
 
+export interface DbMlSalesSnapshot {
+  id: string;
+  uploaded_at: string;
+  uploaded_by: string;
+  semana_referencia: string;
+  row_count: number;
+}
+
+export interface DbMlSalesRow {
+  id: string;
+  snapshot_id: string;
+  grupo_servico: string;
+  plaza: string;
+  semana: string;
+  total_os: number;
+  os_convertidas: number;
+  taxa_conversao: number;
+  adesoes: number;
+  taxa_adesao: number;
+  preco_medio_venda: number;
+  preco_medio_repasse: number;
+  prestadores_ativos: number;
+  rede_concorrentes: number;
+  capacidade_compra_regional: number;
+  receita_total: number | null;
+  observacoes: string | null;
+}
+
+export interface DbMlBehaviorLog {
+  id: string;
+  timestamp: string;
+  user_id: string;
+  user_name: string;
+  plaza: string;
+  grupo_servico: string;
+  code_id: string | null;
+  action: string;
+  suggested_venda: number;
+  suggested_repasse: number;
+  actual_venda: number | null;
+  actual_repasse: number | null;
+  venda_delta_percent: number | null;
+}
+
+export interface DbMlWeights {
+  id: string;
+  grupo_servico: string;
+  plaza: string;
+  w_historico_preco: number;
+  w_conversao: number;
+  w_adesao: number;
+  w_prestadores: number;
+  w_concorrentes: number;
+  w_capacidade_compra: number;
+  bias_correcao: number;
+  n_samples: number;
+  updated_at: string;
+}
+
 // ─── Database type map (for createClient<Database>) ──────────────────────────
 
 export interface Database {
@@ -241,6 +300,10 @@ export interface Database {
       price_history: { Row: DbPriceHistory; Insert: Omit<DbPriceHistory, 'id'>; Update: Partial<DbPriceHistory> };
       replication_rules: { Row: DbReplicationRule; Insert: Omit<DbReplicationRule, 'id' | 'created_at'>; Update: Partial<DbReplicationRule> };
       plaza_correlations: { Row: DbPlazaCorrelation; Insert: Omit<DbPlazaCorrelation, 'id'>; Update: Partial<DbPlazaCorrelation> };
+      ml_sales_snapshots: { Row: DbMlSalesSnapshot; Insert: Omit<DbMlSalesSnapshot, 'id' | 'uploaded_at'>; Update: Partial<DbMlSalesSnapshot> };
+      ml_sales_rows: { Row: DbMlSalesRow; Insert: Omit<DbMlSalesRow, 'id'>; Update: Partial<DbMlSalesRow> };
+      ml_behavior_logs: { Row: DbMlBehaviorLog; Insert: Omit<DbMlBehaviorLog, 'id' | 'timestamp'>; Update: Partial<DbMlBehaviorLog> };
+      ml_weights: { Row: DbMlWeights; Insert: Omit<DbMlWeights, 'id' | 'updated_at'>; Update: Partial<DbMlWeights> };
     };
   };
 }

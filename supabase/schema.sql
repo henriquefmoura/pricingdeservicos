@@ -9,19 +9,26 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ─── Helper: get current user role from JWT ─────────────────────────────────
+-- NOTE: These functions live in the public schema because Supabase does not
+-- allow creating custom functions in the managed auth schema (error 42501).
+-- SECURITY DEFINER + fixed search_path prevent search_path injection attacks.
 
-CREATE OR REPLACE FUNCTION auth.user_role()
+CREATE OR REPLACE FUNCTION public.user_role()
 RETURNS TEXT AS $$
   SELECT COALESCE(
     current_setting('request.jwt.claims', true)::json->>'user_role',
     'user'
   );
-$$ LANGUAGE SQL STABLE;
+$$ LANGUAGE SQL STABLE SECURITY DEFINER SET search_path = '';
 
-CREATE OR REPLACE FUNCTION auth.user_plaza()
+CREATE OR REPLACE FUNCTION public.user_plaza()
 RETURNS TEXT AS $$
   SELECT current_setting('request.jwt.claims', true)::json->>'user_plaza';
-$$ LANGUAGE SQL STABLE;
+$$ LANGUAGE SQL STABLE SECURITY DEFINER SET search_path = '';
+
+-- Allow Supabase roles to call these helpers (required for RLS evaluation)
+GRANT EXECUTE ON FUNCTION public.user_role() TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.user_plaza() TO authenticated, anon;
 
 -- ─── 1. Users ───────────────────────────────────────────────────────────────
 
@@ -38,15 +45,15 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
 -- Master can see everyone; admin/user can see users in their plaza
 CREATE POLICY users_select ON public.users FOR SELECT USING (
-  auth.user_role() = 'master'
-  OR plaza = auth.user_plaza()
+  public.user_role() = 'master'
+  OR plaza = public.user_plaza()
   OR id = auth.uid()
 );
 
 -- Only master can insert/update/delete users
-CREATE POLICY users_insert ON public.users FOR INSERT WITH CHECK (auth.user_role() = 'master');
-CREATE POLICY users_update ON public.users FOR UPDATE USING (auth.user_role() = 'master');
-CREATE POLICY users_delete ON public.users FOR DELETE USING (auth.user_role() = 'master');
+CREATE POLICY users_insert ON public.users FOR INSERT WITH CHECK (public.user_role() = 'master');
+CREATE POLICY users_update ON public.users FOR UPDATE USING (public.user_role() = 'master');
+CREATE POLICY users_delete ON public.users FOR DELETE USING (public.user_role() = 'master');
 
 -- ─── 2. Pricing Codes ──────────────────────────────────────────────────────
 
@@ -71,9 +78,9 @@ ALTER TABLE public.pricing_codes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY pricing_codes_select ON public.pricing_codes FOR SELECT USING (true);
 
 -- Only master can create/edit/delete pricing codes
-CREATE POLICY pricing_codes_insert ON public.pricing_codes FOR INSERT WITH CHECK (auth.user_role() = 'master');
-CREATE POLICY pricing_codes_update ON public.pricing_codes FOR UPDATE USING (auth.user_role() = 'master');
-CREATE POLICY pricing_codes_delete ON public.pricing_codes FOR DELETE USING (auth.user_role() = 'master');
+CREATE POLICY pricing_codes_insert ON public.pricing_codes FOR INSERT WITH CHECK (public.user_role() = 'master');
+CREATE POLICY pricing_codes_update ON public.pricing_codes FOR UPDATE USING (public.user_role() = 'master');
+CREATE POLICY pricing_codes_delete ON public.pricing_codes FOR DELETE USING (public.user_role() = 'master');
 
 -- ─── 3. Pricing Prices (per plaza per code) ────────────────────────────────
 
@@ -93,15 +100,15 @@ ALTER TABLE public.pricing_prices ENABLE ROW LEVEL SECURITY;
 
 -- Master can see all; admin/user can see their plaza
 CREATE POLICY pricing_prices_select ON public.pricing_prices FOR SELECT USING (
-  auth.user_role() = 'master' OR plaza = auth.user_plaza()
+  public.user_role() = 'master' OR plaza = public.user_plaza()
 );
 
 -- Admin and user can set prices for their own plaza
 CREATE POLICY pricing_prices_insert ON public.pricing_prices FOR INSERT WITH CHECK (
-  auth.user_role() IN ('master', 'admin', 'user') AND (auth.user_role() = 'master' OR plaza = auth.user_plaza())
+  public.user_role() IN ('master', 'admin', 'user') AND (public.user_role() = 'master' OR plaza = public.user_plaza())
 );
 CREATE POLICY pricing_prices_update ON public.pricing_prices FOR UPDATE USING (
-  auth.user_role() IN ('master', 'admin', 'user') AND (auth.user_role() = 'master' OR plaza = auth.user_plaza())
+  public.user_role() IN ('master', 'admin', 'user') AND (public.user_role() = 'master' OR plaza = public.user_plaza())
 );
 
 -- ─── 4. Approvals ──────────────────────────────────────────────────────────
@@ -132,17 +139,17 @@ ALTER TABLE public.approvals ENABLE ROW LEVEL SECURITY;
 
 -- Master sees all; admin sees own plaza
 CREATE POLICY approvals_select ON public.approvals FOR SELECT USING (
-  auth.user_role() = 'master' OR plaza = auth.user_plaza()
+  public.user_role() = 'master' OR plaza = public.user_plaza()
 );
 
 -- Admin/user can create approvals for their plaza
 CREATE POLICY approvals_insert ON public.approvals FOR INSERT WITH CHECK (
-  auth.user_role() IN ('master', 'admin', 'user') AND (auth.user_role() = 'master' OR plaza = auth.user_plaza())
+  public.user_role() IN ('master', 'admin', 'user') AND (public.user_role() = 'master' OR plaza = public.user_plaza())
 );
 
 -- Admin can approve/reject in their plaza; master can do it everywhere
 CREATE POLICY approvals_update ON public.approvals FOR UPDATE USING (
-  auth.user_role() = 'master' OR (auth.user_role() = 'admin' AND plaza = auth.user_plaza())
+  public.user_role() = 'master' OR (public.user_role() = 'admin' AND plaza = public.user_plaza())
 );
 
 -- ─── 5. Price Adjustment Log (for ML) ──────────────────────────────────────
@@ -168,10 +175,10 @@ CREATE TABLE IF NOT EXISTS public.price_adjustment_log (
 ALTER TABLE public.price_adjustment_log ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY adjustment_log_select ON public.price_adjustment_log FOR SELECT USING (
-  auth.user_role() = 'master' OR plaza = auth.user_plaza()
+  public.user_role() = 'master' OR plaza = public.user_plaza()
 );
 CREATE POLICY adjustment_log_insert ON public.price_adjustment_log FOR INSERT WITH CHECK (
-  auth.user_role() IN ('master', 'admin', 'user')
+  public.user_role() IN ('master', 'admin', 'user')
 );
 
 -- ─── 6. Notifications ──────────────────────────────────────────────────────
@@ -197,8 +204,8 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 -- Users see notifications targeted at their role and optionally their plaza
 CREATE POLICY notifications_select ON public.notifications FOR SELECT USING (
-  auth.user_role() = 'master'
-  OR (to_role = auth.user_role() AND (to_plaza IS NULL OR to_plaza = auth.user_plaza()))
+  public.user_role() = 'master'
+  OR (to_role = public.user_role() AND (to_plaza IS NULL OR to_plaza = public.user_plaza()))
 );
 
 -- Authenticated users can create notifications
@@ -206,13 +213,13 @@ CREATE POLICY notifications_insert ON public.notifications FOR INSERT WITH CHECK
 
 -- Users can mark their own notifications as read
 CREATE POLICY notifications_update ON public.notifications FOR UPDATE USING (
-  auth.user_role() = 'master'
-  OR (to_role = auth.user_role() AND (to_plaza IS NULL OR to_plaza = auth.user_plaza()))
+  public.user_role() = 'master'
+  OR (to_role = public.user_role() AND (to_plaza IS NULL OR to_plaza = public.user_plaza()))
 );
 
 CREATE POLICY notifications_delete ON public.notifications FOR DELETE USING (
-  auth.user_role() = 'master'
-  OR (to_role = auth.user_role() AND (to_plaza IS NULL OR to_plaza = auth.user_plaza()))
+  public.user_role() = 'master'
+  OR (to_role = public.user_role() AND (to_plaza IS NULL OR to_plaza = public.user_plaza()))
 );
 
 -- ─── 7. Support Threads ────────────────────────────────────────────────────
@@ -234,18 +241,18 @@ ALTER TABLE public.support_threads ENABLE ROW LEVEL SECURITY;
 
 -- Master sees all; others see threads they participate in
 CREATE POLICY support_threads_select ON public.support_threads FOR SELECT USING (
-  auth.user_role() = 'master'
-  OR (from_user_role = auth.user_role() AND (plaza IS NULL OR plaza = auth.user_plaza()))
-  OR (to_role = auth.user_role() AND (plaza IS NULL OR plaza = auth.user_plaza()))
+  public.user_role() = 'master'
+  OR (from_user_role = public.user_role() AND (plaza IS NULL OR plaza = public.user_plaza()))
+  OR (to_role = public.user_role() AND (plaza IS NULL OR plaza = public.user_plaza()))
 );
 
 CREATE POLICY support_threads_insert ON public.support_threads FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 CREATE POLICY support_threads_update ON public.support_threads FOR UPDATE USING (
-  auth.user_role() = 'master'
-  OR (from_user_role = auth.user_role() AND (plaza IS NULL OR plaza = auth.user_plaza()))
-  OR (to_role = auth.user_role() AND (plaza IS NULL OR plaza = auth.user_plaza()))
+  public.user_role() = 'master'
+  OR (from_user_role = public.user_role() AND (plaza IS NULL OR plaza = public.user_plaza()))
+  OR (to_role = public.user_role() AND (plaza IS NULL OR plaza = public.user_plaza()))
 );
-CREATE POLICY support_threads_delete ON public.support_threads FOR DELETE USING (auth.user_role() = 'master');
+CREATE POLICY support_threads_delete ON public.support_threads FOR DELETE USING (public.user_role() = 'master');
 
 -- ─── 8. Support Messages ───────────────────────────────────────────────────
 
@@ -266,21 +273,21 @@ ALTER TABLE public.support_messages ENABLE ROW LEVEL SECURITY;
 
 -- Visible to thread participants
 CREATE POLICY support_messages_select ON public.support_messages FOR SELECT USING (
-  auth.user_role() = 'master'
+  public.user_role() = 'master'
   OR EXISTS (
     SELECT 1 FROM public.support_threads t
     WHERE t.id = thread_id
     AND (
-      (t.from_user_role = auth.user_role() AND (t.plaza IS NULL OR t.plaza = auth.user_plaza()))
-      OR (t.to_role = auth.user_role() AND (t.plaza IS NULL OR t.plaza = auth.user_plaza()))
+      (t.from_user_role = public.user_role() AND (t.plaza IS NULL OR t.plaza = public.user_plaza()))
+      OR (t.to_role = public.user_role() AND (t.plaza IS NULL OR t.plaza = public.user_plaza()))
     )
   )
 );
 
 CREATE POLICY support_messages_insert ON public.support_messages FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 CREATE POLICY support_messages_update ON public.support_messages FOR UPDATE USING (
-  auth.user_role() = 'master'
-  OR to_role = auth.user_role()
+  public.user_role() = 'master'
+  OR to_role = public.user_role()
 );
 
 -- ─── 9. Activity Logs ──────────────────────────────────────────────────────
@@ -300,7 +307,7 @@ ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 
 -- Master can see all logs; admin/user only their plaza
 CREATE POLICY activity_logs_select ON public.activity_logs FOR SELECT USING (
-  auth.user_role() = 'master' OR plaza = auth.user_plaza()
+  public.user_role() = 'master' OR plaza = public.user_plaza()
 );
 
 CREATE POLICY activity_logs_insert ON public.activity_logs FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
@@ -365,9 +372,9 @@ CREATE TABLE IF NOT EXISTS public.replication_rules (
 
 ALTER TABLE public.replication_rules ENABLE ROW LEVEL SECURITY;
 CREATE POLICY replication_rules_select ON public.replication_rules FOR SELECT USING (true);
-CREATE POLICY replication_rules_insert ON public.replication_rules FOR INSERT WITH CHECK (auth.user_role() = 'master');
-CREATE POLICY replication_rules_update ON public.replication_rules FOR UPDATE USING (auth.user_role() = 'master');
-CREATE POLICY replication_rules_delete ON public.replication_rules FOR DELETE USING (auth.user_role() = 'master');
+CREATE POLICY replication_rules_insert ON public.replication_rules FOR INSERT WITH CHECK (public.user_role() = 'master');
+CREATE POLICY replication_rules_update ON public.replication_rules FOR UPDATE USING (public.user_role() = 'master');
+CREATE POLICY replication_rules_delete ON public.replication_rules FOR DELETE USING (public.user_role() = 'master');
 
 -- ─── 14. Plaza Correlations ────────────────────────────────────────────────
 
@@ -380,8 +387,8 @@ CREATE TABLE IF NOT EXISTS public.plaza_correlations (
 
 ALTER TABLE public.plaza_correlations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY plaza_correlations_select ON public.plaza_correlations FOR SELECT USING (true);
-CREATE POLICY plaza_correlations_insert ON public.plaza_correlations FOR INSERT WITH CHECK (auth.user_role() = 'master');
-CREATE POLICY plaza_correlations_update ON public.plaza_correlations FOR UPDATE USING (auth.user_role() = 'master');
+CREATE POLICY plaza_correlations_insert ON public.plaza_correlations FOR INSERT WITH CHECK (public.user_role() = 'master');
+CREATE POLICY plaza_correlations_update ON public.plaza_correlations FOR UPDATE USING (public.user_role() = 'master');
 
 -- ─── Indexes ───────────────────────────────────────────────────────────────
 

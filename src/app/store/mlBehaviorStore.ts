@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { MLBehaviorLog, MLBehaviorAction, MLWeights } from '../types/mlPricing';
 import { DEFAULT_ML_WEIGHTS } from '../types/mlPricing';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 // Chave usada no mapa de pesos: "grupoServico::plaza"
 function weightsKey(grupoServico: string, plaza: string): string {
@@ -34,6 +35,9 @@ interface MLBehaviorState {
   getAcceptanceRate: (grupoServico?: string, plaza?: string) => number;
 
   clearLogs: () => void;
+
+  /** Sincroniza logs de comportamento e pesos adaptativos do banco de dados Supabase */
+  syncFromBackend: () => Promise<void>;
 }
 
 /**
@@ -123,6 +127,61 @@ export const useMLBehaviorStore = create<MLBehaviorState>()(
 
       clearLogs: () => {
         set({ logs: [], weights: {} });
+      },
+
+      syncFromBackend: async () => {
+        if (!isSupabaseConfigured()) return;
+        try {
+          // Sync behavior logs
+          const { data: dbLogs, error: logsError } = await supabase!
+            .from('ml_behavior_logs')
+            .select('*')
+            .order('timestamp', { ascending: true });
+
+          if (logsError) throw logsError;
+
+          // Sync adaptive weights
+          const { data: dbWeights, error: weightsError } = await supabase!
+            .from('ml_weights')
+            .select('*');
+
+          if (weightsError) throw weightsError;
+
+          const logs: MLBehaviorLog[] = (dbLogs ?? []).map((l) => ({
+            id: l.id,
+            timestamp: l.timestamp,
+            userId: l.user_id,
+            userName: l.user_name,
+            plaza: l.plaza,
+            grupoServico: l.grupo_servico,
+            codeId: l.code_id ?? undefined,
+            action: l.action as MLBehaviorAction,
+            suggestedVenda: Number(l.suggested_venda),
+            suggestedRepasse: Number(l.suggested_repasse),
+            actualVenda: l.actual_venda != null ? Number(l.actual_venda) : undefined,
+            actualRepasse: l.actual_repasse != null ? Number(l.actual_repasse) : undefined,
+            vendaDeltaPercent: l.venda_delta_percent != null ? Number(l.venda_delta_percent) : undefined,
+          }));
+
+          const weights: Record<string, MLWeights> = {};
+          for (const w of dbWeights ?? []) {
+            const key = weightsKey(w.grupo_servico, w.plaza);
+            weights[key] = {
+              wHistoricoPreco: Number(w.w_historico_preco),
+              wConversao: Number(w.w_conversao),
+              wAdesao: Number(w.w_adesao),
+              wPrestadores: Number(w.w_prestadores),
+              wConcorrentes: Number(w.w_concorrentes),
+              wCapacidadeCompra: Number(w.w_capacidade_compra),
+              biasCorrecao: Number(w.bias_correcao),
+              nSamples: w.n_samples,
+            };
+          }
+
+          set({ logs, weights });
+        } catch (err) {
+          console.error('[mlBehaviorStore] syncFromBackend error:', err);
+        }
       },
     }),
     {

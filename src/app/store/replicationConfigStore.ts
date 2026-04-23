@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export interface ReplicationRule {
   id: string;
@@ -23,6 +24,9 @@ interface ReplicationConfigState {
   getAllReplicatorPlazas: () => string[];
   isPlazaReplicator: (plaza: string) => boolean;
   clearAllRules: () => void;
+
+  /** Sincroniza regras de replicação do banco de dados Supabase */
+  syncFromBackend: () => Promise<void>;
 }
 
 export const useReplicationConfigStore = create<ReplicationConfigState>()(
@@ -143,6 +147,31 @@ export const useReplicationConfigStore = create<ReplicationConfigState>()(
       // Limpar todas as regras
       clearAllRules: () => {
         set({ rules: [] });
+      },
+
+      // Sincroniza regras de replicação do banco de dados Supabase
+      syncFromBackend: async () => {
+        if (!isSupabaseConfigured()) return;
+        try {
+          const { data, error } = await supabase!
+            .from('replication_rules')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+          if (error) throw error;
+          if (!data || data.length === 0) return;
+
+          const rules: ReplicationRule[] = data.map((r) => ({
+            id: r.id,
+            replicatorPlaza: r.replicator_plaza,
+            targetPlazas: r.target_plazas ?? [],
+            isActive: r.is_active,
+          }));
+
+          set({ rules });
+        } catch (err) {
+          console.error('[replicationConfigStore] syncFromBackend error:', err);
+        }
       },
     }),
     {

@@ -18,6 +18,7 @@ import { generateMLSuggestion } from './services/mlPricingSuggestionService';
 import { MLPriceSuggestionCard } from './components/MLPriceSuggestion';
 import { toast } from 'sonner';
 import { calculateMargemComImpostos, getPlazaIss, FIXED_TAX, getTotalTaxPercent } from './data/plazasData';
+import { hasEffectiveMarketResearch } from './utils/pricingUtils';
 
 interface PriceInput {
   repasse: string;
@@ -165,25 +166,8 @@ export default function AdminPricingPage() {
   // Check whether a code has effective market research:
   // - Own research is always checked first.
   // - For non-'Serviço' types within a group: unlocked if ALL 'Serviço' codes in the same group have research.
-  const hasEffectiveMarketResearch = (code: PricingCode): boolean => {
-    const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
-    const research = codeRef ? getResearchByCode(codeRef) : undefined;
-    if (research && research.precosConcorrentes.length > 0) return true;
-
-    if (code.tipo !== 'Serviço' && code.grupoServico) {
-      const groupServiceCodes = codes.filter(
-        (c) => c.grupoServico === code.grupoServico && c.tipo === 'Serviço'
-      );
-      if (groupServiceCodes.length > 0) {
-        return groupServiceCodes.every((c) => {
-          const ref = c.codigoAvulso || c.codigoAtrelado || '';
-          const r = ref ? getResearchByCode(ref) : undefined;
-          return r && r.precosConcorrentes.length > 0;
-        });
-      }
-    }
-    return false;
-  };
+  const checkMarketResearch = (code: PricingCode) =>
+    hasEffectiveMarketResearch(code, codes, getResearchByCode);
 
   // Group codes by grupoServico
   const groupCodes = (codesToGroup: PricingCode[]) => {
@@ -238,7 +222,7 @@ export default function AdminPricingPage() {
     }
 
     // Bloquear salvamento sem pesquisa de mercado
-    if (!hasEffectiveMarketResearch(code)) {
+    if (!checkMarketResearch(code)) {
       toast.error('Pesquisa de mercado necessária', {
         description: 'Realize uma pesquisa de mercado para este serviço antes de salvar o preço. Acesse a página de Pesquisa de Mercado.',
       });
@@ -476,7 +460,7 @@ export default function AdminPricingPage() {
                       const margem = calculateMargem(code.id);
                       const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
                       const research = getResearchByCode(codeRef);
-                      const hasResearch = hasEffectiveMarketResearch(code);
+                      const hasResearch = checkMarketResearch(code);
                       const prestadorPrices = code.prices ? Object.values(code.prices).map((p) => p.venda) : [];
                       const suggestedPrice = getSuggestedPrice(codeRef, prestadorPrices);
                       const tipoStyles = getServiceTypeStyles(code.tipo);

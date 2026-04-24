@@ -29,6 +29,7 @@ import { useNotificationStore } from '../store/notificationStore';
 import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 import { calculateMargemComImpostos, getPlazaIss, FIXED_TAX, getTotalTaxPercent } from '../data/plazasData';
+import { hasEffectiveMarketResearch } from '../utils/pricingUtils';
 
 interface PriceInput {
   repasse: string;
@@ -170,25 +171,8 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
 
   // Check whether a code has effective market research.
   // Non-'Serviço' codes in a group are unlocked when all 'Serviço' codes in that group have research.
-  const hasEffectiveMarketResearch = (code: PricingCode): boolean => {
-    const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
-    const research = codeRef ? getResearchByCode(codeRef) : undefined;
-    if (research && research.precosConcorrentes.length > 0) return true;
-
-    if (code.tipo !== 'Serviço' && code.grupoServico) {
-      const groupServiceCodes = codes.filter(
-        (c) => c.grupoServico === code.grupoServico && c.tipo === 'Serviço'
-      );
-      if (groupServiceCodes.length > 0) {
-        return groupServiceCodes.every((c) => {
-          const ref = c.codigoAvulso || c.codigoAtrelado || '';
-          const r = ref ? getResearchByCode(ref) : undefined;
-          return r && r.precosConcorrentes.length > 0;
-        });
-      }
-    }
-    return false;
-  };
+  const checkMarketResearch = (code: PricingCode) =>
+    hasEffectiveMarketResearch(code, codes, getResearchByCode);
 
   const handleSavePrice = (code: PricingCode) => {
     if (!user?.plaza) {
@@ -216,7 +200,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
     }
 
     // Bloquear salvamento sem pesquisa de mercado
-    if (!hasEffectiveMarketResearch(code)) {
+    if (!checkMarketResearch(code)) {
       toast.error('Pesquisa de mercado necessária', {
         description: 'Realize uma pesquisa de mercado para este serviço antes de salvar o preço. Acesse a página de Pesquisa de Mercado.',
       });
@@ -406,7 +390,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
     const hasInput = priceInputs[code.id];
     const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
     const research = getResearchByCode(codeRef);
-    const hasMarketResearch = hasEffectiveMarketResearch(code);
+    const hasMarketResearch = checkMarketResearch(code);
 
     return (
       <Card key={code.id} className="border-2">

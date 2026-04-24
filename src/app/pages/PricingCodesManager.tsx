@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { Plus, Trash2, Upload, FileSpreadsheet, Calendar, AlertCircle, CheckCircle2, ChevronsUpDown, ChevronDown, FolderOpen } from 'lucide-react';
+import { Plus, Trash2, Upload, FileSpreadsheet, Calendar, AlertCircle, CheckCircle2, ChevronsUpDown, ChevronDown, FolderOpen, Link, MessageSquare, ExternalLink } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -23,6 +23,7 @@ import {
 } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
 import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -39,7 +40,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../componen
 
 export function PricingCodesManager() {
   const { user } = useAuthStore();
-  const { codes, addCode, addCodes, removeCode, getCodesByStatus, clearCodes } = usePricingCodesStore();
+  const { codes, addCode, addCodes, removeCode, updateCodeMeta, getCodesByStatus, clearCodes } = usePricingCodesStore();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -438,6 +439,7 @@ export function PricingCodesManager() {
               getTipoBadgeColor={getTipoBadgeColor}
               getStatusBadge={getStatusBadge}
               removeCode={removeCode}
+              updateCodeMeta={updateCodeMeta}
             />
           )}
         </CardContent>
@@ -497,9 +499,26 @@ interface GroupedCodesViewProps {
   getTipoBadgeColor: (tipo: PricingCode['tipo']) => string;
   getStatusBadge: (status: PricingCode['status']) => React.ReactNode;
   removeCode: (id: string) => void;
+  updateCodeMeta: (id: string, meta: { fichaTecnica?: string; comentario?: string }) => void;
 }
 
-function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode }: GroupedCodesViewProps) {
+function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode, updateCodeMeta }: GroupedCodesViewProps) {
+  // Dialog state for ficha técnica and comentário
+  const [editingFicha, setEditingFicha] = useState<{ id: string; url: string } | null>(null);
+  const [editingComment, setEditingComment] = useState<{ id: string; text: string } | null>(null);
+
+  const handleSaveFicha = () => {
+    if (!editingFicha) return;
+    updateCodeMeta(editingFicha.id, { fichaTecnica: editingFicha.url.trim() || undefined });
+    setEditingFicha(null);
+  };
+
+  const handleSaveComment = () => {
+    if (!editingComment) return;
+    updateCodeMeta(editingComment.id, { comentario: editingComment.text.trim() || undefined });
+    setEditingComment(null);
+  };
+
   // Group codes by grupoServico
   const grouped = codes.reduce<Record<string, PricingCode[]>>((acc, code) => {
     const group = code.grupoServico || UNGROUPED_KEY;
@@ -542,14 +561,34 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
             return (
               <TableRow key={code.id}>
                 <TableCell>
-                  <Badge className={getTipoBadgeColor(code.tipo)}>
-                    {code.tipo}
-                  </Badge>
+                  <div className="flex items-center gap-1">
+                    <Badge className={getTipoBadgeColor(code.tipo)}>
+                      {code.tipo}
+                    </Badge>
+                    {code.tipo === 'Serviço' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title={code.fichaTecnica ? 'Ver / editar ficha técnica' : 'Adicionar ficha técnica'}
+                        onClick={() => setEditingFicha({ id: code.id, url: code.fichaTecnica || '' })}
+                        className={`h-6 w-6 p-0 ${code.fichaTecnica ? 'text-blue-600 hover:text-blue-700' : 'text-gray-400 hover:text-blue-600'}`}
+                      >
+                        <Link className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="max-w-xs">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {code.descricao}
-                  </p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {code.descricao}
+                    </p>
+                    {code.comentario && (
+                      <span title={code.comentario}>
+                        <MessageSquare className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-sm text-gray-600">{code.unidade}</TableCell>
                 <TableCell className="text-sm font-mono text-gray-600">
@@ -586,12 +625,21 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center justify-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title={code.comentario ? 'Ver / editar comentário' : 'Adicionar comentário'}
+                      onClick={() => setEditingComment({ id: code.id, text: code.comentario || '' })}
+                      className={`h-7 w-7 p-0 ${code.comentario ? 'text-amber-500 hover:text-amber-600' : 'text-gray-400 hover:text-amber-500'}`}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => removeCode(code.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -606,43 +654,154 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
   );
 
   if (!hasGroups) {
-    return renderCodesTable(codes);
+    return (
+      <>
+        {renderCodesTable(codes)}
+        {renderDialogs()}
+      </>
+    );
   }
 
   return (
-    <div className="space-y-3">
-      {groupNames.map((groupName) => {
-        const groupCodes = grouped[groupName];
-        const isUngrouped = groupName === UNGROUPED_KEY;
-        const displayName = isUngrouped ? 'Sem Grupo' : groupName;
+    <>
+      <div className="space-y-3">
+        {groupNames.map((groupName) => {
+          const groupCodes = grouped[groupName];
+          const isUngrouped = groupName === UNGROUPED_KEY;
+          const displayName = isUngrouped ? 'Sem Grupo' : groupName;
 
-        return (
-          <Collapsible key={groupName} defaultOpen>
-            <div className="border-2 border-indigo-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-              <CollapsibleTrigger asChild>
-                <button
-                  className="flex items-center justify-between w-full px-5 py-4 bg-indigo-50 hover:bg-indigo-100 transition-colors text-left group border-l-4 border-l-indigo-500"
-                  aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
-                >
-                  <div className="flex items-center gap-3">
-                    <FolderOpen className="w-6 h-6 text-indigo-600" />
-                    <span className="font-bold text-lg text-gray-900">{displayName}</span>
-                    <Badge variant="outline" className="text-sm px-3 py-1 font-semibold border-indigo-300 text-indigo-700 bg-white">
-                      {groupCodes.length} serviço(s)
-                    </Badge>
-                  </div>
-                  <ChevronDown className="w-5 h-5 text-indigo-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                {renderCodesTable(groupCodes)}
-              </CollapsibleContent>
-            </div>
-          </Collapsible>
-        );
-      })}
-    </div>
+          return (
+            <Collapsible key={groupName} defaultOpen>
+              <div className="border-2 border-indigo-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <CollapsibleTrigger asChild>
+                  <button
+                    className="flex items-center justify-between w-full px-5 py-4 bg-indigo-50 hover:bg-indigo-100 transition-colors text-left group border-l-4 border-l-indigo-500"
+                    aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FolderOpen className="w-6 h-6 text-indigo-600" />
+                      <span className="font-bold text-lg text-gray-900">{displayName}</span>
+                      <Badge variant="outline" className="text-sm px-3 py-1 font-semibold border-indigo-300 text-indigo-700 bg-white">
+                        {groupCodes.length} serviço(s)
+                      </Badge>
+                    </div>
+                    <ChevronDown className="w-5 h-5 text-indigo-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  {renderCodesTable(groupCodes)}
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+          );
+        })}
+      </div>
+      {renderDialogs()}
+    </>
   );
+
+  function renderDialogs() {
+    return (
+      <>
+        {/* Ficha Técnica Dialog */}
+        <Dialog open={!!editingFicha} onOpenChange={(open) => { if (!open) setEditingFicha(null); }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Link className="w-5 h-5 text-blue-600" />
+                Ficha Técnica do Serviço
+              </DialogTitle>
+              <DialogDescription>
+                Informe o link da ficha técnica. Ao salvar, o ícone ficará em destaque na linha do serviço.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <Label htmlFor="ficha-url">URL da Ficha Técnica</Label>
+              <Input
+                id="ficha-url"
+                value={editingFicha?.url ?? ''}
+                onChange={(e) => setEditingFicha((prev) => prev ? { ...prev, url: e.target.value } : prev)}
+                placeholder="https://exemplo.com/ficha-tecnica"
+                type="url"
+              />
+              {editingFicha?.url && (
+                <a
+                  href={editingFicha.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Abrir link em nova aba
+                </a>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingFicha(null)}>
+                Cancelar
+              </Button>
+              {editingFicha?.url && (
+                <Button
+                  variant="outline"
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                  onClick={() => {
+                    if (editingFicha) updateCodeMeta(editingFicha.id, { fichaTecnica: undefined });
+                    setEditingFicha(null);
+                  }}
+                >
+                  Remover link
+                </Button>
+              )}
+              <Button onClick={handleSaveFicha}>Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Comentário Dialog */}
+        <Dialog open={!!editingComment} onOpenChange={(open) => { if (!open) setEditingComment(null); }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-amber-500" />
+                Comentário do Serviço
+              </DialogTitle>
+              <DialogDescription>
+                Adicione observações ou instruções sobre este serviço para auxiliar administradores e usuários na precificação.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <Label htmlFor="comentario-text">Comentário</Label>
+              <Textarea
+                id="comentario-text"
+                value={editingComment?.text ?? ''}
+                onChange={(e) => setEditingComment((prev) => prev ? { ...prev, text: e.target.value } : prev)}
+                placeholder="Ex: Atenção — verificar compatibilidade de tensão antes de precificar..."
+                rows={4}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingComment(null)}>
+                Cancelar
+              </Button>
+              {editingComment?.text && (
+                <Button
+                  variant="outline"
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                  onClick={() => {
+                    if (editingComment) updateCodeMeta(editingComment.id, { comentario: undefined });
+                    setEditingComment(null);
+                  }}
+                >
+                  Remover comentário
+                </Button>
+              )}
+              <Button onClick={handleSaveComment}>Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
 }
 
 // ----- Import Preview Dialog -----

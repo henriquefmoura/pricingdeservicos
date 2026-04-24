@@ -5,7 +5,7 @@ import { AISuggestionCard, Card } from './components/Card';
 import { CurrencyInput, Input } from './components/Input';
 import { ServiceTypeBadge, ServiceType } from './components/ServiceTypeBadge';
 import { StatusBadge, BadgeStatus } from './components/StatusBadge';
-import { Search, Sparkles, Send, Save, Lightbulb, TrendingUp, CheckCircle2, AlertCircle, AlertTriangle, BarChart2, ChevronDown, FolderOpen, Info } from 'lucide-react';
+import { Search, Sparkles, Send, Save, Lightbulb, TrendingUp, CheckCircle2, AlertCircle, AlertTriangle, BarChart2, ChevronDown, FolderOpen, Info, Link, MessageSquare, ExternalLink } from 'lucide-react';
 import { useAuthStore } from './store/authStore';
 import { usePricingCodesStore, PricingCode, UNGROUPED_KEY } from './store/pricingCodesStore';
 import { useMarketResearchStore } from './store/marketResearchStore';
@@ -27,7 +27,7 @@ interface PriceInput {
 export default function AdminPricingPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
-  const { codes, updateCodePrice, initializeMockCodes } = usePricingCodesStore();
+  const { codes, updateCodePrice, initializeMockCodes, groupMetadata } = usePricingCodesStore();
   const { getResearchByCode, getSuggestedPrice, initializeMockResearches } = useMarketResearchStore();
   const { addApproval } = useApprovalStore();
   const { getSimilarPlazas, initializeMockData: initCorrelation } = useCorrelationStore();
@@ -162,6 +162,29 @@ export default function AdminPricingPage() {
     return calculateMargemComImpostos(venda, repasse, user.plaza);
   };
 
+  // Check whether a code has effective market research:
+  // - Own research is always checked first.
+  // - For non-'Serviço' types within a group: unlocked if ALL 'Serviço' codes in the same group have research.
+  const hasEffectiveMarketResearch = (code: PricingCode): boolean => {
+    const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
+    const research = codeRef ? getResearchByCode(codeRef) : undefined;
+    if (research && research.precosConcorrentes.length > 0) return true;
+
+    if (code.tipo !== 'Serviço' && code.grupoServico) {
+      const groupServiceCodes = codes.filter(
+        (c) => c.grupoServico === code.grupoServico && c.tipo === 'Serviço'
+      );
+      if (groupServiceCodes.length > 0) {
+        return groupServiceCodes.every((c) => {
+          const ref = c.codigoAvulso || c.codigoAtrelado || '';
+          const r = ref ? getResearchByCode(ref) : undefined;
+          return r && r.precosConcorrentes.length > 0;
+        });
+      }
+    }
+    return false;
+  };
+
   // Group codes by grupoServico
   const groupCodes = (codesToGroup: PricingCode[]) => {
     const grouped = codesToGroup.reduce<Record<string, PricingCode[]>>((acc, code) => {
@@ -215,9 +238,7 @@ export default function AdminPricingPage() {
     }
 
     // Bloquear salvamento sem pesquisa de mercado
-    const codeKeyForResearch = code.codigoAvulso || code.codigoAtrelado;
-    const existingResearch = codeKeyForResearch ? getResearchByCode(codeKeyForResearch) : undefined;
-    if (!existingResearch || existingResearch.precosConcorrentes.length === 0) {
+    if (!hasEffectiveMarketResearch(code)) {
       toast.error('Pesquisa de mercado necessária', {
         description: 'Realize uma pesquisa de mercado para este serviço antes de salvar o preço. Acesse a página de Pesquisa de Mercado.',
       });
@@ -455,6 +476,7 @@ export default function AdminPricingPage() {
                       const margem = calculateMargem(code.id);
                       const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
                       const research = getResearchByCode(codeRef);
+                      const hasResearch = hasEffectiveMarketResearch(code);
                       const prestadorPrices = code.prices ? Object.values(code.prices).map((p) => p.venda) : [];
                       const suggestedPrice = getSuggestedPrice(codeRef, prestadorPrices);
                       const tipoStyles = getServiceTypeStyles(code.tipo);
@@ -597,7 +619,7 @@ export default function AdminPricingPage() {
                             <div style={{ flex: '2 1 340px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
                               {/* Warning: no market research */}
-                              {(!research || research.precosConcorrentes.length === 0) && (
+                              {!hasResearch && (
                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px 14px', borderRadius: '10px', backgroundColor: '#FFF7ED', border: '2px solid #FB923C' }}>
                                   <AlertTriangle size={18} style={{ color: '#EA580C', flexShrink: 0, marginTop: '1px' }} />
                                   <div>
@@ -618,7 +640,7 @@ export default function AdminPricingPage() {
                               )}
 
                               {/* Inputs row */}
-                              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap', padding: '18px 20px', background: (!research || research.precosConcorrentes.length === 0) ? 'linear-gradient(135deg, #FFF7ED 0%, #FEF3C7 100%)' : 'linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 50%, #F0FDFA 100%)', borderRadius: '12px', border: `2px solid ${(!research || research.precosConcorrentes.length === 0) ? '#FB923C' : '#78BE20'}`, boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', opacity: (!research || research.precosConcorrentes.length === 0) ? 0.6 : 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap', padding: '18px 20px', background: !hasResearch ? 'linear-gradient(135deg, #FFF7ED 0%, #FEF3C7 100%)' : 'linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 50%, #F0FDFA 100%)', borderRadius: '12px', border: `2px solid ${!hasResearch ? '#FB923C' : '#78BE20'}`, boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', opacity: !hasResearch ? 0.6 : 1 }}>
                                 <div style={{ flex: '1 1 120px' }}>
                                   <CurrencyInput
                                     label="Repasse (R$)"
@@ -739,11 +761,11 @@ export default function AdminPricingPage() {
                       const isUngrouped = groupName === UNGROUPED_KEY;
                       const displayName = isUngrouped ? 'Sem Grupo' : groupName;
                       const isCollapsed = !expandedGroups[`pending-${groupName}`];
+                      const gMeta = !isUngrouped ? (groupMetadata[groupName] || {}) : {};
 
                       return (
                         <div key={groupName} style={{ borderRadius: '16px', overflow: 'hidden', border: '2px solid #E5E7EB' }}>
-                          <button
-                            onClick={() => toggleGroup(`pending-${groupName}`)}
+                          <div
                             style={{
                               display: 'flex',
                               alignItems: 'center',
@@ -751,16 +773,23 @@ export default function AdminPricingPage() {
                               width: '100%',
                               padding: '24px 28px',
                               backgroundColor: '#F9FAFB',
-                              border: 'none',
-                              cursor: 'pointer',
-                              textAlign: 'left',
-                              transition: 'background-color 0.2s',
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F3F4F6'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F9FAFB'; }}
-                            aria-label={`Grupo ${displayName}, ${codesInGroup.length} serviço(s)`}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <button
+                              onClick={() => toggleGroup(`pending-${groupName}`)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '14px',
+                                flex: 1,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                                padding: 0,
+                              }}
+                              aria-label={`Grupo ${displayName}, ${codesInGroup.length} serviço(s)`}
+                            >
                               <FolderOpen size={28} style={{ color: '#4F46E5' }} />
                               <span style={{ fontWeight: 700, fontSize: '22px', color: '#111827' }}>{displayName}</span>
                               <span style={{
@@ -773,16 +802,41 @@ export default function AdminPricingPage() {
                               }}>
                                 {codesInGroup.length} serviço(s)
                               </span>
+                              <ChevronDown
+                                size={24}
+                                style={{
+                                  color: '#6B7280',
+                                  transition: 'transform 0.2s',
+                                  transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                                }}
+                              />
+                            </button>
+                            {/* Group metadata: ficha técnica link + comment */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginLeft: '12px' }}>
+                              {gMeta.fichaTecnica && (
+                                <a
+                                  href={gMeta.fichaTecnica}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Ficha técnica do grupo"
+                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '7px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1D4ED8', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <ExternalLink size={13} />
+                                  Ficha Técnica
+                                </a>
+                              )}
+                              {gMeta.comentario && (
+                                <div
+                                  title={gMeta.comentario}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '7px', backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', fontSize: '12px', fontWeight: 600, cursor: 'help' }}
+                                >
+                                  <MessageSquare size={13} />
+                                  Obs.
+                                </div>
+                              )}
                             </div>
-                            <ChevronDown
-                              size={24}
-                              style={{
-                                color: '#6B7280',
-                                transition: 'transform 0.2s',
-                                transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-                              }}
-                            />
-                          </button>
+                          </div>
                           {!isCollapsed && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
                               {codesInGroup.map((code) => renderPendingCard(code))}
@@ -929,11 +983,11 @@ export default function AdminPricingPage() {
                       const isUngrouped = groupName === UNGROUPED_KEY;
                       const displayName = isUngrouped ? 'Sem Grupo' : groupName;
                       const isCollapsed = !expandedGroups[`priced-${groupName}`];
+                      const gMeta = !isUngrouped ? (groupMetadata[groupName] || {}) : {};
 
                       return (
                         <div key={groupName} style={{ borderRadius: '16px', overflow: 'hidden', border: '2px solid #D1FAE5' }}>
-                          <button
-                            onClick={() => toggleGroup(`priced-${groupName}`)}
+                          <div
                             style={{
                               display: 'flex',
                               alignItems: 'center',
@@ -941,16 +995,23 @@ export default function AdminPricingPage() {
                               width: '100%',
                               padding: '24px 28px',
                               backgroundColor: '#F0FDF4',
-                              border: 'none',
-                              cursor: 'pointer',
-                              textAlign: 'left',
-                              transition: 'background-color 0.2s',
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#DCFCE7'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F0FDF4'; }}
-                            aria-label={`Grupo ${displayName}, ${codesInGroup.length} serviço(s)`}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <button
+                              onClick={() => toggleGroup(`priced-${groupName}`)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '14px',
+                                flex: 1,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                                padding: 0,
+                              }}
+                              aria-label={`Grupo ${displayName}, ${codesInGroup.length} serviço(s)`}
+                            >
                               <FolderOpen size={28} style={{ color: '#16A34A' }} />
                               <span style={{ fontWeight: 700, fontSize: '22px', color: '#111827' }}>{displayName}</span>
                               <span style={{
@@ -963,16 +1024,40 @@ export default function AdminPricingPage() {
                               }}>
                                 {codesInGroup.length} serviço(s)
                               </span>
+                              <ChevronDown
+                                size={24}
+                                style={{
+                                  color: '#6B7280',
+                                  transition: 'transform 0.2s',
+                                  transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                                }}
+                              />
+                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginLeft: '12px' }}>
+                              {gMeta.fichaTecnica && (
+                                <a
+                                  href={gMeta.fichaTecnica}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Ficha técnica do grupo"
+                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '7px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1D4ED8', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <ExternalLink size={13} />
+                                  Ficha Técnica
+                                </a>
+                              )}
+                              {gMeta.comentario && (
+                                <div
+                                  title={gMeta.comentario}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '7px', backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', fontSize: '12px', fontWeight: 600, cursor: 'help' }}
+                                >
+                                  <MessageSquare size={13} />
+                                  Obs.
+                                </div>
+                              )}
                             </div>
-                            <ChevronDown
-                              size={24}
-                              style={{
-                                color: '#6B7280',
-                                transition: 'transform 0.2s',
-                                transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-                              }}
-                            />
-                          </button>
+                          </div>
                           {!isCollapsed && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
                               {codesInGroup.map((code) => renderPricedCard(code))}

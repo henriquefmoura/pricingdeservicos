@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router';
 import { AppLayout } from './components/AppLayout';
 import { Tabs } from './components/Tabs';
 import { CurrencyInput } from './components/Input';
-import { Check, X, ArrowRight, Clock, CheckCircle, XCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import { Check, X, ArrowRight, Clock, CheckCircle, XCircle, TrendingUp, TrendingDown, ExternalLink, MessageSquare } from 'lucide-react';
 import { useAuthStore } from './store/authStore';
 import { useApprovalStore } from './store/approvalStore';
 import { useMarketResearchStore } from './store/marketResearchStore';
+import { usePricingCodesStore } from './store/pricingCodesStore';
 import { SharedAnalysisPanel } from './components/shared/SharedAnalysisPanel';
 import { toast } from 'sonner';
 import { getPlazaIss, FIXED_TAX, getTotalTaxPercent } from './data/plazasData';
@@ -24,6 +25,7 @@ export default function UserDashboardPage() {
     applyRejectedPrice,
   } = useApprovalStore();
   const { initializeMockResearches } = useMarketResearchStore();
+  const { groupMetadata } = usePricingCodesStore();
 
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'analysis'>('pending');
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
@@ -313,6 +315,31 @@ export default function UserDashboardPage() {
                       Praça {item.plaza}
                     </span>
                   </div>
+                  {/* Group metadata: ficha técnica and comment */}
+                  {item.grupoServico && (groupMetadata[item.grupoServico]?.fichaTecnica || groupMetadata[item.grupoServico]?.comentario) && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                      {groupMetadata[item.grupoServico]?.fichaTecnica && (
+                        <a
+                          href={groupMetadata[item.grupoServico]!.fichaTecnica}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '6px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1D4ED8', fontSize: '11px', fontWeight: 600, textDecoration: 'none' }}
+                        >
+                          <ExternalLink size={11} />
+                          Ficha Técnica
+                        </a>
+                      )}
+                      {groupMetadata[item.grupoServico]?.comentario && (
+                        <span
+                          title={groupMetadata[item.grupoServico]!.comentario}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '6px', backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', fontSize: '11px', fontWeight: 600, cursor: 'help' }}
+                        >
+                          <MessageSquare size={11} />
+                          Obs.
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* CENTER - Price Details (pending only) */}

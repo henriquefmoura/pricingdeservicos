@@ -40,7 +40,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../componen
 
 export function PricingCodesManager() {
   const { user } = useAuthStore();
-  const { codes, addCode, addCodes, removeCode, updateCodeMeta, getCodesByStatus, clearCodes } = usePricingCodesStore();
+  const { codes, addCode, addCodes, removeCode, updateCodeMeta, updateGroupMeta, groupMetadata, getCodesByStatus, clearCodes } = usePricingCodesStore();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -440,6 +440,8 @@ export function PricingCodesManager() {
               getStatusBadge={getStatusBadge}
               removeCode={removeCode}
               updateCodeMeta={updateCodeMeta}
+              groupMetadata={groupMetadata}
+              updateGroupMeta={updateGroupMeta}
             />
           )}
         </CardContent>
@@ -500,12 +502,30 @@ interface GroupedCodesViewProps {
   getStatusBadge: (status: PricingCode['status']) => React.ReactNode;
   removeCode: (id: string) => void;
   updateCodeMeta: (id: string, meta: { fichaTecnica?: string; comentario?: string }) => void;
+  groupMetadata: Record<string, { fichaTecnica?: string; comentario?: string }>;
+  updateGroupMeta: (groupName: string, meta: { fichaTecnica?: string; comentario?: string }) => void;
 }
 
-function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode, updateCodeMeta }: GroupedCodesViewProps) {
-  // Dialog state for ficha técnica and comentário
+function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode, updateCodeMeta, groupMetadata, updateGroupMeta }: GroupedCodesViewProps) {
+  // Dialog state for group-level ficha técnica and comentário
+  const [editingGroupFicha, setEditingGroupFicha] = useState<{ groupName: string; url: string } | null>(null);
+  const [editingGroupComment, setEditingGroupComment] = useState<{ groupName: string; text: string } | null>(null);
+
+  // Keep per-code dialogs for backward-compat (codes may still have old data)
   const [editingFicha, setEditingFicha] = useState<{ id: string; url: string } | null>(null);
   const [editingComment, setEditingComment] = useState<{ id: string; text: string } | null>(null);
+
+  const handleSaveGroupFicha = () => {
+    if (!editingGroupFicha) return;
+    updateGroupMeta(editingGroupFicha.groupName, { fichaTecnica: editingGroupFicha.url.trim() || undefined });
+    setEditingGroupFicha(null);
+  };
+
+  const handleSaveGroupComment = () => {
+    if (!editingGroupComment) return;
+    updateGroupMeta(editingGroupComment.groupName, { comentario: editingGroupComment.text.trim() || undefined });
+    setEditingGroupComment(null);
+  };
 
   const handleSaveFicha = () => {
     if (!editingFicha) return;
@@ -565,17 +585,6 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
                     <Badge className={getTipoBadgeColor(code.tipo)}>
                       {code.tipo}
                     </Badge>
-                    {code.tipo === 'Serviço' && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title={code.fichaTecnica ? 'Ver / editar ficha técnica' : 'Adicionar ficha técnica'}
-                        onClick={() => setEditingFicha({ id: code.id, url: code.fichaTecnica || '' })}
-                        className={`h-6 w-6 p-0 ${code.fichaTecnica ? 'text-blue-600 hover:text-blue-700' : 'text-gray-400 hover:text-blue-600'}`}
-                      >
-                        <Link className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
                   </div>
                 </TableCell>
                 <TableCell className="max-w-xs">
@@ -625,16 +634,7 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center justify-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      title={code.comentario ? 'Ver / editar comentário' : 'Adicionar comentário'}
-                      onClick={() => setEditingComment({ id: code.id, text: code.comentario || '' })}
-                      className={`h-7 w-7 p-0 ${code.comentario ? 'text-amber-500 hover:text-amber-600' : 'text-gray-400 hover:text-amber-500'}`}
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                    </Button>
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -669,25 +669,60 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
           const groupCodes = grouped[groupName];
           const isUngrouped = groupName === UNGROUPED_KEY;
           const displayName = isUngrouped ? 'Sem Grupo' : groupName;
+          const gMeta = groupMetadata[groupName] || {};
 
           return (
             <Collapsible key={groupName} defaultOpen>
               <div className="border-2 border-indigo-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                <CollapsibleTrigger asChild>
-                  <button
-                    className="flex items-center justify-between w-full px-5 py-4 bg-indigo-50 hover:bg-indigo-100 transition-colors text-left group border-l-4 border-l-indigo-500"
-                    aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
-                  >
-                    <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between w-full px-5 py-4 bg-indigo-50 border-l-4 border-l-indigo-500">
+                  <CollapsibleTrigger asChild>
+                    <button
+                      className="flex items-center gap-3 flex-1 text-left group hover:opacity-80 transition-opacity"
+                      aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
+                    >
                       <FolderOpen className="w-6 h-6 text-indigo-600" />
                       <span className="font-bold text-lg text-gray-900">{displayName}</span>
                       <Badge variant="outline" className="text-sm px-3 py-1 font-semibold border-indigo-300 text-indigo-700 bg-white">
                         {groupCodes.length} serviço(s)
                       </Badge>
+                      <ChevronDown className="w-5 h-5 text-indigo-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                    </button>
+                  </CollapsibleTrigger>
+                  {!isUngrouped && (
+                    <div className="flex items-center gap-1 ml-3 flex-shrink-0">
+                      {gMeta.fichaTecnica && (
+                        <a
+                          href={gMeta.fichaTecnica}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Abrir ficha técnica do grupo"
+                          className="h-7 w-7 flex items-center justify-center rounded text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title={gMeta.fichaTecnica ? 'Ver / editar ficha técnica do grupo' : 'Adicionar ficha técnica ao grupo'}
+                        onClick={(e) => { e.stopPropagation(); setEditingGroupFicha({ groupName, url: gMeta.fichaTecnica || '' }); }}
+                        className={`h-7 w-7 p-0 ${gMeta.fichaTecnica ? 'text-blue-600 hover:text-blue-700' : 'text-gray-400 hover:text-blue-600'}`}
+                      >
+                        <Link className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title={gMeta.comentario ? 'Ver / editar comentário do grupo' : 'Adicionar comentário ao grupo'}
+                        onClick={(e) => { e.stopPropagation(); setEditingGroupComment({ groupName, text: gMeta.comentario || '' }); }}
+                        className={`h-7 w-7 p-0 ${gMeta.comentario ? 'text-amber-500 hover:text-amber-600' : 'text-gray-400 hover:text-amber-500'}`}
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <ChevronDown className="w-5 h-5 text-indigo-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
-                  </button>
-                </CollapsibleTrigger>
+                  )}
+                </div>
                 <CollapsibleContent>
                   {renderCodesTable(groupCodes)}
                 </CollapsibleContent>
@@ -703,7 +738,104 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
   function renderDialogs() {
     return (
       <>
-        {/* Ficha Técnica Dialog */}
+        {/* Group Ficha Técnica Dialog */}
+        <Dialog open={!!editingGroupFicha} onOpenChange={(open) => { if (!open) setEditingGroupFicha(null); }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Link className="w-5 h-5 text-blue-600" />
+                Ficha Técnica do Grupo
+              </DialogTitle>
+              <DialogDescription>
+                Informe o link da ficha técnica para o grupo &ldquo;{editingGroupFicha?.groupName}&rdquo;. Ficará visível para admins e usuários.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <Label htmlFor="group-ficha-url">URL da Ficha Técnica</Label>
+              <Input
+                id="group-ficha-url"
+                value={editingGroupFicha?.url ?? ''}
+                onChange={(e) => setEditingGroupFicha((prev) => prev ? { ...prev, url: e.target.value } : prev)}
+                placeholder="https://exemplo.com/ficha-tecnica"
+                type="url"
+              />
+              {editingGroupFicha?.url && (
+                <a
+                  href={editingGroupFicha.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Abrir link em nova aba
+                </a>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingGroupFicha(null)}>
+                Cancelar
+              </Button>
+              {editingGroupFicha?.url && (
+                <Button
+                  variant="outline"
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                  onClick={() => {
+                    if (editingGroupFicha) updateGroupMeta(editingGroupFicha.groupName, { fichaTecnica: undefined });
+                    setEditingGroupFicha(null);
+                  }}
+                >
+                  Remover link
+                </Button>
+              )}
+              <Button onClick={handleSaveGroupFicha}>Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Group Comentário Dialog */}
+        <Dialog open={!!editingGroupComment} onOpenChange={(open) => { if (!open) setEditingGroupComment(null); }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-amber-500" />
+                Comentário do Grupo
+              </DialogTitle>
+              <DialogDescription>
+                Adicione observações sobre o grupo &ldquo;{editingGroupComment?.groupName}&rdquo;. Ficará visível para admins e usuários.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <Label htmlFor="group-comentario-text">Comentário</Label>
+              <Textarea
+                id="group-comentario-text"
+                value={editingGroupComment?.text ?? ''}
+                onChange={(e) => setEditingGroupComment((prev) => prev ? { ...prev, text: e.target.value } : prev)}
+                placeholder="Ex: Atenção — verificar compatibilidade de tensão antes de precificar..."
+                rows={4}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingGroupComment(null)}>
+                Cancelar
+              </Button>
+              {editingGroupComment?.text && (
+                <Button
+                  variant="outline"
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                  onClick={() => {
+                    if (editingGroupComment) updateGroupMeta(editingGroupComment.groupName, { comentario: undefined });
+                    setEditingGroupComment(null);
+                  }}
+                >
+                  Remover comentário
+                </Button>
+              )}
+              <Button onClick={handleSaveGroupComment}>Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Legacy per-code Ficha Técnica Dialog */}
         <Dialog open={!!editingFicha} onOpenChange={(open) => { if (!open) setEditingFicha(null); }}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
@@ -757,7 +889,7 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
           </DialogContent>
         </Dialog>
 
-        {/* Comentário Dialog */}
+        {/* Legacy per-code Comentário Dialog */}
         <Dialog open={!!editingComment} onOpenChange={(open) => { if (!open) setEditingComment(null); }}>
           <DialogContent className="max-w-lg">
             <DialogHeader>

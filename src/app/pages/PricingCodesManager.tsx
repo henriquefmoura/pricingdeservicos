@@ -745,7 +745,7 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
                   variant="outline"
                   className="text-red-600 border-red-300 hover:bg-red-50"
                   onClick={() => {
-                    if (editingFicha) updateCodeMeta(editingFicha.id, { fichaTecnica: undefined });
+                    updateCodeMeta(editingFicha.id, { fichaTecnica: undefined });
                     setEditingFicha(null);
                   }}
                 >
@@ -788,7 +788,7 @@ function GroupedCodesView({ codes, getTipoBadgeColor, getStatusBadge, removeCode
                   variant="outline"
                   className="text-red-600 border-red-300 hover:bg-red-50"
                   onClick={() => {
-                    if (editingComment) updateCodeMeta(editingComment.id, { comentario: undefined });
+                    updateCodeMeta(editingComment.id, { comentario: undefined });
                     setEditingComment(null);
                   }}
                 >

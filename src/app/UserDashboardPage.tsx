@@ -79,11 +79,8 @@ export default function UserDashboardPage() {
 
   const handleDefineNewPrice = (id: string) => {
     setEditingPrice(id);
-    const item = rejectedItems.find((i) => i.id === id);
-    if (item) {
-      setEditRepasseValue(item.proposedRepasse.toFixed(2));
-      setEditVendaValue(item.proposedVenda.toFixed(2));
-    }
+    setEditRepasseValue('');
+    setEditVendaValue('');
   };
 
   const handleSaveNewPrice = (id: string) => {
@@ -485,6 +482,26 @@ export default function UserDashboardPage() {
                 {/* Inline Price Edit Form */}
                 {isEditing && isRejected && (
                   <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' }}>
+                    {/* Reference row: rejected prices shown read-only for comparison */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        marginBottom: '12px',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        backgroundColor: '#FEF2F2',
+                        border: '1px solid #FECACA',
+                        fontSize: '13px',
+                        color: '#991B1B',
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, marginRight: '4px' }}>Preço rejeitado:</span>
+                      <span>Repasse: <span style={{ fontWeight: 700 }}>R$ {item.proposedRepasse.toFixed(2)}</span></span>
+                      <span>Venda: <span style={{ fontWeight: 700 }}>R$ {item.proposedVenda.toFixed(2)}</span></span>
+                      <span>Margem líquida: <span style={{ fontWeight: 700 }}>{item.proposedMargem.toFixed(1)}%</span></span>
+                    </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr auto', gap: '16px', alignItems: 'end' }}>
                       <CurrencyInput
                         label="Repasse (R$)"

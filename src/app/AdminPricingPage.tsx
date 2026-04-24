@@ -41,6 +41,7 @@ export default function AdminPricingPage() {
   const [editingCode, setEditingCode] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'pendentes' | 'precificados'>('pendentes');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [openCommentGroup, setOpenCommentGroup] = useState<string | null>(null);
 
   // Auth guard
   useEffect(() => {
@@ -811,16 +812,21 @@ export default function AdminPricingPage() {
                                 </a>
                               )}
                               {gMeta.comentario && (
-                                <div
-                                  title={gMeta.comentario}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '7px', backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', fontSize: '12px', fontWeight: 600, cursor: 'help' }}
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setOpenCommentGroup(openCommentGroup === `pending-${groupName}` ? null : `pending-${groupName}`); }}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '7px', backgroundColor: openCommentGroup === `pending-${groupName}` ? '#FDE68A' : '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                                 >
                                   <MessageSquare size={13} />
                                   Obs.
-                                </div>
+                                </button>
                               )}
                             </div>
                           </div>
+                          {openCommentGroup === `pending-${groupName}` && gMeta.comentario && (
+                            <div style={{ padding: '12px 28px', backgroundColor: '#FFFBEB', borderTop: '1px solid #FDE68A' }}>
+                              <p style={{ fontSize: '13px', color: '#78350F', margin: 0 }}>{gMeta.comentario}</p>
+                            </div>
+                          )}
                           {!isCollapsed && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
                               {codesInGroup.map((code) => renderPendingCard(code))}
@@ -1032,16 +1038,21 @@ export default function AdminPricingPage() {
                                 </a>
                               )}
                               {gMeta.comentario && (
-                                <div
-                                  title={gMeta.comentario}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '7px', backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', fontSize: '12px', fontWeight: 600, cursor: 'help' }}
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setOpenCommentGroup(openCommentGroup === `priced-${groupName}` ? null : `priced-${groupName}`); }}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '7px', backgroundColor: openCommentGroup === `priced-${groupName}` ? '#FDE68A' : '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                                 >
                                   <MessageSquare size={13} />
                                   Obs.
-                                </div>
+                                </button>
                               )}
                             </div>
                           </div>
+                          {openCommentGroup === `priced-${groupName}` && gMeta.comentario && (
+                            <div style={{ padding: '12px 28px', backgroundColor: '#FFFBEB', borderTop: '1px solid #FDE68A' }}>
+                              <p style={{ fontSize: '13px', color: '#78350F', margin: 0 }}>{gMeta.comentario}</p>
+                            </div>
+                          )}
                           {!isCollapsed && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
                               {codesInGroup.map((code) => renderPricedCard(code))}

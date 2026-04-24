@@ -25,6 +25,8 @@ export interface PricingCode {
   createdAt: Date;
   createdBy: string;
   targetPlazas?: string[]; // Praças alvo para este código
+  fichaTecnica?: string; // URL da ficha técnica do serviço
+  comentario?: string; // Comentário/observação sobre o serviço
   prices?: {
     [plaza: string]: {
       repasse: number;
@@ -43,6 +45,7 @@ interface PricingCodesState {
   addCodes: (codes: Omit<PricingCode, 'id' | 'createdAt' | 'status'>[]) => void;
   removeCode: (id: string) => void;
   updateCodePrice: (id: string, plaza: string, repasse: number, venda: number, preenchidoPor: string) => void;
+  updateCodeMeta: (id: string, meta: { fichaTecnica?: string; comentario?: string }) => void;
   getCodesByStatus: (status: PricingCode['status']) => PricingCode[];
   getPendingCodesCount: () => number;
   clearCodes: () => void;
@@ -222,6 +225,14 @@ export const usePricingCodesStore = create<PricingCodesState>()(
 
       getCodesByStatus: (status) => {
         return get().codes.filter((code) => code.status === status);
+      },
+
+      updateCodeMeta: (id, meta) => {
+        set((state) => ({
+          codes: state.codes.map((code) =>
+            code.id === id ? { ...code, ...meta } : code
+          ),
+        }));
       },
 
       getPendingCodesCount: () => {

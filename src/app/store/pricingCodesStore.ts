@@ -38,14 +38,21 @@ export interface PricingCode {
   };
 }
 
+export interface GroupMeta {
+  fichaTecnica?: string;
+  comentario?: string;
+}
+
 interface PricingCodesState {
   codes: PricingCode[];
+  groupMetadata: Record<string, GroupMeta>;
   isLoading: boolean;
   addCode: (code: Omit<PricingCode, 'id' | 'createdAt' | 'status'>) => void;
   addCodes: (codes: Omit<PricingCode, 'id' | 'createdAt' | 'status'>[]) => void;
   removeCode: (id: string) => void;
   updateCodePrice: (id: string, plaza: string, repasse: number, venda: number, preenchidoPor: string) => void;
   updateCodeMeta: (id: string, meta: { fichaTecnica?: string; comentario?: string }) => void;
+  updateGroupMeta: (groupName: string, meta: GroupMeta) => void;
   getCodesByStatus: (status: PricingCode['status']) => PricingCode[];
   getPendingCodesCount: () => number;
   clearCodes: () => void;
@@ -58,6 +65,7 @@ export const usePricingCodesStore = create<PricingCodesState>()(
   persist(
     (set, get) => ({
       codes: [],
+      groupMetadata: {},
       isLoading: false,
 
       syncFromBackend: async () => {
@@ -232,6 +240,18 @@ export const usePricingCodesStore = create<PricingCodesState>()(
           codes: state.codes.map((code) =>
             code.id === id ? { ...code, ...meta } : code
           ),
+        }));
+      },
+
+      updateGroupMeta: (groupName, meta) => {
+        set((state) => ({
+          groupMetadata: {
+            ...state.groupMetadata,
+            [groupName]: {
+              ...state.groupMetadata[groupName],
+              ...meta,
+            },
+          },
         }));
       },
 

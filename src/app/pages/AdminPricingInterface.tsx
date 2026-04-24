@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Save, CheckCircle2, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, ListChecks, ChevronDown, FolderOpen, Info } from 'lucide-react';
+import { Save, CheckCircle2, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, ListChecks, ChevronDown, FolderOpen, Info, ExternalLink, MessageSquare } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -29,6 +29,7 @@ import { useNotificationStore } from '../store/notificationStore';
 import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 import { calculateMargemComImpostos, getPlazaIss, FIXED_TAX, getTotalTaxPercent } from '../data/plazasData';
+import { hasEffectiveMarketResearch } from '../utils/pricingUtils';
 
 interface PriceInput {
   repasse: string;
@@ -42,7 +43,7 @@ interface AdminPricingInterfaceProps {
 export function AdminPricingInterface({ initialFilter }: AdminPricingInterfaceProps) {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { codes, updateCodePrice, initializeMockCodes } = usePricingCodesStore();
+  const { codes, updateCodePrice, initializeMockCodes, groupMetadata } = usePricingCodesStore();
   const { getResearchByCode, getSuggestedPrice } = useMarketResearchStore();
   const { addApproval } = useApprovalStore();
   const { getSimilarPlazas, initializeMockData } = useCorrelationStore();
@@ -168,6 +169,11 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
     }));
   };
 
+  // Check whether a code has effective market research.
+  // Non-'Serviço' codes in a group are unlocked when all 'Serviço' codes in that group have research.
+  const checkMarketResearch = (code: PricingCode) =>
+    hasEffectiveMarketResearch(code, codes, getResearchByCode);
+
   const handleSavePrice = (code: PricingCode) => {
     if (!user?.plaza) {
       toast.error('Erro: Praça do usuário não identificada');
@@ -194,9 +200,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
     }
 
     // Bloquear salvamento sem pesquisa de mercado
-    const codeKeyForResearch = code.codigoAvulso || code.codigoAtrelado;
-    const existingResearch = codeKeyForResearch ? getResearchByCode(codeKeyForResearch) : undefined;
-    if (!existingResearch || existingResearch.precosConcorrentes.length === 0) {
+    if (!checkMarketResearch(code)) {
       toast.error('Pesquisa de mercado necessária', {
         description: 'Realize uma pesquisa de mercado para este serviço antes de salvar o preço. Acesse a página de Pesquisa de Mercado.',
       });
@@ -386,7 +390,7 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
     const hasInput = priceInputs[code.id];
     const codeRef = code.codigoAvulso || code.codigoAtrelado || '';
     const research = getResearchByCode(codeRef);
-    const hasMarketResearch = !!(research && research.precosConcorrentes.length > 0);
+    const hasMarketResearch = checkMarketResearch(code);
 
     return (
       <Card key={code.id} className="border-2">
@@ -913,25 +917,50 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                   const groupCodes = pendentesGrouped.grouped[groupName];
                   const isUngrouped = groupName === UNGROUPED_KEY;
                   const displayName = isUngrouped ? 'Sem Grupo' : groupName;
+                  const gMeta = !isUngrouped ? (groupMetadata[groupName] || {}) : {};
 
                   return (
                     <Collapsible key={groupName}>
                       <div className="border-2 border-indigo-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                        <CollapsibleTrigger asChild>
-                          <button
-                            className="flex items-center justify-between w-full px-8 py-6 bg-indigo-50 hover:bg-indigo-100 transition-colors text-left group border-l-4 border-l-indigo-500"
-                            aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
-                          >
-                            <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-between w-full px-8 py-6 bg-indigo-50 border-l-4 border-l-indigo-500">
+                          <CollapsibleTrigger asChild>
+                            <button
+                              className="flex items-center gap-4 flex-1 text-left group hover:opacity-80 transition-opacity"
+                              aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
+                            >
                               <FolderOpen className="w-8 h-8 text-indigo-600" />
                               <span className="font-bold text-2xl text-gray-900">{displayName}</span>
                               <Badge variant="outline" className="text-base px-4 py-1.5 font-semibold border-indigo-300 text-indigo-700 bg-white">
                                 {groupCodes.length} serviço(s)
                               </Badge>
-                            </div>
-                            <ChevronDown className="w-7 h-7 text-indigo-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
-                          </button>
-                        </CollapsibleTrigger>
+                              <ChevronDown className="w-7 h-7 text-indigo-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                            </button>
+                          </CollapsibleTrigger>
+                          <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                            {gMeta.fichaTecnica && (
+                              <a
+                                href={gMeta.fichaTecnica}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Ficha técnica do grupo"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold no-underline hover:bg-blue-100 transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                Ficha Técnica
+                              </a>
+                            )}
+                            {gMeta.comentario && (
+                              <div
+                                title={gMeta.comentario}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold cursor-help"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                Obs.
+                              </div>
+                            )}
+                          </div>
+                        </div>
                         <CollapsibleContent>
                           <div className="space-y-4 p-4">
                             {groupCodes.map((code) => renderPendingCodeCard(code))}
@@ -983,25 +1012,50 @@ export function AdminPricingInterface({ initialFilter }: AdminPricingInterfacePr
                     const groupCodes = precificadosGrouped.grouped[groupName];
                     const isUngrouped = groupName === UNGROUPED_KEY;
                     const displayName = isUngrouped ? 'Sem Grupo' : groupName;
+                    const gMeta = !isUngrouped ? (groupMetadata[groupName] || {}) : {};
 
                     return (
                       <Collapsible key={groupName}>
                         <div className="border-2 border-green-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                          <CollapsibleTrigger asChild>
-                            <button
-                              className="flex items-center justify-between w-full px-8 py-6 bg-green-50 hover:bg-green-100 transition-colors text-left group border-l-4 border-l-green-500"
-                              aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
-                            >
-                              <div className="flex items-center gap-4">
+                          <div className="flex items-center justify-between w-full px-8 py-6 bg-green-50 border-l-4 border-l-green-500">
+                            <CollapsibleTrigger asChild>
+                              <button
+                                className="flex items-center gap-4 flex-1 text-left group hover:opacity-80 transition-opacity"
+                                aria-label={`Grupo ${displayName}, ${groupCodes.length} serviço(s)`}
+                              >
                                 <FolderOpen className="w-8 h-8 text-green-600" />
                                 <span className="font-bold text-2xl text-gray-900">{displayName}</span>
                                 <Badge variant="outline" className="text-base px-4 py-1.5 font-semibold border-green-300 text-green-700 bg-white">
                                   {groupCodes.length} serviço(s)
                                 </Badge>
-                              </div>
-                              <ChevronDown className="w-7 h-7 text-green-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
-                            </button>
-                          </CollapsibleTrigger>
+                                <ChevronDown className="w-7 h-7 text-green-500 transition-transform group-data-[state=closed]:rotate-[-90deg]" />
+                              </button>
+                            </CollapsibleTrigger>
+                            <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                              {gMeta.fichaTecnica && (
+                                <a
+                                  href={gMeta.fichaTecnica}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Ficha técnica do grupo"
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold no-underline hover:bg-blue-100 transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  Ficha Técnica
+                                </a>
+                              )}
+                              {gMeta.comentario && (
+                                <div
+                                  title={gMeta.comentario}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold cursor-help"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                  Obs.
+                                </div>
+                              )}
+                            </div>
+                          </div>
                           <CollapsibleContent>
                             <div className="space-y-4 p-4">
                               {groupCodes.map((code) => renderPricedCodeCard(code))}

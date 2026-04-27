@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { Plus, Trash2, Upload, FileSpreadsheet, Calendar, AlertCircle, CheckCircle2, ChevronsUpDown, ChevronDown, FolderOpen, Link, MessageSquare, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Upload, FileSpreadsheet, Calendar, AlertCircle, CheckCircle2, ChevronsUpDown, ChevronDown, FolderOpen, Link, MessageSquare, ExternalLink, Download } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -37,6 +37,37 @@ import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Checkbox } from '../components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
+
+// Mapeamento de praça → numeração das lojas (4 dígitos, zero-padded)
+const PLAZA_STORES: Record<string, string[]> = {
+  'Praça São Paulo': ['0001', '0005', '0008', '0012', '0016', '0024', '0041', '0042', '0046', '0058', '0065', '0067', '0068', '0069', '0075'],
+  'Praça ABC': ['0010', '0045'],
+  'Praça Bauru': ['0078'],
+  'Praça BH': ['0004', '0020', '0036', '0070'],
+  'Praça Brasília': ['0013', '0023', '0028', '0077'],
+  'Praça Campinas': ['0003', '0022'],
+  'Praça Campo Grande': ['0044'],
+  'Praça Curitiba': ['0009', '0035'],
+  'Praça Fortaleza': ['0038'],
+  'Praça Goiânia': ['0018'],
+  'Praça Joinville': ['0076'],
+  'Praça Jundiaí': ['0056'],
+  'Praça Londrina': ['0033'],
+  'Praça Maceió': ['0050'],
+  'Praça Natal': ['0049'],
+  'Praça Porto Alegre': ['0019', '0063'],
+  'Praça Ribeirão Preto': ['0002'],
+  'Praça RJ': ['0007', '0011', '0017', '0021', '0026', '0074'],
+  'Praça Salvador': ['0059'],
+  'Praça Santos': ['0062'],
+  'Praça São José': ['0039', '0071', '0072'],
+  'Praça São José do Rio Preto': ['0034'],
+  'Praça São José dos Campos/Taubaté': ['0015', '0055'],
+  'Praça São Leopoldo': ['0032'],
+  'Praça Sorocaba': ['0027'],
+  'Praça Uberlândia': ['0029'],
+  'Praça Vitória': ['0057'],
+};
 
 export function PricingCodesManager() {
   const { user } = useAuthStore();
@@ -197,6 +228,76 @@ export function PricingCodesManager() {
     fileInputRef.current?.click();
   };
 
+  const handleExportSistema = () => {
+    // Tomorrow's date as Data_inicio
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dd = String(tomorrow.getDate()).padStart(2, '0');
+    const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const yyyy = tomorrow.getFullYear();
+    const dataInicio = `${dd}.${mm}.${yyyy}`;
+    const dataFim = '31.12.9999';
+
+    const rows: (string | number)[][] = [];
+
+    for (const code of codes) {
+      if (!code.prices || Object.keys(code.prices).length === 0) continue;
+
+      for (const [plaza, priceData] of Object.entries(code.prices)) {
+        const stores = PLAZA_STORES[plaza] ?? [];
+        if (stores.length === 0) continue;
+
+        // Determine which material codes to use for this service
+        const materialCodes: string[] = [];
+        if (code.codigoAvulso) materialCodes.push(code.codigoAvulso);
+        if (code.codigoAtrelado) materialCodes.push(code.codigoAtrelado);
+        if (materialCodes.length === 0) continue;
+
+        for (const store of stores) {
+          for (const material of materialCodes) {
+            rows.push([
+              'LB01',
+              10,
+              store,
+              material,
+              priceData.repasse,
+              priceData.venda,
+              dataInicio,
+              dataFim,
+            ]);
+          }
+        }
+      }
+    }
+
+    if (rows.length === 0) {
+      toast.error('Nenhum preço preenchido para exportar.');
+      return;
+    }
+
+    const header = ['Organizacao', 'Canal', 'Filial', 'Material', 'Preco_de_Compra', 'Preco_de_Venda', 'Data_inicio', 'Data_fim'];
+    const wsData = [header, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Format Filial and Material columns as text to preserve leading zeros
+    const range = XLSX.utils.decode_range(ws['!ref'] ?? 'A1');
+    for (let R = 1; R <= range.e.r; R++) {
+      // Column C (index 2) = Filial, Column D (index 3) = Material
+      for (const col of [2, 3]) {
+        const cellAddr = XLSX.utils.encode_cell({ r: R, c: col });
+        if (ws[cellAddr]) {
+          ws[cellAddr].t = 's';
+          ws[cellAddr].z = '@';
+        }
+      }
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Preços');
+    XLSX.writeFile(wb, `exportacao-sistema-${dd}${mm}${yyyy}.xlsx`);
+    toast.success(`Exportação gerada com ${rows.length} linha(s).`);
+  };
+
   const getStatusBadge = (status: PricingCode['status']) => {
     switch (status) {
       case 'pendente':
@@ -312,6 +413,10 @@ export function PricingCodesManager() {
               <Button variant="outline" onClick={handleImportExcel}>
                 <Upload className="w-4 h-4 mr-2" />
                 Importar Excel
+              </Button>
+              <Button variant="outline" onClick={handleExportSistema}>
+                <Download className="w-4 h-4 mr-2" />
+                Exportar p/ Sistema
               </Button>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>

@@ -71,7 +71,7 @@ const PLAZA_STORES: Record<string, string[]> = {
 
 export function PricingCodesManager() {
   const { user } = useAuthStore();
-  const { codes, addCode, addCodes, removeCode, updateCodeMeta, updateGroupMeta, groupMetadata, getCodesByStatus, clearCodes } = usePricingCodesStore();
+  const { codes, addCode, addCodes, removeCode, updateCodeMeta, updateGroupMeta, groupMetadata, getCodesByStatus, clearCodes, markAsExported } = usePricingCodesStore();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -91,6 +91,14 @@ export function PricingCodesManager() {
   const pendingCodes = getCodesByStatus('pendente');
   const inProgressCodes = getCodesByStatus('em_andamento');
   const completedCodes = getCodesByStatus('concluido');
+
+  // Count (code, plaza) price entries that are priced but not yet exported
+  const pendingExportCount = codes.reduce((acc, code) => {
+    for (const priceData of Object.values(code.prices || {})) {
+      if (!priceData.exportadoEm) acc++;
+    }
+    return acc;
+  }, 0);
 
   const handleAddCode = () => {
     if (newCode.descricao && (newCode.codigoAvulso || newCode.codigoAtrelado) && newCode.prazo && user) {
@@ -239,11 +247,15 @@ export function PricingCodesManager() {
     const dataFim = '31.12.9999';
 
     const rows: (string | number)[][] = [];
+    const exportedItems: { id: string; plaza: string }[] = [];
 
     for (const code of codes) {
       if (!code.prices || Object.keys(code.prices).length === 0) continue;
 
       for (const [plaza, priceData] of Object.entries(code.prices)) {
+        // Skip if already exported (re-export only when price is updated, which clears exportadoEm)
+        if (priceData.exportadoEm) continue;
+
         const stores = PLAZA_STORES[plaza] ?? [];
         if (stores.length === 0) continue;
 
@@ -267,11 +279,13 @@ export function PricingCodesManager() {
             ]);
           }
         }
+
+        exportedItems.push({ id: code.id, plaza });
       }
     }
 
     if (rows.length === 0) {
-      toast.error('Nenhum preço preenchido para exportar.');
+      toast.info('Nenhum preço novo para exportar. Todos os preços já foram exportados.');
       return;
     }
 
@@ -295,7 +309,11 @@ export function PricingCodesManager() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Preços');
     XLSX.writeFile(wb, `exportacao-sistema-${dd}${mm}${yyyy}.xlsx`);
-    toast.success(`Exportação gerada com ${rows.length} linha(s).`);
+
+    // Mark all exported price entries so they won't appear in the next export
+    markAsExported(exportedItems);
+
+    toast.success(`Exportação gerada com ${rows.length} linha(s) para ${exportedItems.length} combinação(ões) código/praça.`);
   };
 
   const getStatusBadge = (status: PricingCode['status']) => {
@@ -353,7 +371,7 @@ export function PricingCodesManager() {
   return (
     <div className="space-y-6">
       {/* Header com estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-gray-600">Total de Códigos</CardTitle>
@@ -389,6 +407,18 @@ export function PricingCodesManager() {
             <p className="text-3xl font-bold text-green-600">{completedCodes.length}</p>
           </CardContent>
         </Card>
+
+        <Card className={pendingExportCount > 0 ? 'border-amber-400 bg-amber-50' : ''}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">Aguardando Exportação</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={`text-3xl font-bold ${pendingExportCount > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+              {pendingExportCount}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">praça(s) não exportadas</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Ações principais */}
@@ -414,9 +444,14 @@ export function PricingCodesManager() {
                 <Upload className="w-4 h-4 mr-2" />
                 Importar Excel
               </Button>
-              <Button variant="outline" onClick={handleExportSistema}>
+              <Button variant="outline" onClick={handleExportSistema} className={pendingExportCount > 0 ? 'border-amber-400 text-amber-700 hover:bg-amber-50' : ''}>
                 <Download className="w-4 h-4 mr-2" />
                 Exportar p/ Sistema
+                {pendingExportCount > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-amber-500 rounded-full">
+                    {pendingExportCount}
+                  </span>
+                )}
               </Button>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>

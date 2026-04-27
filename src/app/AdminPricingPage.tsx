@@ -5,7 +5,7 @@ import { AISuggestionCard, Card } from './components/Card';
 import { CurrencyInput, Input } from './components/Input';
 import { ServiceTypeBadge, ServiceType } from './components/ServiceTypeBadge';
 import { StatusBadge, BadgeStatus } from './components/StatusBadge';
-import { Search, Sparkles, Send, Save, Lightbulb, TrendingUp, CheckCircle2, AlertCircle, AlertTriangle, BarChart2, ChevronDown, FolderOpen, Info, Link, MessageSquare, ExternalLink } from 'lucide-react';
+import { Search, Sparkles, Send, Save, Lightbulb, TrendingUp, CheckCircle2, AlertCircle, AlertTriangle, BarChart2, ChevronDown, FolderOpen, Info, Link, MessageSquare, ExternalLink, Upload, Clock } from 'lucide-react';
 import { useAuthStore } from './store/authStore';
 import { usePricingCodesStore, PricingCode, UNGROUPED_KEY } from './store/pricingCodesStore';
 import { useMarketResearchStore } from './store/marketResearchStore';
@@ -926,6 +926,19 @@ export default function AdminPricingPage() {
                                     <CheckCircle2 size={16} style={{ color: '#16A34A' }} />
                                     <span style={{ fontSize: '12px', color: '#065F46', fontWeight: 600 }}>Precificado</span>
                                   </div>
+                                  {priceData.exportadoEm ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <Upload size={14} style={{ color: '#2563EB' }} />
+                                      <span style={{ fontSize: '11px', color: '#1E40AF', fontWeight: 600 }}>
+                                        Exportado em {new Date(priceData.exportadoEm).toLocaleDateString('pt-BR')}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <Clock size={14} style={{ color: '#D97706' }} />
+                                      <span style={{ fontSize: '11px', color: '#92400E', fontWeight: 600 }}>Aguardando exportação</span>
+                                    </div>
+                                  )}
                                 </div>
                                 {priceData.preenchidoPor && (
                                   <p style={{ fontSize: '11px', color: '#9CA3AF', margin: 0 }}>

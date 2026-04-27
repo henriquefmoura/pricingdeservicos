@@ -34,6 +34,7 @@ export interface PricingCode {
       margem: number;
       preenchidoPor?: string;
       preenchidoEm?: Date;
+      exportadoEm?: Date;
     };
   };
 }
@@ -55,6 +56,7 @@ interface PricingCodesState {
   updateGroupMeta: (groupName: string, meta: GroupMeta) => void;
   getCodesByStatus: (status: PricingCode['status']) => PricingCode[];
   getPendingCodesCount: () => number;
+  markAsExported: (items: { id: string; plaza: string }[]) => void;
   clearCodes: () => void;
   initializeMockCodes: () => void;
   /** Load codes from Supabase (no-op when offline). */
@@ -77,6 +79,17 @@ export const usePricingCodesStore = create<PricingCodesState>()(
             pricingCodesApi.fetchAllPrices(),
           ]);
           if (dbCodes) {
+            // Preserve local exportadoEm values across syncs (not stored in DB)
+            const existingCodes = get().codes;
+            const exportedAtMap = new Map<string, Date>();
+            for (const c of existingCodes) {
+              for (const [plaza, priceData] of Object.entries(c.prices || {})) {
+                if (priceData.exportadoEm) {
+                  exportedAtMap.set(`${c.id}:${plaza}`, priceData.exportadoEm);
+                }
+              }
+            }
+
             // Build a map of code_id → prices
             const priceMap = new Map<string, PricingCode['prices']>();
             if (dbPrices) {
@@ -88,6 +101,7 @@ export const usePricingCodesStore = create<PricingCodesState>()(
                   margem: Number(p.margem),
                   preenchidoPor: p.preenchido_por ?? undefined,
                   preenchidoEm: p.preenchido_em ? new Date(p.preenchido_em) : undefined,
+                  exportadoEm: exportedAtMap.get(`${p.code_id}:${p.plaza}`),
                 };
               }
             }
@@ -257,6 +271,25 @@ export const usePricingCodesStore = create<PricingCodesState>()(
 
       getPendingCodesCount: () => {
         return get().codes.filter((code) => code.status === 'pendente').length;
+      },
+
+      markAsExported: (items) => {
+        const now = new Date();
+        const key = (id: string, plaza: string) => `${id}:${plaza}`;
+        const exportSet = new Set(items.map((i) => key(i.id, i.plaza)));
+        set((state) => ({
+          codes: state.codes.map((code) => {
+            const updatedPrices = { ...code.prices };
+            let changed = false;
+            for (const [plaza, priceData] of Object.entries(updatedPrices)) {
+              if (exportSet.has(key(code.id, plaza))) {
+                updatedPrices[plaza] = { ...priceData, exportadoEm: now };
+                changed = true;
+              }
+            }
+            return changed ? { ...code, prices: updatedPrices } : code;
+          }),
+        }));
       },
 
       clearCodes: () => {

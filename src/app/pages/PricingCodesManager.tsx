@@ -293,7 +293,7 @@ export function PricingCodesManager() {
     }
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Precos');
+    XLSX.utils.book_append_sheet(wb, ws, 'Preços');
     XLSX.writeFile(wb, `exportacao-sistema-${dd}${mm}${yyyy}.xlsx`);
     toast.success(`Exportação gerada com ${rows.length} linha(s).`);
   };

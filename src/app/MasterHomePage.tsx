@@ -9,7 +9,6 @@ import { usePricingStore } from './store/pricingStore';
 import { useAuthStore } from './store/authStore';
 import { useReplicationConfigStore } from './store/replicationConfigStore';
 import { useMarketResearchStore, PriceHistoryEntry } from './store/marketResearchStore';
-import { GoogleSheetsConfig } from './components/GoogleSheetsConfig';
 import { ReplicationConfig } from './components/ReplicationConfig';
 import { SalesDataUpload } from './components/master/SalesDataUpload';
 import { ServiceData } from './types/pricing';
@@ -195,165 +194,185 @@ export default function MasterHomePage() {
           </div>
         </div>
 
-        {/* Upload Card */}
-        <HighlightedCard>
+        {/* Upload Sections — two columns */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' }}>
 
-          {/* Error Alert */}
-          {error && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 16px',
-                borderRadius: '8px',
-                backgroundColor: '#FEE2E2',
-                border: '1px solid #FCA5A5',
-                marginBottom: '16px',
-              }}
-            >
-              <AlertCircle size={16} style={{ color: '#DC2626' }} />
-              <span style={{ fontSize: '14px', color: '#DC2626' }}>{error}</span>
-            </div>
-          )}
-
-          {/* Dropzone */}
-          <div
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            style={{
-              border: `2px ${dragActive ? 'solid' : 'dashed'} #78BE20`,
-              borderRadius: '12px',
-              padding: '48px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '16px',
-              cursor: 'pointer',
-              backgroundColor: dragActive ? 'rgba(120, 190, 32, 0.04)' : 'transparent',
-              transition: 'all 0.2s ease',
-              marginBottom: '24px',
-            }}
-          >
-            <div
-              style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(120, 190, 32, 0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {isProcessing ? (
-                <div
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    border: '3px solid #E5E7EB',
-                    borderTop: '3px solid #78BE20',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite',
-                  }}
-                />
-              ) : (
-                <FileSpreadsheet size={32} style={{ color: '#78BE20' }} />
-              )}
+          {/* ── Coluna 1: Upload de Tabela de Preços ── */}
+          <HighlightedCard>
+            {/* Section header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid #E5E7EB' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: 'rgba(120,190,32,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <FileSpreadsheet size={18} style={{ color: '#78BE20' }} />
+              </div>
+              <div>
+                <p style={{ fontSize: '15px', fontWeight: 700, color: '#001022', margin: 0 }}>Upload de Tabela de Preços</p>
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>Planilha Excel com preços e margens por praça</p>
+              </div>
             </div>
 
-            {isProcessing ? (
-              <p style={{ fontSize: '18px', fontWeight: 600, color: '#001022', textAlign: 'center' }}>
-                Processando arquivo...
-              </p>
-            ) : selectedFile ? (
-              <>
-                <p style={{ fontSize: '18px', fontWeight: 600, color: '#001022', textAlign: 'center' }}>
-                  {selectedFile.name}
-                </p>
-                <p style={{ fontSize: '14px', color: '#6B7280', textAlign: 'center' }}>
-                  Clique novamente para selecionar outro arquivo
-                </p>
-              </>
-            ) : (
-              <>
-                <p style={{ fontSize: '18px', fontWeight: 600, color: '#001022', textAlign: 'center' }}>
-                  Arraste o arquivo Excel aqui
-                </p>
-                <p style={{ fontSize: '14px', color: '#6B7280', textAlign: 'center' }}>
-                  ou clique para selecionar
-                </p>
-              </>
+            {/* Error Alert */}
+            {error && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: '#FEE2E2',
+                  border: '1px solid #FCA5A5',
+                  marginBottom: '16px',
+                }}
+              >
+                <AlertCircle size={16} style={{ color: '#DC2626' }} />
+                <span style={{ fontSize: '14px', color: '#DC2626' }}>{error}</span>
+              </div>
             )}
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-              {['.xlsx', '.xls'].map((type) => (
-                <div
-                  key={type}
-                  style={{
-                    padding: '4px 12px',
-                    borderRadius: '100px',
-                    backgroundColor: '#F3F4F6',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    color: '#4B5563',
-                  }}
-                >
-                  {type}
-                </div>
-              ))}
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileSelect}
-              style={{ display: 'none' }}
-            />
-          </div>
-
-          {/* Format Guide */}
-          <div>
-            <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '12px' }}>
-              Estrutura esperada:
-            </p>
+            {/* Dropzone */}
             <div
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
               style={{
+                border: `2px ${dragActive ? 'solid' : 'dashed'} #78BE20`,
+                borderRadius: '12px',
+                padding: '36px 24px',
                 display: 'flex',
-                flexWrap: 'wrap',
-                gap: '8px',
-                padding: '12px',
-                borderRadius: '8px',
-                backgroundColor: '#F8FAFC',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px',
+                cursor: 'pointer',
+                backgroundColor: dragActive ? 'rgba(120, 190, 32, 0.04)' : 'transparent',
+                transition: 'all 0.2s ease',
+                marginBottom: '20px',
               }}
             >
-              {['codigo', 'grupo', 'SP_Repasse', 'SP_Venda', 'SP_Margem', 'RJ_Repasse', 'RJ_Venda', 'RJ_Margem'].map(
-                (col) => (
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(120, 190, 32, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {isProcessing ? (
                   <div
-                    key={col}
                     style={{
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      backgroundColor: '#FFFFFF',
-                      border: '1px solid #E5E7EB',
-                      fontSize: '12px',
-                      fontFamily: 'monospace',
-                      color: '#001022',
+                      width: '28px',
+                      height: '28px',
+                      border: '3px solid #E5E7EB',
+                      borderTop: '3px solid #78BE20',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite',
+                    }}
+                  />
+                ) : (
+                  <FileSpreadsheet size={26} style={{ color: '#78BE20' }} />
+                )}
+              </div>
+
+              {isProcessing ? (
+                <p style={{ fontSize: '15px', fontWeight: 600, color: '#001022', textAlign: 'center', margin: 0 }}>
+                  Processando arquivo...
+                </p>
+              ) : selectedFile ? (
+                <>
+                  <p style={{ fontSize: '14px', fontWeight: 600, color: '#001022', textAlign: 'center', margin: 0 }}>
+                    {selectedFile.name}
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#6B7280', textAlign: 'center', margin: 0 }}>
+                    Clique para selecionar outro arquivo
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: '15px', fontWeight: 600, color: '#001022', textAlign: 'center', margin: 0 }}>
+                    Arraste o arquivo Excel aqui
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#6B7280', textAlign: 'center', margin: 0 }}>
+                    ou clique para selecionar
+                  </p>
+                </>
+              )}
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {['.xlsx', '.xls'].map((type) => (
+                  <div
+                    key={type}
+                    style={{
+                      padding: '3px 10px',
+                      borderRadius: '100px',
+                      backgroundColor: '#F3F4F6',
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      color: '#4B5563',
                     }}
                   >
-                    {col}
+                    {type}
                   </div>
-                )
-              )}
-              <div style={{ padding: '4px 10px', fontSize: '12px', color: '#9CA3AF' }}>...</div>
+                ))}
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+              />
             </div>
-          </div>
-        </HighlightedCard>
+
+            {/* Format Guide */}
+            <div>
+              <p style={{ fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>
+                Estrutura esperada:
+              </p>
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '6px',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  backgroundColor: '#F8FAFC',
+                }}
+              >
+                {['codigo', 'grupo', 'SP_Repasse', 'SP_Venda', 'SP_Margem', 'RJ_Repasse', 'RJ_Venda', 'RJ_Margem'].map(
+                  (col) => (
+                    <div
+                      key={col}
+                      style={{
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #E5E7EB',
+                        fontSize: '11px',
+                        fontFamily: 'monospace',
+                        color: '#001022',
+                      }}
+                    >
+                      {col}
+                    </div>
+                  )
+                )}
+                <div style={{ padding: '3px 8px', fontSize: '11px', color: '#9CA3AF' }}>...</div>
+              </div>
+            </div>
+          </HighlightedCard>
+
+          {/* ── Coluna 2: Upload de Dados de Vendas (ML) ── */}
+          <Card style={{ border: '1.5px solid #86EFAC' }}>
+            <SalesDataUpload masterName={user?.name ?? 'Master'} />
+          </Card>
+
+        </div>
 
         {/* Histórico Completo de Preços */}
         {priceHistory.length > 0 && (
@@ -510,11 +529,6 @@ export default function MasterHomePage() {
           </Card>
         )}
 
-        {/* ML Sales Data Upload */}
-        <Card style={{ border: '1.5px solid #86EFAC' }}>
-          <SalesDataUpload masterName={user?.name ?? 'Master'} />
-        </Card>
-
         {/* Quick Info Cards - Horizontal Row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
           <div
@@ -639,9 +653,6 @@ export default function MasterHomePage() {
             </p>
           </Card>
         </div>
-
-        {/* Google Sheets Integration */}
-        <GoogleSheetsConfig />
 
         {/* Replication Config */}
         <ReplicationConfig />

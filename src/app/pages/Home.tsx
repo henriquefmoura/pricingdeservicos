@@ -10,7 +10,6 @@ import { useAuthStore } from '../store/authStore';
 import { usePricingCodesStore } from '../store/pricingCodesStore';
 import { ServiceData } from '../types/pricing';
 import { PricingCodesManager } from './PricingCodesManager';
-import { GoogleSheetsConfig } from '../components/GoogleSheetsConfig';
 import { ReplicationConfig } from '../components/ReplicationConfig';
 
 export function Home() {
@@ -263,11 +262,6 @@ export function Home() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Google Sheets Integration */}
-            <div className="mt-8">
-              <GoogleSheetsConfig />
-            </div>
 
             {/* Replication Config */}
             <div className="mt-8">

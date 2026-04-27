@@ -253,7 +253,7 @@ export function PricingCodesManager() {
       if (!code.prices || Object.keys(code.prices).length === 0) continue;
 
       for (const [plaza, priceData] of Object.entries(code.prices)) {
-        // Skip if already exported and price hasn't changed since last export
+        // Skip if already exported (re-export only when price is updated, which clears exportadoEm)
         if (priceData.exportadoEm) continue;
 
         const stores = PLAZA_STORES[plaza] ?? [];
@@ -313,7 +313,7 @@ export function PricingCodesManager() {
     // Mark all exported price entries so they won't appear in the next export
     markAsExported(exportedItems);
 
-    toast.success(`Exportação gerada com ${rows.length} linha(s) (${exportedItems.length} praça(s) marcada(s) como exportada(s)).`);
+    toast.success(`Exportação gerada com ${rows.length} linha(s) para ${exportedItems.length} combinação(ões) código/praça.`);
   };
 
   const getStatusBadge = (status: PricingCode['status']) => {

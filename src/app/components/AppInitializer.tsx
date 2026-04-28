@@ -29,7 +29,9 @@ export function AppInitializer() {
     didInit.current = true;
 
     if (isSupabaseConfigured()) {
-      useAuthStore.getState().restoreSession();
+      useAuthStore.getState().restoreSession().catch((err) => {
+        console.error('[AppInitializer] restoreSession failed:', err);
+      });
     }
   }, []);
 

@@ -17,7 +17,7 @@ const testCredentials = [
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, user, isAuthenticated } = useAuthStore();
+  const { login, user, isAuthenticated, isLoading: isRestoringSession } = useAuthStore();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,8 +25,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Redirecionar se já estiver autenticado
+  // Redirecionar se já estiver autenticado (only after session restoration completes)
   useEffect(() => {
+    if (isRestoringSession) return;
     if (isAuthenticated && user) {
       if (user.role === 'master') {
         navigate('/governance', { replace: true });
@@ -36,7 +37,7 @@ export default function LoginPage() {
         navigate('/dashboard', { replace: true });
       }
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, isRestoringSession, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +72,36 @@ export default function LoginPage() {
     setPassword(credential.password);
     setError('');
   };
+
+  // While restoring a Supabase session, show a minimal loading screen
+  // to avoid briefly flashing the login form for already-authenticated users
+  if (isRestoringSession) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          backgroundColor: '#001022',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              border: '3px solid rgba(120, 190, 32, 0.3)',
+              borderTopColor: '#78BE20',
+              animation: 'ps-spin 0.8s linear infinite',
+            }}
+          />
+          <p style={{ color: '#78BE20', fontSize: '14px', fontWeight: 500 }}>Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>

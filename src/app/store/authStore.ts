@@ -57,6 +57,24 @@ const MOCK_USERS: Record<string, { password: string; user: User }> = {
     user: { id: '2', name: 'Admin São Paulo', email: 'admin.sp@empresa.com', role: 'admin', plaza: 'Praça São Paulo' },
   },
 
+  // ── Praça Brasília (ADMIN) ───────────────────────────────────────────────
+  'admin.bsb@empresa.com': {
+    password: 'admin123',
+    user: { id: '3', name: 'Admin Brasília', email: 'admin.bsb@empresa.com', role: 'admin', plaza: 'Praça Brasília' },
+  },
+
+  // ── Praça São José (ADMIN) ───────────────────────────────────────────────
+  'admin.sc@empresa.com': {
+    password: 'admin123',
+    user: { id: '4', name: 'Admin São José', email: 'admin.sc@empresa.com', role: 'admin', plaza: 'Praça São José' },
+  },
+
+  // ── Praça São Paulo (USER) ───────────────────────────────────────────────
+  'usuario.sp@empresa.com': {
+    password: 'user123',
+    user: { id: '11', name: 'Usuário SP', email: 'usuario.sp@empresa.com', role: 'user', plaza: 'Praça São Paulo' },
+  },
+
   // ── Praça RJ (USER) ──────────────────────────────────────────────────────
   'usuario.rj@empresa.com': {
     password: 'user123',

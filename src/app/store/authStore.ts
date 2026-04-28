@@ -57,24 +57,6 @@ const MOCK_USERS: Record<string, { password: string; user: User }> = {
     user: { id: '2', name: 'Admin São Paulo', email: 'admin.sp@empresa.com', role: 'admin', plaza: 'Praça São Paulo' },
   },
 
-  // ── Praça Brasília (ADMIN) ───────────────────────────────────────────────
-  'admin.bsb@empresa.com': {
-    password: 'admin123',
-    user: { id: '3', name: 'Admin Brasília', email: 'admin.bsb@empresa.com', role: 'admin', plaza: 'Praça Brasília' },
-  },
-
-  // ── Praça São José (ADMIN) ───────────────────────────────────────────────
-  'admin.sc@empresa.com': {
-    password: 'admin123',
-    user: { id: '4', name: 'Admin São José', email: 'admin.sc@empresa.com', role: 'admin', plaza: 'Praça São José' },
-  },
-
-  // ── Praça São Paulo (USER) ───────────────────────────────────────────────
-  'usuario.sp@empresa.com': {
-    password: 'user123',
-    user: { id: '11', name: 'Usuário SP', email: 'usuario.sp@empresa.com', role: 'user', plaza: 'Praça São Paulo' },
-  },
-
   // ── Praça RJ (USER) ──────────────────────────────────────────────────────
   'usuario.rj@empresa.com': {
     password: 'user123',
@@ -96,26 +78,22 @@ export const useAuthStore = create<AuthState>()(
 
         // ── Try Supabase Auth first ──
         if (isSupabaseConfigured()) {
-          try {
-            const authUser = await authApi.signIn(email, password);
-            if (authUser) {
-              set({
-                user: {
-                  id: authUser.id,
-                  name: authUser.name,
-                  email: authUser.email,
-                  role: authUser.role,
-                  plaza: authUser.plaza ?? undefined,
-                },
-                isAuthenticated: true,
-                isLoading: false,
-              });
-              return true;
-            }
-          } catch (err) {
-            console.error('[AuthStore] login error:', err);
+          const authUser = await authApi.signIn(email, password);
+          if (authUser) {
+            set({
+              user: {
+                id: authUser.id,
+                name: authUser.name,
+                email: authUser.email,
+                role: authUser.role,
+                plaza: authUser.plaza ?? undefined,
+              },
+              isAuthenticated: true,
+              isLoading: false,
+            });
+            return true;
           }
-          // If Supabase rejects or throws, don't fall back to mock in online mode
+          // If Supabase rejects, don't fall back to mock in online mode
           set({ isLoading: false });
           return false;
         }
@@ -145,33 +123,26 @@ export const useAuthStore = create<AuthState>()(
       restoreSession: async () => {
         if (!isSupabaseConfigured()) return;
         set({ isLoading: true });
-        try {
-          const authUser = await authApi.getCurrentUser();
-          if (authUser) {
-            set({
-              user: {
-                id: authUser.id,
-                name: authUser.name,
-                email: authUser.email,
-                role: authUser.role,
-                plaza: authUser.plaza ?? undefined,
-              },
-              isAuthenticated: true,
-              isLoading: false,
-            });
-          } else {
-            set({ user: null, isAuthenticated: false, isLoading: false });
-          }
-        } catch (err) {
-          console.error('[AuthStore] restoreSession error:', err);
+        const authUser = await authApi.getCurrentUser();
+        if (authUser) {
+          set({
+            user: {
+              id: authUser.id,
+              name: authUser.name,
+              email: authUser.email,
+              role: authUser.role,
+              plaza: authUser.plaza ?? undefined,
+            },
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } else {
           set({ user: null, isAuthenticated: false, isLoading: false });
         }
       },
     }),
     {
       name: 'auth-storage',
-      // Never persist isLoading – it should always start as false
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
     }
   )
 );

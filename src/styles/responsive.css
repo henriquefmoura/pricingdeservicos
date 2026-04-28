@@ -58,8 +58,3 @@ img {
     box-sizing: border-box;
   }
 }
-
-/* Loading spinner used by the session-restore screen in LoginPage */
-@keyframes ps-spin {
-  to { transform: rotate(360deg); }
-}

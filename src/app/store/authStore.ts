@@ -78,22 +78,26 @@ export const useAuthStore = create<AuthState>()(
 
         // ── Try Supabase Auth first ──
         if (isSupabaseConfigured()) {
-          const authUser = await authApi.signIn(email, password);
-          if (authUser) {
-            set({
-              user: {
-                id: authUser.id,
-                name: authUser.name,
-                email: authUser.email,
-                role: authUser.role,
-                plaza: authUser.plaza ?? undefined,
-              },
-              isAuthenticated: true,
-              isLoading: false,
-            });
-            return true;
+          try {
+            const authUser = await authApi.signIn(email, password);
+            if (authUser) {
+              set({
+                user: {
+                  id: authUser.id,
+                  name: authUser.name,
+                  email: authUser.email,
+                  role: authUser.role,
+                  plaza: authUser.plaza ?? undefined,
+                },
+                isAuthenticated: true,
+                isLoading: false,
+              });
+              return true;
+            }
+          } catch (err) {
+            console.error('[AuthStore] login error:', err);
           }
-          // If Supabase rejects, don't fall back to mock in online mode
+          // If Supabase rejects or throws, don't fall back to mock in online mode
           set({ isLoading: false });
           return false;
         }
@@ -123,20 +127,25 @@ export const useAuthStore = create<AuthState>()(
       restoreSession: async () => {
         if (!isSupabaseConfigured()) return;
         set({ isLoading: true });
-        const authUser = await authApi.getCurrentUser();
-        if (authUser) {
-          set({
-            user: {
-              id: authUser.id,
-              name: authUser.name,
-              email: authUser.email,
-              role: authUser.role,
-              plaza: authUser.plaza ?? undefined,
-            },
-            isAuthenticated: true,
-            isLoading: false,
-          });
-        } else {
+        try {
+          const authUser = await authApi.getCurrentUser();
+          if (authUser) {
+            set({
+              user: {
+                id: authUser.id,
+                name: authUser.name,
+                email: authUser.email,
+                role: authUser.role,
+                plaza: authUser.plaza ?? undefined,
+              },
+              isAuthenticated: true,
+              isLoading: false,
+            });
+          } else {
+            set({ user: null, isAuthenticated: false, isLoading: false });
+          }
+        } catch (err) {
+          console.error('[AuthStore] restoreSession error:', err);
           set({ user: null, isAuthenticated: false, isLoading: false });
         }
       },

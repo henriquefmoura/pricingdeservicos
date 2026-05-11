@@ -29,7 +29,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === 'master') {
-        navigate('/governance', { replace: true });
+        navigate('/home', { replace: true });
       } else if (user.role === 'admin') {
         navigate('/admin', { replace: true });
       } else {
@@ -50,7 +50,7 @@ export default function LoginPage() {
         // Redireciona baseado no role do usuário
         const loggedUser = useAuthStore.getState().user;
         if (loggedUser?.role === 'master') {
-          navigate('/governance');
+          navigate('/home');
         } else if (loggedUser?.role === 'admin') {
           navigate('/admin');
         } else {

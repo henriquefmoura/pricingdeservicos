@@ -426,7 +426,7 @@ export function PricingGovernanceDashboard() {
                     </td>
                     <td style={detailTableCellStyle}>{record.adjustedBy}</td>
                     <td style={{ ...detailTableCellStyle, color: '#6B7280', fontSize: '12px' }}>
-                      {new Date(record.adjustedAt).toLocaleDateString('pt-BR', {
+                      {new Date(record.adjustedAt).toLocaleString('pt-BR', {
                         day: '2-digit',
                         month: '2-digit',
                         year: '2-digit',
